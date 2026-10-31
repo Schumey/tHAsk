@@ -246,9 +246,9 @@ class ThaskSmartListEntity(ThaskTodoEntity):
         today = self._data.today
         tasks = [task for task in self._data.collection.tasks.values() if self._matches(task, today)]
         if self._key == SMART_THIS_WEEK:
-            tasks.sort(key=lambda task: (task.due.end, not task.important, task.position))
+            tasks.sort(key=lambda task: (task.due.end, -task.priority, task.position))
         else:
-            tasks.sort(key=lambda task: (not task.important, task.position))
+            tasks.sort(key=lambda task: (-task.priority, task.position))
         return self._sorted(tasks)
 
     def _is_relevant(self, change: Change) -> bool:

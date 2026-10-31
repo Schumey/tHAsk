@@ -9,7 +9,7 @@ import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
 from homeassistant.util import dt as dt_util
 
-from .core.models import TASK_SORTS
+from .core.models import PRIORITIES, TASK_SORTS
 from .core.period import Granularity
 
 GRANULARITIES = [granularity.value for granularity in Granularity]
@@ -52,6 +52,8 @@ TASK_FIELDS = {
     vol.Optional("title"): vol.All(str, vol.Length(min=1)),
     vol.Optional("notes"): str,
     vol.Optional("completed"): bool,
+    vol.Optional("priority"): vol.In(PRIORITIES),
+    # Deprecated alias for priority 3 / 0, still sent by older clients.
     vol.Optional("important"): bool,
     vol.Optional("due"): vol.Any(None, PERIOD_SCHEMA),
     vol.Optional("due_time"): vol.Any(None, hh_mm),
@@ -69,5 +71,5 @@ LIST_FIELDS = {
     vol.Optional("color"): vol.Any(None, str),
     vol.Optional("icon"): vol.Any(None, str),
     vol.Optional("position"): vol.Coerce(float),
-    vol.Optional("sort"): vol.In(TASK_SORTS),
+    vol.Optional("sort"): vol.In((*TASK_SORTS, "important")),
 }

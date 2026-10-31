@@ -18,9 +18,9 @@ const STRINGS = {
     rec_year: "Jährlich", rec_every: "Alle {0} {1}", units_day: "Tage", units_week: "Wochen",
     units_month: "Monate", units_quarter: "Quartale", units_year: "Jahre", close: "Schließen",
     back: "Zurück", loading: "Lade …", not_loaded: "tHAsk ist nicht geladen. Ist die Integration eingerichtet?",
-    kind_due: "Fällig", kind_time: "Uhrzeit", kind_recurrence: "Wiederholung", kind_important: "Wichtig",
-    ignore: "Nicht erkennen", mark_important: "Wichtig", complete: "Erledigt", week_short: "KW",
-    sort: "Sortieren", sort_manual: "Manuell", sort_important: "Wichtigkeit", sort_due: "Fälligkeit",
+    kind_due: "Fällig", kind_time: "Uhrzeit", kind_recurrence: "Wiederholung", kind_priority: "Priorität",
+    ignore: "Nicht erkennen", priority: "Priorität", priority_0: "Keine", priority_1: "Niedrig", priority_2: "Mittel", priority_3: "Hoch", complete: "Erledigt", week_short: "KW",
+    sort: "Sortieren", sort_manual: "Manuell", sort_priority: "Priorität", sort_due: "Fälligkeit",
     sort_title: "Alphabetisch", sort_created: "Erstellungsdatum", clear_completed: "Erledigte löschen",
     clear_confirm: "{0} erledigte Aufgabe(n) aus „{1}“ endgültig löschen?", cleared: "{0} erledigte Aufgabe(n) gelöscht",
   },
@@ -40,9 +40,9 @@ const STRINGS = {
     rec_every: "Every {0} {1}", units_day: "days", units_week: "weeks", units_month: "months",
     units_quarter: "quarters", units_year: "years", close: "Close", back: "Back", loading: "Loading …",
     not_loaded: "tHAsk is not loaded. Is the integration set up?",
-    kind_due: "Due", kind_time: "Time", kind_recurrence: "Repeat", kind_important: "Important",
-    ignore: "Don't detect", mark_important: "Important", complete: "Completed", week_short: "Week",
-    sort: "Sort", sort_manual: "Manual", sort_important: "Importance", sort_due: "Due date",
+    kind_due: "Due", kind_time: "Time", kind_recurrence: "Repeat", kind_priority: "Priority",
+    ignore: "Don't detect", priority: "Priority", priority_0: "None", priority_1: "Low", priority_2: "Medium", priority_3: "High", complete: "Completed", week_short: "Week",
+    sort: "Sort", sort_manual: "Manual", sort_priority: "Priority", sort_due: "Due date",
     sort_title: "Alphabetical", sort_created: "Creation date", clear_completed: "Clear completed",
     clear_confirm: "Permanently delete {0} completed task(s) from “{1}”?", cleared: "{0} completed task(s) deleted",
   },
@@ -58,13 +58,13 @@ const MONTHS_SHORT = {
 };
 const WEEKDAYS_SHORT = { de: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"], en: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] };
 const GRANULARITIES = ["day", "week", "month", "quarter", "year"];
-const TASK_SORTS = ["manual", "important", "due", "title", "created"];
+const TASK_SORTS = ["manual", "priority", "due", "title", "created"];
 // The integration appends its version to the module URL (cache busting), so the panel can show it.
 const VERSION = new URL(import.meta.url).searchParams.get("v") || "";
 
 const SMART_VIEWS = [
   { key: "my_day", icon: "mdi:white-balance-sunny" },
-  { key: "important", icon: "mdi:star-outline" },
+  { key: "important", icon: "mdi:flag-outline" },
   { key: "planned", icon: "mdi:calendar-month-outline" },
   { key: "this_week", icon: "mdi:calendar-week" },
   { key: "this_month", icon: "mdi:calendar-month" },
@@ -179,7 +179,7 @@ function sortTasks(tasks, mode) {
   const manual = [...tasks].sort((a, b) => a.position - b.position || a.created.localeCompare(b.created));
   const dueKey = (task) => (task.due ? toISO(periodEndOf(task.due)) : "9999-12-31");
   const keyed = {
-    important: (a, b) => b.important - a.important,
+    priority: (a, b) => b.priority - a.priority,
     due: (a, b) => dueKey(a).localeCompare(dueKey(b)),
     title: (a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" }),
     created: (a, b) => b.created.localeCompare(a.created),
@@ -341,7 +341,7 @@ class ThaskPanel extends HTMLElement {
       case "my_day":
         return task.my_day === this._todayISO;
       case "important":
-        return task.important;
+        return task.priority >= 3;
       case "planned":
         return !!task.due;
       case "this_week":
@@ -375,7 +375,7 @@ class ThaskPanel extends HTMLElement {
     } else if (view.key === "my_day" && !searching) {
       sorted = sortTasks(tasks, "manual");
     } else {
-      sorted = tasks.sort((a, b) => dueKey(a).localeCompare(dueKey(b)) || b.important - a.important || a.position - b.position);
+      sorted = tasks.sort((a, b) => dueKey(a).localeCompare(dueKey(b)) || b.priority - a.priority || a.position - b.position);
     }
     return {
       open: sorted.filter((task) => !task.completed),
@@ -647,7 +647,8 @@ class ThaskPanel extends HTMLElement {
     if (task.reminder && !task.completed) meta.push(`<span class="meta"><ha-icon icon="mdi:bell-outline"></ha-icon></span>`);
     if (task.notes) meta.push(`<span class="meta"><ha-icon icon="mdi:note-text-outline"></ha-icon></span>`);
     return `
-      <div class="task ${task.completed ? "completed" : ""} ${task.id === this._selectedTask ? "selected" : ""}"
+      <div class="task prio-${task.priority || 0} ${task.completed ? "completed" : ""} ${task.id === this._selectedTask ? "selected" : ""}"
+        ${task.priority ? `title="${esc(this.t("priority"))}: ${esc(this.t(`priority_${task.priority}`))}"` : ""}
         data-action="select-task" data-task-id="${esc(task.id)}" ${draggable ? `draggable="true" data-drop="task"` : ""}>
         <button class="check" data-action="toggle-complete" data-task-id="${esc(task.id)}" title="${esc(this.t("complete"))}">
           <ha-icon icon="mdi:check"></ha-icon></button>
@@ -655,8 +656,6 @@ class ThaskPanel extends HTMLElement {
           <div class="task-title">${esc(task.title)}</div>
           ${meta.length ? `<div class="task-meta">${meta.join('<span class="dot">·</span>')}</div>` : ""}
         </div>
-        <button class="star ${task.important ? "on" : ""}" data-action="toggle-important" data-task-id="${esc(task.id)}" title="${esc(this.t("mark_important"))}">
-          <ha-icon icon="${task.important ? "mdi:star" : "mdi:star-outline"}"></ha-icon></button>
       </div>`;
   }
 
@@ -735,8 +734,6 @@ class ThaskPanel extends HTMLElement {
         <div class="row">
           <button class="check ${task.completed ? "on" : ""}" data-action="toggle-complete" data-task-id="${esc(task.id)}"><ha-icon icon="mdi:check"></ha-icon></button>
           <textarea class="title-input" data-field="title" rows="1">${esc(task.title)}</textarea>
-          <button class="star ${task.important ? "on" : ""}" data-action="toggle-important" data-task-id="${esc(task.id)}">
-            <ha-icon icon="${task.important ? "mdi:star" : "mdi:star-outline"}"></ha-icon></button>
         </div>
         <div class="steps">
           ${task.steps.map((step, index) => `
@@ -746,6 +743,12 @@ class ThaskPanel extends HTMLElement {
               <button class="icon-button small" data-action="delete-step" data-index="${index}"><ha-icon icon="mdi:close"></ha-icon></button>
             </div>`).join("")}
           <div class="step add"><ha-icon icon="mdi:plus"></ha-icon><input class="step-input" data-field="new-step" placeholder="${esc(this.t("add_step"))}"></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="label"><ha-icon icon="mdi:flag-outline"></ha-icon>${esc(this.t("priority"))}</div>
+        <div class="segmented">
+          ${[0, 1, 2, 3].map((n) => `<button class="prio-btn prio-${n} ${n === (task.priority || 0) ? "on" : ""}" data-action="priority-set" data-priority="${n}">${esc(this.t(`priority_${n}`))}</button>`).join("")}
         </div>
       </div>
       <button class="card action ${inMyDay ? "on" : ""}" data-action="toggle-my-day">
@@ -840,13 +843,13 @@ class ThaskPanel extends HTMLElement {
     const parsed = (await this._runParse()) || { title: text, tokens: [] };
     const listId = this._defaultListId();
     if (!parsed.title || !listId) return;
-    const data = { list_id: listId, title: parsed.title, important: !!parsed.important };
+    const data = { list_id: listId, title: parsed.title, priority: parsed.priority || 0 };
     if (parsed.due) data.due = parsed.due;
     if (parsed.due_time) data.due_time = parsed.due_time;
     if (parsed.recurrence) data.recurrence = parsed.recurrence;
     if (this._view.type === "smart") {
       if (this._view.key === "my_day") data.my_day = this._todayISO;
-      if (this._view.key === "important") data.important = true;
+      if (this._view.key === "important") data.priority = Math.max(data.priority, 3);
       if (this._view.key === "this_week" && !data.due) data.due = makePeriod("week", this._today);
       if (this._view.key === "this_month" && !data.due) data.due = makePeriod("month", this._today);
     }
@@ -904,9 +907,8 @@ class ThaskPanel extends HTMLElement {
         ev.stopPropagation();
         this._updateTask(task, { completed: !task.completed });
         break;
-      case "toggle-important":
-        ev.stopPropagation();
-        this._updateTask(task, { important: !task.important });
+      case "priority-set":
+        this._updateTask(task, { priority: Number(target.dataset.priority) });
         break;
       case "toggle-completed":
         this._showCompleted = !this._showCompleted;
@@ -1140,6 +1142,9 @@ class ThaskPanel extends HTMLElement {
 const STYLE = `
   :host {
     --thask-accent: var(--primary-color, #03a9f4);
+    --thask-prio-1: #43a047;
+    --thask-prio-2: #fdd835;
+    --thask-prio-3: #e53935;
     --thask-bg: var(--primary-background-color, #fafafa);
     --thask-surface: var(--card-background-color, #fff);
     --thask-sidebar: var(--secondary-background-color, #f2f2f2);
@@ -1234,8 +1239,13 @@ const STYLE = `
   .check:hover { color: var(--thask-muted); }
   .task.completed .check, .check.on { background: var(--thask-accent); border-color: var(--thask-accent); color: var(--text-primary-color, #fff); }
   .check.small { width: 18px; height: 18px; }
-  .star { color: var(--thask-muted); display: inline-flex; flex: none; }
-  .star.on { color: var(--thask-accent); }
+  /* Priority: the bar gets wider with the level, so the level does not depend on the colour alone. */
+  .task.prio-1 { box-shadow: inset 3px 0 0 var(--thask-prio-1); }
+  .task.prio-2 { box-shadow: inset 5px 0 0 var(--thask-prio-2); }
+  .task.prio-3 { box-shadow: inset 7px 0 0 var(--thask-prio-3); }
+  .prio-btn.prio-1.on { box-shadow: inset 0 -3px 0 var(--thask-prio-1); }
+  .prio-btn.prio-2.on { box-shadow: inset 0 -3px 0 var(--thask-prio-2); }
+  .prio-btn.prio-3.on { box-shadow: inset 0 -3px 0 var(--thask-prio-3); }
   .section-title { display: flex; align-items: center; gap: 6px; padding: 14px 4px 6px; font-weight: 500; font-size: 13px; text-align: left; }
   .section-title span { color: var(--thask-muted); font-weight: 400; }
   .section-title.overdue { color: var(--thask-danger); }

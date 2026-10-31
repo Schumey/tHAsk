@@ -54,15 +54,23 @@ class Step:
         return cls(data.get("id") or new_id(), data["title"], bool(data.get("completed", False)))
 
 
-TASK_SORTS = ("manual", "important", "due", "title", "created")
+TASK_SORTS = ("manual", "priority", "due", "title", "created")
+# Priority levels: 0 none, 1 low (green), 2 medium (yellow), 3 high (red).
+PRIORITIES = (0, 1, 2, 3)
+PRIORITY_HIGH = 3
+
+
+def normalize_sort(mode: str) -> str:
+    """Older clients and stored lists use "important" for what is now the priority sort."""
+    return "priority" if mode == "important" else mode
 
 
 def sort_tasks(tasks: list[Task], mode: str) -> list[Task]:
     """Order tasks by a list's sort mode; ties keep the manual order."""
     manual = sorted(tasks, key=lambda task: (task.position, task.created))
     match mode:
-        case "important":
-            return sorted(manual, key=lambda task: not task.important)
+        case "priority":
+            return sorted(manual, key=lambda task: -task.priority)
         case "due":
             return sorted(manual, key=lambda task: task.due.end if task.due else date.max)
         case "title":
@@ -93,6 +101,7 @@ class TaskList:
         for key in self.EDITABLE:
             if key in patch:
                 setattr(self, key, patch[key])
+        self.sort = normalize_sort(self.sort)
         self.modified = utc_now_iso()
 
     def as_dict(self) -> dict[str, Any]:
@@ -111,7 +120,9 @@ class TaskList:
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> TaskList:
-        return cls(**{key: data[key] for key in cls.__dataclass_fields__ if key in data})
+        result = cls(**{key: data[key] for key in cls.__dataclass_fields__ if key in data})
+        result.sort = normalize_sort(result.sort)
+        return result
 
 
 @dataclass(slots=True)
@@ -121,7 +132,7 @@ class Task:
     title: str
     notes: str = ""
     completed: bool = False
-    important: bool = False
+    priority: int = 0
     due: Period | None = None
     # Optional time of day, only meaningful for day periods ("HH:MM").
     due_time: str | None = None
@@ -140,12 +151,15 @@ class Task:
     completed_at: str | None = None
 
     EDITABLE = (
-        "list_id", "title", "notes", "completed", "important", "due", "due_time", "reminder",
+        "list_id", "title", "notes", "completed", "priority", "due", "due_time", "reminder",
         "recurrence", "my_day", "steps", "categories", "position",
     )
 
     def apply(self, patch: dict[str, Any]) -> None:
         """Apply a partial update in serialized form (as sent by clients)."""
+        if "important" in patch and "priority" not in patch:
+            # Legacy flag (older clients, stored data): important means high priority.
+            patch = {**patch, "priority": PRIORITY_HIGH if patch["important"] else 0}
         for key in self.EDITABLE:
             if key not in patch:
                 continue
@@ -193,7 +207,7 @@ class Task:
             list_id=self.list_id,
             title=self.title,
             notes=self.notes,
-            important=self.important,
+            priority=self.priority,
             due=due,
             due_time=self.due_time,
             reminder=reminder,
@@ -210,7 +224,9 @@ class Task:
             "title": self.title,
             "notes": self.notes,
             "completed": self.completed,
-            "important": self.important,
+            "priority": self.priority,
+            # Deprecated: kept for clients that still show a star.
+            "important": self.priority >= PRIORITY_HIGH,
             "due": self.due.as_dict() if self.due else None,
             "due_time": self.due_time,
             "reminder": self.reminder,

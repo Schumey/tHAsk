@@ -94,7 +94,7 @@ def convert_task(raw: dict[str, Any], options: ImportOptions, tz: tzinfo, result
     fields: dict[str, Any] = {
         "title": title,
         "notes": _notes(raw.get("body")),
-        "important": raw.get("importance") == "high",
+        "priority": {"high": 3, "low": 1}.get(raw.get("importance"), 0),
         "completed": raw.get("status") == "completed",
         "categories": list(raw.get("categories") or []),
         "steps": [

@@ -18,14 +18,18 @@ Beim ersten Start wird die Liste „Aufgaben“ angelegt.
 
 Nach dem Einrichten erscheint **tHAsk** in der HA-Seitenleiste (auch in der Companion-App auf dem Handy):
 
-- Intelligente Listen **Mein Tag**, **Wichtig**, **Geplant** (gruppiert nach Überfällig / Diese Woche / Diesen Monat / Später), **Diese Woche** und **Diesen Monat** (alles, was bis Monatsende fällig ist, inkl. Überfälligem), darunter die eigenen Listen (mit Gruppen).
+- Intelligente Listen **Mein Tag**, **Wichtig** (Priorität Hoch), **Geplant** (gruppiert nach Überfällig / Diese Woche / Diesen Monat / Später), **Diese Woche** und **Diesen Monat** (alles, was bis Monatsende fällig ist, inkl. Überfälligem), darunter die eigenen Listen (mit Gruppen).
 - **Schnelleingabe** mit Erkennung, z. B. „Reifen wechseln nächsten Monat !“, „Steuer KW 47“, „Rechnungen ablegen jeden Monat“, „Zahnarzt morgen um 9:30“. Erkanntes wird als Chip angezeigt; ein Klick auf den Chip nimmt die Erkennung zurück.
 - **Detailbereich**: Schritte, „Mein Tag“, Fälligkeit als Tag/Woche/Monat/Quartal/Jahr mit Vor-/Zurück-Pfeilen, Erinnerung, Wiederholung, Liste, Notizen.
 - Aufgaben per Drag & Drop sortieren oder auf eine andere Liste in der Seitenleiste ziehen.
 - **Suche** (oben in der Seitenleiste) durchsucht alle Listen nach Titel, Notizen, Schritten und Kategorien; mehrere Wörter müssen alle vorkommen.
 - Listen anlegen (unten in der Seitenleiste), umbenennen (auf den Titel klicken), Gruppe per Auswahl setzen (vorhandene Gruppen, „Keine Gruppe“ oder „Neue Gruppe …“), löschen und per Drag & Drop in der Seitenleiste anordnen.
-- Aufgaben pro Liste sortieren: manuell, nach Wichtigkeit, Fälligkeit, alphabetisch oder Erstellungsdatum (gilt auch für die HA-Entity). Bei automatischer Sortierung ist Drag & Drop innerhalb der Liste aus.
+- Aufgaben pro Liste sortieren: manuell, nach Priorität, Fälligkeit, alphabetisch oder Erstellungsdatum (gilt auch für die HA-Entity). Bei automatischer Sortierung ist Drag & Drop innerhalb der Liste aus.
 - **Erledigte löschen** (Besen-Symbol im Listenkopf).
+
+### Priorität
+
+Jede Aufgabe hat eine Priorität von 0 bis 3, im Panel als farbiger Balken an der Zeile (Niedrig grün, Mittel gelb, Hoch rot; je höher, desto breiter der Balken). In der Schnelleingabe setzen `!`, `!!` und `!!!` Niedrig, Mittel und Hoch. Die alte Markierung „Wichtig“ wurde zu Priorität Hoch; ältere Clients können weiter `important` senden bzw. lesen (Hoch = wichtig) und `sort: important` verwenden.
 
 ## Was in Home Assistant entsteht
 
@@ -58,7 +62,7 @@ Beispiel: Erinnerung als Push aufs Handy – Automation mit Trigger *Event* `tha
 
 ## Import aus MS To-Do
 
-Übernommen werden Listen, Aufgaben, Notizen, Schritte, Fälligkeit, Erinnerung, Wiederholung, Wichtig-Markierung, Kategorien und erledigte Aufgaben. Nicht übernommen werden „Mein Tag“ (gibt die Microsoft-API nicht her), Listengruppen und Anhänge.
+Übernommen werden Listen, Aufgaben, Notizen, Schritte, Fälligkeit, Erinnerung, Wiederholung, Priorität (hoch/niedrig, normal = keine), Kategorien und erledigte Aufgaben. Nicht übernommen werden „Mein Tag“ (gibt die Microsoft-API nicht her), Listengruppen und Anhänge.
 
 ### 1. App bei Microsoft registrieren (einmalig, ca. 5 Minuten)
 
@@ -98,14 +102,14 @@ Alle Befehle laufen über die normale HA-WebSocket-Verbindung (Authentifizierung
 | `thask/info` | – |
 | `thask/data` | – (alle Listen und Aufgaben) |
 | `thask/subscribe` | – (Snapshot, danach jede Änderung als Event) |
-| `thask/list/create`, `thask/list/update`, `thask/list/delete` | `name`, `group`, `color`, `icon`, `position`, `sort` (`manual`, `important`, `due`, `title`, `created`) / `list_id` |
+| `thask/list/create`, `thask/list/update`, `thask/list/delete` | `name`, `group`, `color`, `icon`, `position`, `sort` (`manual`, `priority`, `due`, `title`, `created`) / `list_id` |
 | `thask/list/move` | `list_id`, `previous_id` |
 | `thask/list/clear_completed` | `list_id` (leer = alle), `older_than_days` |
 | `thask/task/create`, `thask/task/update`, `thask/task/delete` | siehe unten / `task_id` |
 | `thask/task/move` | `task_id`, `previous_id` |
-| `thask/parse` | `text`, `disabled` (Liste aus `due`, `time`, `recurrence`, `important`) – Schnelleingabe |
+| `thask/parse` | `text`, `disabled` (Liste aus `due`, `time`, `recurrence`, `priority`) – Schnelleingabe |
 
-Aufgabenfelder: `list_id`, `title`, `notes`, `completed`, `important`, `due` (`{"granularity": "day|week|month|quarter|year", "start": "2026-11-09"}`), `due_time` (`"HH:MM"`, nur bei Tagen), `reminder` (ISO-Datum mit Uhrzeit), `recurrence` (`{"unit": "month", "interval": 1}`), `my_day` (ISO-Datum), `steps`, `categories`.
+Aufgabenfelder: `list_id`, `title`, `notes`, `completed`, `priority` (0 keine, 1 niedrig, 2 mittel, 3 hoch), `due` (`{"granularity": "day|week|month|quarter|year", "start": "2026-11-09"}`), `due_time` (`"HH:MM"`, nur bei Tagen), `reminder` (ISO-Datum mit Uhrzeit), `recurrence` (`{"unit": "month", "interval": 1}`), `my_day` (ISO-Datum), `steps`, `categories`.
 
 Wird eine wiederkehrende Aufgabe erledigt, entsteht eine neue Aufgabe für den nächsten Zeitraum, der noch nicht vorbei ist.
 

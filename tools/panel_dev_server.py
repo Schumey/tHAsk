@@ -108,7 +108,7 @@ def seed(collection: TaskCollection, today: date) -> None:
     shopping = collection.create_list("Einkauf")
     house = collection.create_list("Haus", group="Zuhause")
     week = Period(Granularity.WEEK, today)
-    collection.create_task(tasks.id, "Reifen wechseln", due=week.shift(1).as_dict(), important=True)
+    collection.create_task(tasks.id, "Reifen wechseln", due=week.shift(1).as_dict(), priority=3)
     collection.create_task(
         tasks.id,
         "Steuererklärung",

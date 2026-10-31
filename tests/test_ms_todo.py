@@ -99,7 +99,7 @@ def test_import_converts_fields(collection, export):
     assert "Mail" not in tasks
     steuer = tasks["Steuer"]
     assert steuer.due == Period.day(date(2026, 11, 30))
-    assert steuer.important
+    assert steuer.priority == 3
     assert steuer.notes == "Belege & Quittungen"
     assert [(step.title, step.completed) for step in steuer.steps] == [("Belege", True)]
     assert steuer.recurrence.unit is Granularity.MONTH

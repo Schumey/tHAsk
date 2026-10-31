@@ -95,7 +95,7 @@ def test_dump_and_load_roundtrip(collection, list_id):
         list_id,
         "Steuer",
         due=Period.quarter(2027, 1).as_dict(),
-        important=True,
+        priority=2,
         reminder="2027-01-04T08:00:00+00:00",
         recurrence={"unit": "year", "interval": 1},
         categories=["Finanzen"],
@@ -140,12 +140,28 @@ def test_clear_completed(collection, list_id):
 
 def test_sort_modes(collection, list_id):
     a = collection.create_task(list_id, "beta", due=Period.month(2026, 12).as_dict())
-    b = collection.create_task(list_id, "Alpha", important=True)
+    b = collection.create_task(list_id, "Alpha", priority=3)
     c = collection.create_task(list_id, "gamma", due=Period.day(TODAY).as_dict())
     titles = lambda mode: [task.title for task in collection.tasks_in(list_id, sort=mode)]  # noqa: E731
     assert titles("manual") == ["gamma", "Alpha", "beta"]
-    assert titles("important") == ["Alpha", "gamma", "beta"]
+    assert titles("priority") == ["Alpha", "gamma", "beta"]
     assert titles("due") == ["gamma", "beta", "Alpha"]
     assert titles("title") == ["Alpha", "beta", "gamma"]
     a.created, b.created, c.created = "2026-01-01", "2026-03-01", "2026-02-01"
     assert titles("created") == ["Alpha", "gamma", "beta"]
+
+
+def test_legacy_important_flag_becomes_high_priority(collection, list_id):
+    task = collection.create_task(list_id, "Alt", important=True)
+    assert task.priority == 3 and task.as_dict()["important"] is True
+    collection.update_task(task.id, {"important": False}, TODAY)
+    assert task.priority == 0
+    collection.update_task(task.id, {"priority": 2}, TODAY)
+    assert task.priority == 2 and task.as_dict()["important"] is False
+
+    stored = {"lists": [{"id": "l1", "name": "Alt", "sort": "important"}],
+              "tasks": [{"id": "t1", "list_id": "l1", "title": "Wichtig", "important": True},
+                        {"id": "t2", "list_id": "l1", "title": "Normal"}]}
+    collection.load(stored)
+    assert collection.tasks["t1"].priority == 3 and collection.tasks["t2"].priority == 0
+    assert collection.lists["l1"].sort == "priority"

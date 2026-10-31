@@ -65,9 +65,9 @@
           "name": "Due date",
           "description": "Any day within the period."
         },
-        "important": {
-          "name": "Important",
-          "description": "Mark the task as important."
+        "priority": {
+          "name": "Priority",
+          "description": "0 = none, 1 = low, 2 = medium, 3 = high."
         },
         "my_day": {
           "name": "Add to My Day",

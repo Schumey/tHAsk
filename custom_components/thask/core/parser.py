@@ -1,6 +1,6 @@
-"""Quick entry: take due period, time, recurrence and importance out of a typed task title.
+"""Quick entry: take due period, time, recurrence and priority out of a typed task title.
 
-"Reifen wechseln nächsten Monat !" -> title "Reifen wechseln", due November, important.
+"Reifen wechseln nächsten Monat !" -> title "Reifen wechseln", due November, low priority (! = low, !! = medium, !!! = high).
 German first, with the most common English phrases.
 """
 
@@ -18,7 +18,7 @@ from .period import Granularity, Period, add_months
 KIND_DUE = "due"
 KIND_TIME = "time"
 KIND_RECURRENCE = "recurrence"
-KIND_IMPORTANT = "important"
+KIND_PRIORITY = "priority"
 
 _B = r"(?<!\w)"
 _E = r"(?!\w)"
@@ -78,7 +78,7 @@ class ParseResult:
     due: Period | None = None
     due_time: str | None = None
     recurrence: Recurrence | None = None
-    important: bool = False
+    priority: int = 0
     tokens: list[Token] = field(default_factory=list)
 
     def as_dict(self, lang: str, today: date) -> dict[str, Any]:
@@ -88,7 +88,7 @@ class ParseResult:
             "due_label": self.due.label(lang, today) if self.due else None,
             "due_time": self.due_time,
             "recurrence": self.recurrence.as_dict() if self.recurrence else None,
-            "important": self.important,
+            "priority": self.priority,
             "tokens": [
                 {"kind": token.kind, "start": token.start, "end": token.end, "text": token.text}
                 for token in self.tokens
@@ -246,8 +246,8 @@ def _year(match: re.Match[str], today: date) -> dict[str, Any]:
     return {"due": Period.year(int(match[1]))}
 
 
-def _important(match: re.Match[str], today: date) -> dict[str, Any]:
-    return {"important": True}
+def _priority(match: re.Match[str], today: date) -> dict[str, Any]:
+    return {"priority": min(len(match[0].strip()), 3)}
 
 
 def _rule(kind: str, pattern: str, handler: Handler) -> tuple[str, re.Pattern[str], Handler]:
@@ -300,7 +300,7 @@ _RULES = [
     _rule(KIND_DUE, rf"{_B}{_PREP}({_MONTH_FULL})(?:\s+(\d{{4}}))?{_E}", _month),
     _rule(KIND_DUE, rf"{_B}{_PREP_REQUIRED}({_MONTH_SHORT})\.?(?:\s+(\d{{4}}))?(?!\w)", _month),
     _rule(KIND_DUE, rf"{_B}(?:{_PREP_REQUIRED}|im\s+jahr\s+|jahr\s+)(\d{{4}}){_E}", _year),
-    _rule(KIND_IMPORTANT, r"(?<!\S)!+(?!\S)", _important),
+    _rule(KIND_PRIORITY, r"(?<!\S)!+(?!\S)", _priority),
 ]
 
 
@@ -365,6 +365,6 @@ def parse(text: str, today: date, disabled: Container[str] = ()) -> ParseResult:
         due=due,
         due_time=due_time,
         recurrence=fields.get("recurrence"),
-        important=fields.get("important", False),
+        priority=fields.get("priority", 0),
         tokens=tokens,
     )

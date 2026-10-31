@@ -27,10 +27,13 @@ add_task:
     due_date:
       selector:
         date:
-    important:
-      default: false
+    priority:
+      default: 0
       selector:
-        boolean:
+        number:
+          min: 0
+          max: 3
+          mode: box
     my_day:
       default: false
       selector:

@@ -18,7 +18,7 @@ from homeassistant.util import dt as dt_util
 from .const import SIGNAL_DAY_CHANGED
 from .core.collection import Change, NotFoundError
 from .core.models import Task, TaskList
-from .core.parser import KIND_DUE, KIND_IMPORTANT, KIND_RECURRENCE, KIND_TIME, parse
+from .core.parser import KIND_DUE, KIND_PRIORITY, KIND_RECURRENCE, KIND_TIME, parse
 from .data import ThaskData, async_get_data
 from .schema import LIST_FIELDS, TASK_FIELDS
 
@@ -226,7 +226,7 @@ def ws_task_move(hass, connection, msg, data: ThaskData) -> None:
     {
         vol.Required("type"): "thask/parse",
         vol.Required("text"): str,
-        vol.Optional("disabled", default=[]): [vol.In([KIND_DUE, KIND_TIME, KIND_RECURRENCE, KIND_IMPORTANT])],
+        vol.Optional("disabled", default=[]): [vol.In([KIND_DUE, KIND_TIME, KIND_RECURRENCE, KIND_PRIORITY])],
     }
 )
 @_with_data

@@ -99,10 +99,13 @@ def test_recurrence():
     assert result.due == Period.quarter(2027, 2)
 
 
-def test_important():
+def test_priority():
     result = parse("Zahnarzt anrufen diese Woche !", TODAY)
-    assert result.important and result.title == "Zahnarzt anrufen"
-    assert not parse("Hallo!", TODAY).important
+    assert result.priority == 1 and result.title == "Zahnarzt anrufen"
+    assert parse("Zahnarzt anrufen !!", TODAY).priority == 2
+    assert parse("Zahnarzt anrufen !!!", TODAY).priority == 3
+    assert parse("Zahnarzt anrufen !!!!!", TODAY).priority == 3
+    assert parse("Hallo!", TODAY).priority == 0
 
 
 def test_tokens_and_disabled_kinds():
@@ -117,4 +120,4 @@ def test_serialization():
     data = parse("Steuer KW 47 !", TODAY).as_dict("de", TODAY)
     assert data["due"] == {"granularity": "week", "start": "2026-11-16"}
     assert data["due_label"] == "KW 47"
-    assert data["important"] is True
+    assert data["priority"] == 1

@@ -17,7 +17,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
-from .core.models import Task
+from .core.models import PRIORITIES, Task
 from .core.ms_todo import ImportOptions, import_export
 from .core.period import Granularity, Period, PeriodStatus
 from .data import ThaskData, async_get_data
@@ -37,7 +37,7 @@ ADD_TASK_SCHEMA = vol.Schema(
         vol.Optional("notes", default=""): cv.string,
         vol.Optional("due_granularity"): vol.In(GRANULARITIES),
         vol.Optional("due_date"): cv.date,
-        vol.Optional("important", default=False): cv.boolean,
+        vol.Optional("priority", default=0): vol.All(vol.Coerce(int), vol.In(PRIORITIES)),
         vol.Optional("my_day", default=False): cv.boolean,
     }
 )
@@ -118,7 +118,7 @@ def async_setup_services(hass: HomeAssistant) -> None:
             if (default := data.collection.default_list()) is None:
                 raise ServiceValidationError("There is no task list to add the task to")
             list_id = default.id
-        fields: dict[str, Any] = {"notes": call.data["notes"], "important": call.data["important"]}
+        fields: dict[str, Any] = {"notes": call.data["notes"], "priority": call.data["priority"]}
         if "due_granularity" in call.data or "due_date" in call.data:
             granularity = Granularity(call.data.get("due_granularity", Granularity.DAY))
             fields["due"] = Period(granularity, call.data.get("due_date", data.today)).as_dict()
@@ -138,7 +138,7 @@ def async_setup_services(hass: HomeAssistant) -> None:
             and (call.data["include_completed"] or not task.completed)
             and _matches_due(task, call.data["due"], today)
         ]
-        tasks.sort(key=lambda task: (task.due.end if task.due else date.max, not task.important, task.position))
+        tasks.sort(key=lambda task: (task.due.end if task.due else date.max, -task.priority, task.position))
         return {"tasks": [data.task_info(task) for task in tasks]}
 
     async def clear_completed(call: ServiceCall) -> ServiceResponse:

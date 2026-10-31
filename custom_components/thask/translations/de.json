@@ -65,9 +65,9 @@
           "name": "Fälligkeitsdatum",
           "description": "Ein beliebiger Tag innerhalb des Zeitraums."
         },
-        "important": {
-          "name": "Wichtig",
-          "description": "Aufgabe als wichtig markieren."
+        "priority": {
+          "name": "Priorität",
+          "description": "0 = keine, 1 = niedrig, 2 = mittel, 3 = hoch."
         },
         "my_day": {
           "name": "Zu „Mein Tag“ hinzufügen",
