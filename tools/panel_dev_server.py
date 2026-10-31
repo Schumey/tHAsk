@@ -26,6 +26,7 @@ from core.parser import parse  # noqa: E402
 from core.period import Granularity, Period  # noqa: E402
 
 LANGUAGE = "de"
+VERSION = json.loads((INTEGRATION / "manifest.json").read_text(encoding="utf-8"))["version"]
 
 PAGE = """<!doctype html>
 <html lang="de">
@@ -85,7 +86,7 @@ PAGE = """<!doctype html>
     },
   };
 </script>
-<script type="module" src="/thask_static/thask-panel.js"></script>
+<script type="module" src="/thask_static/thask-panel.js?v=__VERSION__"></script>
 </head>
 <body>
 <thask-panel></thask-panel>
@@ -183,7 +184,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         if self.path in ("/", "/index.html"):
-            self._send(200, PAGE.encode(), "text/html; charset=utf-8")
+            self._send(200, PAGE.replace("__VERSION__", VERSION).encode(), "text/html; charset=utf-8")
         elif self.path.split("?")[0] == "/thask_static/thask-panel.js":
             self._send(200, (INTEGRATION / "www" / "thask-panel.js").read_bytes(), "text/javascript")
         else:

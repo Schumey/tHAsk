@@ -59,6 +59,9 @@ const MONTHS_SHORT = {
 const WEEKDAYS_SHORT = { de: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"], en: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] };
 const GRANULARITIES = ["day", "week", "month", "quarter", "year"];
 const TASK_SORTS = ["manual", "important", "due", "title", "created"];
+// The integration appends its version to the module URL (cache busting), so the panel can show it.
+const VERSION = new URL(import.meta.url).searchParams.get("v") || "";
+
 const SMART_VIEWS = [
   { key: "my_day", icon: "mdi:white-balance-sunny" },
   { key: "important", icon: "mdi:star-outline" },
@@ -499,7 +502,7 @@ class ThaskPanel extends HTMLElement {
       }
       html += item({ type: "list", id: list.id }, list.icon || "mdi:format-list-bulleted", list.name);
     }
-    html += `<div class="drop-end" data-drop="list-end"></div></div><div class="new-list"><ha-icon icon="mdi:plus"></ha-icon><input class="new-list-input" placeholder="${esc(this.t("new_list"))}"></div>`;
+    html += `<div class="drop-end" data-drop="list-end"></div></div><div class="new-list"><ha-icon icon="mdi:plus"></ha-icon><input class="new-list-input" placeholder="${esc(this.t("new_list"))}"></div>${VERSION ? `<div class="version">tHAsk v${esc(VERSION)}</div>` : ""}`;
     const sidebar = this.shadowRoot.querySelector(".sidebar");
     const focused = this.shadowRoot.activeElement?.classList.contains("new-list-input");
     const pending = sidebar.querySelector(".new-list-input")?.value || "";
@@ -1108,6 +1111,7 @@ const STYLE = `
   .count { color: var(--thask-muted); font-size: 12px; }
   .group { padding: 12px 16px 4px; font-size: 12px; font-weight: 500; color: var(--thask-muted); text-transform: uppercase; letter-spacing: 0.04em; }
   .divider { height: 1px; background: var(--thask-divider); margin: 8px 16px; }
+  .version { padding: 8px 16px 12px; font-size: 12px; color: var(--thask-muted); }
   .new-list { display: flex; align-items: center; gap: 12px; padding: 10px 16px; color: var(--thask-accent); }
   .new-list input { flex: 1; min-width: 0; border: none; background: none; outline: none; }
   .main { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
