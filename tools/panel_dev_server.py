@@ -271,6 +271,8 @@ CARD_PAGE = PAGE.replace("<thask-panel></thask-panel>", """<div class="cards">
   <thask-card data-config='{"view": "my_day"}'></thask-card>
   <thask-card data-config='{"view": "planned", "show_completed": true, "max_items": 4}'></thask-card>
   <thask-card data-config='{"view": "this_week", "compact": true, "show_entry": false, "title": "Woche kompakt"}'></thask-card>
+  <thask-card data-config='{"views": ["my_day", "this_week"]}'></thask-card>
+  <thask-card data-config='{"views": ["my_day", "this_week", "important"], "tabs": true}'></thask-card>
 </div>
 <style>.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; padding: 12px; }
   ha-card { display: block; background: var(--card-background-color, #fff); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.2); }</style>""").replace(

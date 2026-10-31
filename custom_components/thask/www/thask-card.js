@@ -15,7 +15,8 @@ const STRINGS = {
     not_loaded: "tHAsk ist nicht geladen", unknown_list: "Unbekannte Liste", open_panel: "In tHAsk öffnen",
     complete: "Erledigt", add_step: "Schritt hinzufügen",
     // editor
-    view: "Ansicht", title: "Titel (leer = Name der Ansicht)", show_entry: "Schnelleingabe",
+    views: "Ansichten (mehrere möglich)", tabs: "Als Reiter statt untereinander",
+    hide_duplicates: "Jede Aufgabe nur einmal zeigen", title: "Titel (leer = Name der Ansicht)", show_entry: "Schnelleingabe",
     show_completed: "Erledigte zeigen", show_list: "Liste bei jeder Aufgabe zeigen",
     min_priority: "Mindestens Priorität", max_items: "Höchstens so viele Aufgaben (0 = alle)", compact: "Kompakt",
     priority_0: "Alle", priority_1: "Niedrig", priority_2: "Mittel", priority_3: "Hoch",
@@ -27,7 +28,8 @@ const STRINGS = {
     completed: "Completed", add_task: "Add a task", more: "{0} more", loading: "Loading …",
     not_loaded: "tHAsk is not loaded", unknown_list: "Unknown list", open_panel: "Open in tHAsk",
     complete: "Completed", add_step: "Add a step",
-    view: "View", title: "Title (empty = name of the view)", show_entry: "Quick add",
+    views: "Views (one or more)", tabs: "As tabs instead of one below the other",
+    hide_duplicates: "Show each task only once", title: "Title (empty = name of the view)", show_entry: "Quick add",
     show_completed: "Show completed", show_list: "Show the list of each task",
     min_priority: "At least priority", max_items: "At most this many tasks (0 = all)", compact: "Compact",
     priority_0: "All", priority_1: "Low", priority_2: "Medium", priority_3: "High",
@@ -40,7 +42,12 @@ const VIEW_ICONS = {
   my_day: "mdi:calendar-today", overdue: "mdi:calendar-alert", important: "mdi:flag-outline",
   planned: "mdi:calendar-month-outline", this_week: "mdi:calendar-week", this_month: "mdi:calendar-month",
 };
-const DEFAULTS = { view: "my_day", show_entry: true, show_completed: false, show_list: true, min_priority: 0, max_items: 0, compact: false };
+const DEFAULTS = {
+  view: "my_day", tabs: false, hide_duplicates: true, show_entry: true, show_completed: false, show_list: true,
+  min_priority: 0, max_items: 0, compact: false,
+};
+
+const parseView = (id) => (id.startsWith("list:") ? { id, type: "list", listId: id.slice(5) } : { id, type: "smart", key: id });
 // Shared with the panel: whether the "Overdue" section in Today is folded (per device).
 const OVERDUE_COLLAPSED_KEY = "thask.overdueCollapsed";
 const RANGE_STORAGE_KEY = "thask.importantRange";
@@ -69,7 +76,8 @@ class ThaskCard extends HTMLElement {
     this._today = periodStart("day", new Date());
     this._overdueMode = "section";
     this._expanded = null; // id of the task whose steps and notes are shown
-    this._showDone = false;
+    this._showDone = new Set(); // views whose completed tasks are unfolded
+    this._tab = 0;
     this._overdueCollapsed = readStorage(OVERDUE_COLLAPSED_KEY) === "1";
     this._parseTimer = null;
     this._parsed = null;
@@ -109,7 +117,7 @@ class ThaskCard extends HTMLElement {
   }
 
   getCardSize() {
-    return 2 + Math.min(this._visible().open.length, 8);
+    return 2 + Math.min(this._views().reduce((n, view) => n + this._visible(view).open.length, 0), 8);
   }
 
   getGridOptions() {
@@ -185,36 +193,49 @@ class ThaskCard extends HTMLElement {
 
   // ---- Derived ----------------------------------------------------------------------------
 
-  get _view() {
-    const view = this._config?.view || "my_day";
-    return view.startsWith("list:") ? { type: "list", id: view.slice(5) } : { type: "smart", key: view };
+  // The views of the card: `views` (several, below each other or as tabs) or the single `view`.
+  _views() {
+    const ids = Array.isArray(this._config.views) && this._config.views.length ? this._config.views : [this._config.view || "my_day"];
+    return ids.map(parseView);
   }
 
-  _title() {
-    if (this._config.title) return this._config.title;
-    const view = this._view;
-    if (view.type === "list") return this._lists.find((l) => l.id === view.id)?.name ?? this.t("unknown_list");
+  _tabs() {
+    return !!this._config.tabs && this._views().length > 1;
+  }
+
+  // The view new tasks go to: the shown tab, or the first view.
+  _active() {
+    const views = this._views();
+    return this._tabs() ? views[Math.min(this._tab, views.length - 1)] : views[0];
+  }
+
+  _viewName(view) {
+    if (view.type === "list") return this._lists.find((l) => l.id === view.listId)?.name ?? this.t("unknown_list");
     return this.t(view.key);
   }
 
-  _visible() {
-    const view = this._view;
+  _viewIcon(view) {
+    return view.type === "list" ? "mdi:format-list-checks" : VIEW_ICONS[view.key] || "mdi:checkbox-marked-circle-outline";
+  }
+
+  _visible(view, skip = null) {
     if (!this._loaded) return { open: [], done: [] };
     const ctx = { today: this._today, overdueMode: this._overdueMode, importantRange: readStorage(RANGE_STORAGE_KEY) || "all" };
     const minPriority = Number(this._config.min_priority) || 0;
     const tasks = [...this._tasks.values()].filter((task) =>
-      (view.type === "list" ? task.list_id === view.id : matchesSmart(task, view.key, ctx)) && task.priority >= minPriority
+      (view.type === "list" ? task.list_id === view.listId : matchesSmart(task, view.key, ctx))
+      && task.priority >= minPriority && !skip?.has(task.id)
     );
     if (view.type === "list") {
-      const sort = this._lists.find((l) => l.id === view.id)?.sort || "manual";
+      const sort = this._lists.find((l) => l.id === view.listId)?.sort || "manual";
       return splitDone(sortTasks(tasks, sort));
     }
     return splitDone(sortByDue(tasks));
   }
 
   _listId() {
-    const view = this._view;
-    return view.type === "list" ? view.id : this._lists[0]?.id;
+    const view = this._active();
+    return view.type === "list" ? view.listId : this._lists[0]?.id;
   }
 
   // ---- Rendering --------------------------------------------------------------------------
@@ -226,21 +247,54 @@ class ThaskCard extends HTMLElement {
     const root = this.shadowRoot;
     const card = root.querySelector("ha-card");
     card.classList.toggle("compact", !!this._config.compact);
-    const { open, done } = this._visible();
-    const icon = this._view.type === "list" ? "mdi:format-list-checks" : VIEW_ICONS[this._view.key] || "mdi:checkbox-marked-circle-outline";
-    root.querySelector(".header").innerHTML = `
-      <ha-icon icon="${icon}"></ha-icon><span class="name">${esc(this._title())}</span>
-      <span class="count">${this._loaded && open.length ? open.length : ""}</span>`;
+    const views = this._views();
+    const header = root.querySelector(".header");
+    let body;
+    if (!this._loaded) {
+      body = `<div class="empty">${esc(this.t("loading"))}</div>`;
+    } else if (views.length === 1) {
+      body = this._renderTasks(views[0], this._visible(views[0]));
+    } else if (this._tabs()) {
+      const active = this._active();
+      body = this._renderTasks(active, this._visible(active));
+    } else {
+      // One below the other; with hide_duplicates a task only shows in the first view it belongs to.
+      const seen = this._config.hide_duplicates ? new Set() : null;
+      body = views.map((view) => {
+        const visible = this._visible(view, seen);
+        visible.open.forEach((task) => seen?.add(task.id));
+        return `<div class="view-head"><ha-icon icon="${this._viewIcon(view)}"></ha-icon><span class="name">${esc(this._viewName(view))}</span>
+          <span class="count">${visible.open.length || ""}</span></div>${this._renderTasks(view, visible)}`;
+      }).join("");
+    }
+    if (this._tabs()) {
+      header.innerHTML = `<div class="tabs">${views.map((view, i) => `
+        <button class="tab ${i === Math.min(this._tab, views.length - 1) ? "on" : ""}" data-action="tab" data-tab="${i}" title="${esc(this._viewName(view))}">
+          <ha-icon icon="${this._viewIcon(view)}"></ha-icon><span class="name">${esc(this._viewName(view))}</span>
+          <span class="count">${this._visible(view).open.length || ""}</span></button>`).join("")}</div>`;
+      header.hidden = false;
+    } else if (views.length === 1 || this._config.title) {
+      const view = views[0];
+      const count = views.length === 1 && this._loaded ? this._visible(view).open.length : 0;
+      header.innerHTML = `<button class="title-row" data-action="open-panel" title="${esc(this.t("open_panel"))}">
+        <ha-icon icon="${views.length === 1 ? this._viewIcon(view) : "mdi:checkbox-marked-circle-outline"}"></ha-icon>
+        <span class="name">${esc(this._config.title || this._viewName(view))}</span><span class="count">${count || ""}</span></button>`;
+      header.hidden = false;
+    } else {
+      header.hidden = true; // the views bring their own headings
+    }
     root.querySelector(".entry").hidden = !this._config.show_entry || !this._loaded;
+    root.querySelector(".quick").placeholder = views.length > 1 && !this._tabs()
+      ? `${this.t("add_task")} (${this._viewName(views[0])})` : this.t("add_task");
     root.querySelector(".error").textContent = this._error || "";
     root.querySelector(".error").hidden = !this._error;
-    root.querySelector(".tasks").innerHTML = this._loaded ? this._renderTasks(open, done) : `<div class="empty">${esc(this.t("loading"))}</div>`;
+    root.querySelector(".tasks").innerHTML = body;
   }
 
   _buildSkeleton() {
     this.shadowRoot.innerHTML = `<style>${STYLE}</style>
       <ha-card>
-        <button class="header" data-action="open-panel" title="${esc(this.t("open_panel"))}"></button>
+        <div class="header"></div>
         <div class="entry">
           <ha-icon icon="mdi:plus"></ha-icon>
           <input class="quick" placeholder="${esc(this.t("add_task"))}" autocomplete="off">
@@ -264,12 +318,11 @@ class ThaskCard extends HTMLElement {
     });
   }
 
-  _renderTasks(open, done) {
+  _renderTasks(view, { open, done }) {
     let html = "";
     const max = Number(this._config.max_items) || 0;
     const shown = max ? open.slice(0, max) : open;
     const rest = open.length - shown.length;
-    const view = this._view;
     if (view.type === "smart" && view.key === "planned") {
       const weekEnd = periodEnd("week", periodStart("week", this._today));
       const monthEnd = periodEnd("month", periodStart("month", this._today));
@@ -279,24 +332,25 @@ class ThaskCard extends HTMLElement {
         groups[end < this._today ? "overdue" : end <= weekEnd ? "this_week" : end <= monthEnd ? "this_month" : "later"].push(task);
       }
       for (const [key, tasks] of Object.entries(groups)) {
-        if (tasks.length) html += `<div class="section ${key}">${esc(this.t(key))}</div>${tasks.map((t) => this._row(t)).join("")}`;
+        if (tasks.length) html += `<div class="section ${key}">${esc(this.t(key))}</div>${tasks.map((t) => this._row(t, view)).join("")}`;
       }
     } else if (view.type === "smart" && view.key === "my_day" && this._overdueMode === "section" && shown.some((t) => isOverdue(t, this._today))) {
       const overdue = shown.filter((t) => isOverdue(t, this._today));
       const today = shown.filter((t) => !isOverdue(t, this._today));
       html += `<button class="section overdue toggle" data-action="toggle-overdue">
         <ha-icon icon="${this._overdueCollapsed ? "mdi:chevron-right" : "mdi:chevron-down"}"></ha-icon>${esc(this.t("overdue"))} <span>${overdue.length}</span></button>`;
-      if (!this._overdueCollapsed) html += overdue.map((t) => this._row(t)).join("");
-      if (today.length) html += `<div class="section">${esc(this.t("today"))}</div>${today.map((t) => this._row(t)).join("")}`;
+      if (!this._overdueCollapsed) html += overdue.map((t) => this._row(t, view)).join("");
+      if (today.length) html += `<div class="section">${esc(this.t("today"))}</div>${today.map((t) => this._row(t, view)).join("")}`;
     } else {
-      html += shown.map((t) => this._row(t)).join("");
+      html += shown.map((t) => this._row(t, view)).join("");
     }
     if (rest > 0) html += `<button class="more" data-action="open-panel">${esc(this.t("more", rest))}</button>`;
     if (!open.length && !(this._config.show_completed && done.length)) html += `<div class="empty">${esc(this.t("empty"))}</div>`;
     if (this._config.show_completed && done.length) {
-      html += `<button class="section toggle" data-action="toggle-done">
-        <ha-icon icon="${this._showDone ? "mdi:chevron-down" : "mdi:chevron-right"}"></ha-icon>${esc(this.t("completed"))} <span>${done.length}</span></button>`;
-      if (this._showDone) html += done.map((t) => this._row(t)).join("");
+      const unfolded = this._showDone.has(view.id);
+      html += `<button class="section toggle" data-action="toggle-done" data-view="${esc(view.id)}">
+        <ha-icon icon="${unfolded ? "mdi:chevron-down" : "mdi:chevron-right"}"></ha-icon>${esc(this.t("completed"))} <span>${done.length}</span></button>`;
+      if (unfolded) html += done.map((t) => this._row(t, view)).join("");
     }
     return html;
   }
@@ -314,9 +368,9 @@ class ThaskCard extends HTMLElement {
     return `<span class="meta due ${status}"><ha-icon icon="${icon}"></ha-icon>${esc(label)}</span>`;
   }
 
-  _row(task) {
+  _row(task, view) {
     const meta = [];
-    if (this._view.type === "smart" && this._config.show_list) {
+    if (view.type === "smart" && this._config.show_list) {
       const list = this._lists.find((l) => l.id === task.list_id);
       if (list) meta.push(`<span class="meta">${esc(list.name)}</span>`);
     }
@@ -382,7 +436,12 @@ class ThaskCard extends HTMLElement {
         this._render();
         break;
       case "toggle-done":
-        this._showDone = !this._showDone;
+        if (!this._showDone.delete(target.dataset.view)) this._showDone.add(target.dataset.view);
+        this._render();
+        break;
+      case "tab":
+        this._tab = Number(target.dataset.tab);
+        this._expanded = null;
         this._render();
         break;
       case "open-panel":
@@ -428,7 +487,7 @@ class ThaskCard extends HTMLElement {
     if (parsed.due_time) data.due_time = parsed.due_time;
     if (parsed.recurrence) data.recurrence = parsed.recurrence;
     // A new task should show up in the view it was typed into.
-    const view = this._view;
+    const view = this._active();
     if (view.type === "smart") {
       if ((view.key === "my_day" || view.key === "overdue") && !data.due) data.due = makePeriod("day", this._today);
       if (view.key === "important") data.priority = Math.max(data.priority, 3);
@@ -473,10 +532,12 @@ class ThaskCardEditor extends HTMLElement {
       ...(this._lists || []).map((l) => ({ value: `list:${l.id}`, label: l.group ? `${l.group} › ${l.name}` : l.name })),
     ];
     return [
-      { name: "view", selector: { select: { options: views, mode: "dropdown" } } },
+      { name: "views", selector: { select: { options: views, multiple: true, mode: "dropdown" } } },
       { name: "title", selector: { text: {} } },
       {
         type: "grid", name: "", schema: [
+          { name: "tabs", selector: { boolean: {} } },
+          { name: "hide_duplicates", selector: { boolean: {} } },
           { name: "show_entry", selector: { boolean: {} } },
           { name: "show_completed", selector: { boolean: {} } },
           { name: "show_list", selector: { boolean: {} } },
@@ -503,9 +564,19 @@ class ThaskCardEditor extends HTMLElement {
       this._form.addEventListener("value-changed", (ev) => {
         const config = { ...ev.detail.value };
         config.min_priority = Number(config.min_priority) || 0;
+        // One view is written as `view`, several as `views`.
+        const views = (config.views || []).filter(Boolean);
+        delete config.views;
+        if (views.length > 1) {
+          delete config.view;
+          config.views = views;
+        } else {
+          config.view = views[0] || "my_day";
+        }
         // Leave out what equals the default, so the YAML stays short.
         for (const [key, value] of Object.entries(DEFAULTS)) {
           if (key !== "view" && config[key] === value) delete config[key];
+          if (key === "view" && config.views) delete config.view;
         }
         if (!config.title) delete config.title;
         this._config = config;
@@ -515,7 +586,8 @@ class ThaskCardEditor extends HTMLElement {
     }
     this._form.hass = this._hass;
     this._form.schema = this._schema();
-    this._form.data = { ...DEFAULTS, ...this._config, min_priority: String(this._config.min_priority ?? 0) };
+    const views = this._config.views?.length ? this._config.views : [this._config.view || "my_day"];
+    this._form.data = { ...DEFAULTS, ...this._config, views, min_priority: String(this._config.min_priority ?? 0) };
   }
 }
 
@@ -530,11 +602,22 @@ const STYLE = `
   }
   ha-card { padding: 4px 0 8px; overflow: hidden; color: var(--primary-text-color); }
   button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
-  .header { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 16px 8px; font-size: 18px; font-weight: 500; }
-  .header ha-icon { color: var(--thask-accent); }
-  .header .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .header .count { color: var(--thask-muted); font-size: 14px; font-weight: 400; }
-  .entry { display: flex; align-items: center; gap: 8px; margin: 0 12px 6px; padding: 0 10px; border-radius: 8px;
+  .header[hidden] { display: none; }
+  .title-row, .view-head { display: flex; align-items: center; gap: 10px; width: 100%; padding: 12px 16px 8px 24px; font-size: 18px; font-weight: 500; box-sizing: border-box; }
+  .view-head { font-size: 16px; padding-top: 14px; }
+  .title-row ha-icon, .view-head ha-icon { color: var(--thask-accent); }
+  .name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .count { color: var(--thask-muted); font-size: 14px; font-weight: 400; }
+  .tabs { display: flex; gap: 4px; padding: 8px 12px 6px 20px; overflow-x: auto; scrollbar-width: none; }
+  /* Only the shown tab carries its name, so several tabs fit a narrow card. */
+  .tab:not(.on) .name { display: none; }
+  .tab { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 16px; font-size: 14px; white-space: nowrap; color: var(--thask-muted); }
+  .tab ha-icon { --mdc-icon-size: 18px; }
+  .tab .name { flex: none; }
+  .tab .count { font-size: 12px; }
+  .tab.on { background: var(--secondary-background-color, rgba(127,127,127,.12)); color: var(--primary-text-color); }
+  .tab.on ha-icon { color: var(--thask-accent); }
+  .entry { display: flex; align-items: center; gap: 8px; margin: 0 12px 6px 20px; padding: 0 10px; border-radius: 8px;
     background: var(--secondary-background-color, rgba(127,127,127,.08)); }
   .entry[hidden] { display: none; }
   .entry ha-icon { --mdc-icon-size: 18px; color: var(--thask-muted); }
@@ -542,15 +625,17 @@ const STYLE = `
   .hint { font-size: 12px; color: var(--thask-accent); white-space: nowrap; }
   .error { margin: 0 16px 6px; color: var(--thask-danger); font-size: 13px; }
   .error[hidden] { display: none; }
-  .section { display: flex; align-items: center; gap: 4px; padding: 10px 16px 2px; font-size: 13px; font-weight: 500; color: var(--thask-muted); width: 100%; box-sizing: border-box; }
+  .section { display: flex; align-items: center; gap: 4px; padding: 10px 16px 2px 24px; font-size: 13px; font-weight: 500; color: var(--thask-muted); width: 100%; box-sizing: border-box; }
   .section span { font-weight: 400; }
   .section ha-icon { --mdc-icon-size: 18px; }
   .section.overdue { color: var(--thask-danger); }
-  .task { display: flex; align-items: flex-start; gap: 12px; padding: 7px 16px; cursor: pointer; }
+  .task { position: relative; display: flex; align-items: flex-start; gap: 12px; padding: 7px 16px 7px 24px; cursor: pointer; }
   .task:hover { background: var(--secondary-background-color, rgba(127,127,127,.06)); }
-  .task.prio-1 { box-shadow: inset 3px 0 0 var(--thask-prio-1); }
-  .task.prio-2 { box-shadow: inset 5px 0 0 var(--thask-prio-2); }
-  .task.prio-3 { box-shadow: inset 7px 0 0 var(--thask-prio-3); }
+  /* Priority bar a little inside the card, so a theme's thick card border doesn't hide it. */
+  .task[class*="prio-"]::before { content: ""; position: absolute; left: 8px; top: 5px; bottom: 5px; border-radius: 4px; }
+  .task.prio-1::before { width: 3px; background: var(--thask-prio-1); }
+  .task.prio-2::before { width: 5px; background: var(--thask-prio-2); }
+  .task.prio-3::before { width: 7px; background: var(--thask-prio-3); }
   .body { flex: 1; min-width: 0; }
   .title { overflow-wrap: anywhere; line-height: 22px; }
   .task.completed > .body > .title { text-decoration: line-through; color: var(--thask-muted); }
@@ -571,8 +656,8 @@ const STYLE = `
   .step-input { border: 0; border-bottom: 1px solid var(--divider-color, rgba(127,127,127,.3)); background: transparent; color: var(--primary-text-color);
     font: inherit; font-size: 14px; padding: 4px 0; outline: none; }
   .notes { font-size: 13px; color: var(--thask-muted); white-space: pre-wrap; }
-  .more { display: block; padding: 6px 16px; font-size: 13px; color: var(--thask-accent); }
-  .empty { padding: 12px 16px; color: var(--thask-muted); }
+  .more { display: block; padding: 6px 16px 6px 24px; font-size: 13px; color: var(--thask-accent); }
+  .empty { padding: 12px 16px 12px 24px; color: var(--thask-muted); }
   ha-card.compact .task { padding-top: 4px; padding-bottom: 4px; }
 `;
 

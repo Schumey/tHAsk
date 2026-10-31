@@ -51,6 +51,9 @@ Die Integration bringt die Karte `custom:thask-card` mit; eine Ressource muss ni
 ```yaml
 type: custom:thask-card
 view: my_day            # my_day, overdue, important, planned, this_week, this_month oder list:<Listen-ID>
+# views: [my_day, this_week]   # statt view: mehrere Ansichten auf einer Karte
+tabs: false             # mehrere Ansichten als Reiter statt untereinander
+hide_duplicates: true   # untereinander: jede Aufgabe nur in der ersten passenden Ansicht
 title: Heute            # optional, sonst der Name der Ansicht
 show_entry: true        # Schnelleingabe mit Erkennung („Steuer KW 47 !“)
 show_completed: false   # Erledigte zuklappbar darunter
@@ -59,6 +62,8 @@ min_priority: 0         # 1–3: nur Aufgaben ab dieser Priorität
 max_items: 0            # höchstens so viele offene Aufgaben, 0 = alle
 compact: false          # nur Titel, ohne Fälligkeit und Liste
 ```
+
+Mit mehreren Ansichten stehen sie untereinander, jede mit eigener Überschrift (z. B. „Heute“ und darunter „Diese Woche“ ohne die heutigen Aufgaben), oder als Reiter. Die Schnelleingabe legt in der ersten bzw. der gezeigten Ansicht an.
 
 Zeiträume erscheinen als Chips (KW 46, November, Q4), Überfälliges rot; „Heute“ folgt der Option für Überfälliges, „Geplant“ ist gruppiert. Ein Klick auf eine Aufgabe klappt Schritte und Notizen auf (Schritte abhaken und hinzufügen), der Kreis hakt sie ab, die Überschrift öffnet die tHAsk-Seite.
 
