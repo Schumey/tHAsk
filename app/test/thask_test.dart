@@ -39,8 +39,8 @@ void main() {
     });
 
     test('ISO-Woche am Jahreswechsel', () {
-      expect(isoWeek(DateTime(2026, 12, 31)), 53);
-      expect(isoWeek(DateTime(2027, 1, 1)), 53);
+      expect(isoWeekNumber(DateTime(2026, 12, 31)), 53);
+      expect(isoWeekNumber(DateTime(2027, 1, 1)), 53);
       expect(isoWeekYear(DateTime(2027, 1, 1)), 2026);
     });
   });
@@ -103,6 +103,114 @@ void main() {
     });
   });
 
+  group('Offline-Änderungen', () {
+    late _FakeConnection connection;
+    late _MemoryCache cache;
+    HaConnection? online;
+    late ThaskStore store;
+
+    ThaskStore newStore() => ThaskStore(
+          _MemoryCredentials()..saved = (address: 'ha', token: 't'),
+          cache: cache,
+          connect: (_, _) async => online ?? (throw HaException('offline')),
+          clock: () => DateTime(2026, 10, 31),
+        );
+
+    setUp(() async {
+      connection = _FakeConnection();
+      online = null;
+      cache = _MemoryCache()
+        ..json = jsonEncode({
+          'today': '2026-10-31',
+          'lists': [
+            {'id': 'l1', 'name': 'Aufgaben', 'position': 1},
+          ],
+          'tasks': [
+            {'id': 't1', 'list_id': 'l1', 'title': 'Steuer'},
+          ],
+        });
+      store = newStore();
+      await store.start();
+    });
+
+    tearDown(() => store.dispose());
+
+    /// Verbindung herstellen: der Server liefert seinen Stand, danach werden die Änderungen gesendet.
+    Future<void> reconnect() async {
+      online = connection;
+      store.resume();
+      await Future<void>.delayed(Duration.zero);
+      connection.emit(_snapshot);
+      for (var i = 0; i < 20 && store.pendingCount > 0; i++) {
+        await Future<void>.delayed(Duration.zero);
+      }
+    }
+
+    test('Aufgabe ohne Verbindung anlegen: sofort sichtbar und vorgemerkt', () async {
+      await store.addQuick('l1', 'Milch morgen !');
+      expect(store.pendingCount, 1);
+      final milk = store.tasksOf('l1').singleWhere((t) => t.title == 'Milch');
+      expect(milk.important, isTrue);
+      expect(milk.due, Period.day(DateTime(2026, 11, 1)));
+      expect(cache.outbox, isNotNull);
+    });
+
+    test('Nach dem Verbinden werden die Änderungen der Reihe nach gesendet', () async {
+      await store.addQuick('l1', 'Milch');
+      final milk = store.tasksOf('l1').singleWhere((t) => t.title == 'Milch');
+      await store.setCompleted(milk, true);
+      await store.setCompleted(store.task('t1')!, true);
+      expect(store.pendingCount, 3);
+
+      connection.results['thask/task/create'] = {'id': 'real-1'};
+      await reconnect();
+
+      expect(store.pendingCount, 0);
+      expect(connection.calls.map((c) => c.$1), [
+        'thask/task/create',
+        'thask/task/update',
+        'thask/task/update',
+      ]);
+      // Die Änderung an der neuen Aufgabe geht an die echte Kennung, nicht an die vorläufige.
+      expect(connection.calls[1].$2['task_id'], 'real-1');
+      expect(connection.calls[2].$2['task_id'], 't1');
+      expect(store.tasksOf('l1').where((t) => t.title == 'Milch'), isEmpty);
+      expect(jsonDecode(cache.outbox!), isEmpty);
+    });
+
+    test('Eine noch nicht gesendete Aufgabe zu löschen verwirft alle ihre Änderungen', () async {
+      await store.addQuick('l1', 'Milch');
+      final milk = store.tasksOf('l1').singleWhere((t) => t.title == 'Milch');
+      await store.setImportant(milk, true);
+      await store.deleteTask(milk);
+      expect(store.pendingCount, 0);
+      expect(store.tasksOf('l1').map((t) => t.title), ['Steuer']);
+    });
+
+    test('Vorgemerkte Änderungen überstehen einen Neustart', () async {
+      await store.setCompleted(store.task('t1')!, true);
+      store.dispose();
+      store = newStore();
+      await store.start();
+      expect(store.pendingCount, 1);
+      expect(store.task('t1')!.completed, isTrue);
+    });
+
+    test('Eine vom Server abgelehnte Änderung wird verworfen', () async {
+      await store.deleteTask(store.task('t1')!);
+      connection.errors['thask/task/delete'] = HaException('Not found', code: 'not_found');
+      await reconnect();
+      expect(store.pendingCount, 0);
+    });
+
+    test('Bei Verbindungsverlust bleibt die Änderung vorgemerkt', () async {
+      await store.setCompleted(store.task('t1')!, true);
+      connection.errors['thask/task/update'] = HaException('Die Verbindung wurde beendet.');
+      await reconnect();
+      expect(store.pendingCount, 1);
+    });
+  });
+
   group('ThaskStore', () {
     late _FakeConnection connection;
     late _MemoryCredentials credentials;
@@ -155,15 +263,8 @@ void main() {
       expect(store.myDay, isEmpty);
     });
 
-    test('addQuick nutzt das Parse-Ergebnis des Servers', () async {
+    test('addQuick erkennt Fälligkeit und Wichtig auf dem Gerät', () async {
       await signIn();
-      connection.results['thask/parse'] = {
-        'title': 'Steuer',
-        'due': {'granularity': 'week', 'start': '2026-11-16'},
-        'due_time': null,
-        'recurrence': null,
-        'important': true,
-      };
       await store.addQuick('l1', 'Steuer KW 47 !');
       final create = connection.calls.singleWhere((c) => c.$1 == 'thask/task/create').$2;
       expect(create['title'], 'Steuer');
@@ -268,6 +369,7 @@ class _FakeConnection implements HaConnection {
   final _closed = Completer<void>();
   final calls = <(String, Map<String, dynamic>)>[];
   final results = <String, dynamic>{};
+  final errors = <String, Object>{};
 
   void emit(Map<String, dynamic> event) => _events.add(event);
 
@@ -277,6 +379,8 @@ class _FakeConnection implements HaConnection {
   @override
   Future<dynamic> call(String type, [Map<String, dynamic> payload = const {}]) async {
     calls.add((type, payload));
+    final error = errors[type];
+    if (error != null) throw error;
     return results[type];
   }
 
@@ -304,6 +408,13 @@ class _MemoryCredentials implements CredentialStore {
 
 class _MemoryCache implements SnapshotCache {
   String? json;
+  String? outbox;
+
+  @override
+  Future<String?> loadOutbox() async => outbox;
+
+  @override
+  Future<void> saveOutbox(String value) async => outbox = value;
 
   @override
   Future<String?> load() async => json;
@@ -312,5 +423,8 @@ class _MemoryCache implements SnapshotCache {
   Future<void> save(String value) async => json = value;
 
   @override
-  Future<void> clear() async => json = null;
+  Future<void> clear() async {
+    json = null;
+    outbox = null;
+  }
 }

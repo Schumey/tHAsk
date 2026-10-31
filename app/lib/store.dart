@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import 'ha_client.dart';
 import 'models.dart';
+import 'parser.dart';
 
 enum LinkState { disconnected, connecting, connected }
 
@@ -19,14 +20,46 @@ abstract class CredentialStore {
 abstract class SnapshotCache {
   Future<String?> load();
   Future<void> save(String json);
+
+  /// Noch nicht an Home Assistant gesendete Änderungen.
+  Future<String?> loadOutbox();
+  Future<void> saveOutbox(String json);
+
+  /// Löscht Stand und Änderungen.
   Future<void> clear();
 }
+
+/// Eine vorgemerkte Änderung, die noch an Home Assistant gesendet werden muss.
+class _Op {
+  _Op(this.type, this.payload, this.created, {this.tempId});
+
+  final String type;
+  final Map<String, dynamic> payload;
+  final String created;
+
+  /// Vorläufige Kennung einer offline angelegten Aufgabe, bis der Server die echte vergibt.
+  final String? tempId;
+
+  Map<String, dynamic> toJson() => {'type': type, 'payload': payload, 'created': created, 'temp_id': tempId};
+
+  factory _Op.fromJson(Map<String, dynamic> json) => _Op(
+        json['type'] as String,
+        (json['payload'] as Map).cast<String, dynamic>(),
+        json['created'] as String,
+        tempId: json['temp_id'] as String?,
+      );
+}
+
+const _tempPrefix = 'local-';
 
 typedef ClientFactory = Future<HaConnection> Function(String address, String token);
 
 /// Hält Listen und Aufgaben, hält die Verbindung zu Home Assistant und wendet Änderungen an.
 class ThaskStore extends ChangeNotifier {
-  ThaskStore(this._credentials, {this._cache, ClientFactory? connect, DateTime Function()? clock})
+  /// [autoFlush] aus: vorgemerkte Änderungen werden nicht gesendet (für den kurzen Hintergrundlauf des Widgets,
+  /// damit nicht zwei Prozesse dieselbe Warteschlange abarbeiten).
+  ThaskStore(this._credentials,
+      {this._cache, ClientFactory? connect, DateTime Function()? clock, this.autoFlush = true})
       : _connect = connect ?? HaClient.connect,
         _clock = clock ?? DateTime.now;
 
@@ -35,6 +68,14 @@ class ThaskStore extends ChangeNotifier {
   Timer? _saveTimer;
   final ClientFactory _connect;
   final DateTime Function() _clock;
+  final bool autoFlush;
+
+  final List<_Op> _outbox = [];
+  bool _flushing = false;
+  int _localCounter = 0;
+
+  /// Anzahl der Änderungen, die noch auf die Verbindung zu Home Assistant warten.
+  int get pendingCount => _outbox.length;
 
   LinkState connection = LinkState.disconnected;
   String? error;
@@ -109,6 +150,16 @@ class ThaskStore extends ChangeNotifier {
   }
 
   Future<void> _loadCache() async {
+    final pending = await _cache?.loadOutbox();
+    if (pending != null) {
+      try {
+        _outbox
+          ..clear()
+          ..addAll([for (final op in jsonDecode(pending) as List) _Op.fromJson((op as Map).cast<String, dynamic>())]);
+      } catch (_) {
+        _outbox.clear();
+      }
+    }
     final cached = await _cache?.load();
     if (cached == null) return;
     try {
@@ -156,6 +207,7 @@ class ThaskStore extends ChangeNotifier {
     _tasks.clear();
     _rawLists.clear();
     _rawTasks.clear();
+    _outbox.clear();
     fromCache = false;
     connection = LinkState.disconnected;
     error = null;
@@ -210,6 +262,7 @@ class ThaskStore extends ChangeNotifier {
     error = null;
     _attempt = 0;
     notifyListeners();
+    if (autoFlush && _outbox.isNotEmpty) unawaited(_flush());
   }
 
   void _scheduleRetry() {
@@ -267,6 +320,10 @@ class ThaskStore extends ChangeNotifier {
           ..clear()
           ..addEntries([for (final e in _rawTasks.entries) MapEntry(e.key, Task.fromJson(e.value))]);
         today = dateOnly(DateTime.parse(event['today'] as String));
+        // Noch nicht gesendete Änderungen bleiben sichtbar, bis der Server sie bestätigt.
+        for (final op in _outbox) {
+          _applyOptimistic(op);
+        }
       case 'day_changed':
         today = dateOnly(DateTime.parse(event['today'] as String));
       case 'change':
@@ -307,50 +364,188 @@ class ThaskStore extends ChangeNotifier {
     return client.call(type, payload);
   }
 
-  Future<void> addTask(String listId, String title, {Period? due, bool important = false, bool myDay = false}) async {
-    await _call('thask/task/create', {
-      'list_id': listId,
-      'title': title,
-      if (due != null) 'due': due.toJson(),
-      if (important) 'important': true,
-      if (myDay) 'my_day': isoDate(today),
-    });
-  }
-
-  /// Aufgabe aus einem Schnelleingabe-Text anlegen („Steuer KW 47 !“): der Server erkennt Fälligkeit und Wichtig.
-  Future<void> addQuick(String listId, String text, {bool myDay = false}) async {
-    final parsed = await parse(text);
-    final title = (parsed['title'] as String).trim();
-    await _call('thask/task/create', {
-      'list_id': listId,
-      'title': title.isEmpty ? text.trim() : title,
-      if (parsed['due'] != null) 'due': parsed['due'],
-      if (parsed['due_time'] != null) 'due_time': parsed['due_time'],
-      if (parsed['recurrence'] != null) 'recurrence': parsed['recurrence'],
-      if (parsed['important'] == true) 'important': true,
-      if (myDay) 'my_day': isoDate(today),
-    });
-  }
-
   Task? task(String id) => _tasks[id];
+
+  bool _isTemp(Object? id) => id is String && id.startsWith(_tempPrefix);
+
+  String _newTempId() => '$_tempPrefix${_clock().microsecondsSinceEpoch}-${_localCounter++}';
+
+  /// Änderung an Aufgaben: direkt senden, wenn verbunden, sonst vormerken und sofort sichtbar machen.
+  /// Solange Änderungen warten, wird alles hinten angestellt, damit die Reihenfolge stimmt.
+  Future<void> _mutate(String type, Map<String, dynamic> payload, {String? tempId}) async {
+    final taskId = payload['task_id'];
+    final direct =
+        connection == LinkState.connected && _client != null && _outbox.isEmpty && !_isTemp(taskId);
+    if (direct) {
+      await _client!.call(type, payload);
+      return;
+    }
+    if (type == 'thask/task/delete' && _isTemp(taskId)) {
+      // Die Aufgabe kennt der Server noch gar nicht: Anlegen und alle Änderungen daran verwerfen.
+      _outbox.removeWhere((op) => op.tempId == taskId || op.payload['task_id'] == taskId);
+      _tasks.remove(taskId);
+      _rawTasks.remove(taskId);
+    } else {
+      final op = _Op(type, payload, _clock().toUtc().toIso8601String(), tempId: tempId);
+      _outbox.add(op);
+      _applyOptimistic(op);
+    }
+    await _saveOutbox();
+    notifyListeners();
+    if (connection == LinkState.connected && autoFlush) unawaited(_flush());
+  }
+
+  Future<void> _saveOutbox() async {
+    await _cache?.saveOutbox(jsonEncode([for (final op in _outbox) op.toJson()]));
+  }
+
+  /// Wirkt eine vorgemerkte Änderung auf den lokalen Stand, damit die Anzeige sofort stimmt.
+  void _applyOptimistic(_Op op) {
+    final payload = op.payload;
+    switch (op.type) {
+      case 'thask/task/create':
+        final id = op.tempId!;
+        final listId = payload['list_id'] as String;
+        final positions = [for (final t in _tasks.values) if (t.listId == listId) t.position];
+        final raw = <String, dynamic>{
+          'id': id,
+          'list_id': listId,
+          'title': payload['title'],
+          'notes': '',
+          'completed': false,
+          'important': payload['important'] ?? false,
+          'due': payload['due'],
+          'due_time': payload['due_time'],
+          'reminder': null,
+          'recurrence': payload['recurrence'],
+          'my_day': payload['my_day'],
+          'steps': <Map<String, dynamic>>[],
+          'categories': <String>[],
+          'position': positions.isEmpty ? 0.0 : positions.reduce((a, b) => a > b ? a : b) + 1,
+          'created': op.created,
+          'completed_at': null,
+        };
+        _rawTasks[id] = raw;
+        _tasks[id] = Task.fromJson(raw);
+      case 'thask/task/update':
+        final id = payload['task_id'] as String;
+        final current = _rawTasks[id];
+        if (current == null) return;
+        final raw = Map<String, dynamic>.of(current);
+        payload.forEach((key, value) {
+          if (key == 'task_id') return;
+          raw[key] = key == 'steps'
+              ? [
+                  for (final step in value as List)
+                    {
+                      'completed': false,
+                      ...(step as Map).cast<String, dynamic>(),
+                      'id': step['id'] ?? _newTempId(),
+                    },
+                ]
+              : value;
+        });
+        if (payload.containsKey('completed')) {
+          raw['completed_at'] = payload['completed'] == true ? op.created : null;
+        }
+        _rawTasks[id] = raw;
+        _tasks[id] = Task.fromJson(raw);
+      case 'thask/task/delete':
+        final id = payload['task_id'] as String;
+        _tasks.remove(id);
+        _rawTasks.remove(id);
+    }
+  }
+
+  /// Vorgemerkte Änderungen der Reihe nach an Home Assistant senden. Bricht bei Verbindungsverlust ab
+  /// und macht beim nächsten Verbinden weiter; vom Server abgelehnte Änderungen werden verworfen.
+  Future<void> _flush() async {
+    if (_flushing) return;
+    _flushing = true;
+    try {
+      while (_outbox.isNotEmpty && connection == LinkState.connected && _client != null) {
+        final op = _outbox.first;
+        try {
+          final result = await _client!.call(op.type, op.payload);
+          if (op.tempId != null && result is Map) {
+            final realId = result['id'] as String;
+            for (final other in _outbox) {
+              if (other.payload['task_id'] == op.tempId) other.payload['task_id'] = realId;
+            }
+            // Die echte Aufgabe kommt als Änderungsereignis vom Server.
+            _tasks.remove(op.tempId);
+            _rawTasks.remove(op.tempId);
+          }
+        } on HaException catch (e) {
+          if (e.code == null) break;
+          // Abgelehnt (z. B. Aufgabe wurde inzwischen gelöscht): die Änderung gilt nicht mehr.
+          if (op.tempId != null) {
+            _tasks.remove(op.tempId);
+            _rawTasks.remove(op.tempId);
+          }
+        }
+        _outbox.remove(op);
+        await _saveOutbox();
+        notifyListeners();
+      }
+    } finally {
+      _flushing = false;
+    }
+  }
+
+  Future<void> addTask(String listId, String title, {Period? due, bool important = false, bool myDay = false}) =>
+      _mutate(
+        'thask/task/create',
+        {
+          'list_id': listId,
+          'title': title,
+          if (due != null) 'due': due.toJson(),
+          if (important) 'important': true,
+          if (myDay) 'my_day': isoDate(today),
+        },
+        tempId: _newTempId(),
+      );
+
+  /// Aufgabe aus einem Schnelleingabe-Text anlegen („Steuer KW 47 !“). Erkannt wird auf dem Gerät,
+  /// deshalb geht das auch ohne Verbindung.
+  Future<void> addQuick(String listId, String text, {bool myDay = false}) {
+    final parsed = parse(text, today);
+    final title = parsed.title.isEmpty ? text.trim() : parsed.title;
+    if (title.isEmpty) return Future.value();
+    return _mutate(
+      'thask/task/create',
+      {
+        'list_id': listId,
+        'title': title,
+        if (parsed.due != null) 'due': parsed.due!.toJson(),
+        if (parsed.dueTime != null) 'due_time': parsed.dueTime,
+        if (parsed.recurrence != null) 'recurrence': parsed.recurrence!.toJson(),
+        if (parsed.important) 'important': true,
+        if (myDay) 'my_day': isoDate(today),
+      },
+      tempId: _newTempId(),
+    );
+  }
 
   /// Felder einer Aufgabe ändern (in der Form der API, z. B. `{'notes': '…', 'due': null}`).
   Future<void> updateTask(Task task, Map<String, dynamic> patch) =>
-      _call('thask/task/update', {'task_id': task.id, ...patch});
+      _mutate('thask/task/update', {'task_id': task.id, ...patch});
 
-  Future<void> setCompleted(Task task, bool completed) =>
-      _call('thask/task/update', {'task_id': task.id, 'completed': completed});
+  Future<void> setCompleted(Task task, bool completed) => updateTask(task, {'completed': completed});
 
-  Future<void> setImportant(Task task, bool important) =>
-      _call('thask/task/update', {'task_id': task.id, 'important': important});
+  Future<void> setImportant(Task task, bool important) => updateTask(task, {'important': important});
 
-  Future<void> deleteTask(Task task) => _call('thask/task/delete', {'task_id': task.id});
+  Future<void> deleteTask(Task task) => _mutate('thask/task/delete', {'task_id': task.id});
+
+  /// Für den Hintergrundlauf des Widgets: sofort senden, wenn verbunden, ohne die Warteschlange anzufassen.
+  Future<void> completeNow(Task task) {
+    if (connection == LinkState.connected && _client != null && !_isTemp(task.id)) {
+      return _client!.call('thask/task/update', {'task_id': task.id, 'completed': true});
+    }
+    return setCompleted(task, true);
+  }
 
   Future<void> clearCompleted(String listId) => _call('thask/list/clear_completed', {'list_id': listId});
-
-  /// Schnelleingabe zerlegen lassen (Titel, Fälligkeit, Wichtig, …).
-  Future<Map<String, dynamic>> parse(String text) async =>
-      (await _call('thask/parse', {'text': text}) as Map).cast<String, dynamic>();
 
   @override
   void dispose() {

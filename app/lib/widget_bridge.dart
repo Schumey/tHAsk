@@ -102,20 +102,22 @@ class WidgetBridge {
 @pragma('vm:entry-point')
 Future<void> widgetBackgroundCallback(Uri? uri) async {
   if (uri == null) return;
-  final store = ThaskStore(SecureCredentialStore(), cache: PrefsSnapshotCache());
+  // Die Warteschlange arbeitet nur die App selbst ab, nicht dieser kurze Hintergrundlauf.
+  final store = ThaskStore(SecureCredentialStore(), cache: PrefsSnapshotCache(), autoFlush: false);
   try {
     await store.start();
-    final connected = await store.waitUntilConnected(const Duration(seconds: 15));
-    if (connected && uri.host == 'complete') {
+    await store.waitUntilConnected(const Duration(seconds: 15));
+    if (uri.host == 'complete') {
       final task = store.task(uri.queryParameters['id'] ?? '');
       if (task != null) {
-        await store.setCompleted(task, true);
+        // Ohne Verbindung wird das Abhaken vorgemerkt und später von der App gesendet.
+        await store.completeNow(task);
         // Das Änderungsereignis ist vor der Antwort eingetroffen; kurz Zeit zum Verarbeiten.
         await Future<void>.delayed(const Duration(milliseconds: 300));
       }
     }
   } catch (_) {
-    // Ohne Verbindung bleibt der letzte Stand; push() gibt die ausgeblendete Aufgabe wieder frei.
+    // Bei einem Fehler bleibt der letzte Stand; push() gibt die ausgeblendete Aufgabe wieder frei.
   } finally {
     await WidgetBridge.push(store);
     store.dispose();

@@ -5,6 +5,7 @@ import 'store.dart';
 /// Legt den letzten Stand in den lokalen Einstellungen des Geräts ab.
 class PrefsSnapshotCache implements SnapshotCache {
   static const _key = 'thask_snapshot';
+  static const _outboxKey = 'thask_outbox';
 
   @override
   Future<String?> load() async => (await SharedPreferences.getInstance()).getString(_key);
@@ -13,5 +14,15 @@ class PrefsSnapshotCache implements SnapshotCache {
   Future<void> save(String json) async => (await SharedPreferences.getInstance()).setString(_key, json);
 
   @override
-  Future<void> clear() async => (await SharedPreferences.getInstance()).remove(_key);
+  Future<String?> loadOutbox() async => (await SharedPreferences.getInstance()).getString(_outboxKey);
+
+  @override
+  Future<void> saveOutbox(String json) async => (await SharedPreferences.getInstance()).setString(_outboxKey, json);
+
+  @override
+  Future<void> clear() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_key);
+    await prefs.remove(_outboxKey);
+  }
 }

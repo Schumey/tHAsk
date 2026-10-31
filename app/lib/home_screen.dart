@@ -62,14 +62,18 @@ class _HomeScreenState extends State<HomeScreen> {
         _ => store.lists.isEmpty ? null : store.lists.first.id,
       };
 
-  Future<void> _guard(Future<void> Function() action) async {
+  /// Führt eine Aktion aus und zeigt einen Fehler als Hinweis; true, wenn sie gelang.
+  Future<bool> _guard(Future<void> Function() action) async {
     try {
       await action();
+      return true;
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(SnackBar(content: Text('$e')));
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text('$e')));
+      }
+      return false;
     }
   }
 
@@ -78,10 +82,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final listId = _targetList;
     if (text.isEmpty || listId == null || _sending) return;
     setState(() => _sending = true);
-    await _guard(() => store.addQuick(listId, text, myDay: _view is MyDayView));
+    final added = await _guard(() => store.addQuick(listId, text, myDay: _view is MyDayView));
     if (!mounted) return;
     setState(() => _sending = false);
-    if (store.connection == LinkState.connected) _entry.clear();
+    if (added) _entry.clear();
   }
 
   @override
@@ -116,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
           drawer: _buildDrawer(context),
           body: Column(
             children: [
-              if (store.connection != LinkState.connected) _ConnectionBanner(store: store),
+              if (store.connection != LinkState.connected || store.pendingCount > 0) _ConnectionBanner(store: store),
               Expanded(
                 child: tasks.isEmpty
                     ? Center(
@@ -288,26 +292,29 @@ class _ConnectionBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final connecting = store.connection == LinkState.connecting;
+    final syncing = store.connection == LinkState.connected;
+    final pending = store.pendingCount;
+    final pendingText = pending == 0 ? '' : ' · $pending ${pending == 1 ? 'Änderung' : 'Änderungen'} vorgemerkt';
+    final message = syncing
+        ? 'Sende $pending ${pending == 1 ? 'Änderung' : 'Änderungen'} …'
+        : connecting
+            ? '${store.fromCache ? 'Verbinde … (letzter Stand)' : 'Verbinde …'}$pendingText'
+            : '${store.fromCache ? 'Offline – letzter Stand' : (store.error ?? 'Nicht verbunden')}$pendingText';
     return Material(
       color: scheme.errorContainer,
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Row(
           children: [
-            if (connecting)
+            if (connecting || syncing)
               const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
             else
               Icon(Icons.cloud_off, size: 18, color: scheme.onErrorContainer),
             const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                connecting
-                    ? (store.fromCache ? 'Verbinde … (letzter Stand)' : 'Verbinde …')
-                    : (store.fromCache ? 'Offline – letzter Stand' : (store.error ?? 'Nicht verbunden')),
-                style: TextStyle(color: scheme.onErrorContainer),
-              ),
+              child: Text(message, style: TextStyle(color: scheme.onErrorContainer)),
             ),
-            if (!connecting) TextButton(onPressed: store.resume, child: const Text('Erneut versuchen')),
+            if (!connecting && !syncing) TextButton(onPressed: store.resume, child: const Text('Erneut versuchen')),
           ],
         ),
       ),

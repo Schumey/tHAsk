@@ -15,8 +15,17 @@ const _monthsShort = [
 
 DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
+/// Monate zum Datum addieren; der Tag wird auf den letzten des Zielmonats begrenzt.
+DateTime addMonths(DateTime d, int months) {
+  final index = d.month - 1 + months;
+  final year = d.year + (index / 12).floor();
+  final month = index % 12 + 1;
+  final last = DateTime(year, month + 1, 0).day;
+  return DateTime(year, month, d.day < last ? d.day : last);
+}
+
 /// Wochenbeginn (Montag) und ISO-Kalenderwoche eines Datums.
-int isoWeek(DateTime d) {
+int isoWeekNumber(DateTime d) {
   final thursday = dateOnly(d).add(Duration(days: 4 - d.weekday));
   final jan1 = DateTime(thursday.year, 1, 1);
   return (thursday.difference(jan1).inDays ~/ 7) + 1;
@@ -48,6 +57,23 @@ class Period {
       };
 
   bool contains(DateTime day) => !day.isBefore(start) && !day.isAfter(end);
+
+  factory Period.day(DateTime day) => Period(Granularity.day, dateOnly(day));
+
+  factory Period.month(int year, int month) => Period(Granularity.month, DateTime(year, month, 1));
+
+  factory Period.quarter(int year, int quarter) => Period(Granularity.quarter, DateTime(year, 3 * (quarter - 1) + 1, 1));
+
+  factory Period.year(int year) => Period(Granularity.year, DateTime(year, 1, 1));
+
+  /// Die ISO-Kalenderwoche [week] des Jahres [year]; null, wenn es diese Woche nicht gibt (z. B. KW 53).
+  static Period? isoWeek(int year, int week) {
+    if (week < 1) return null;
+    final jan4 = DateTime(year, 1, 4);
+    final monday = DateTime(jan4.year, 1, 4 - (jan4.weekday - 1) + 7 * (week - 1));
+    if (isoWeekYear(monday) != year || isoWeekNumber(monday) != week) return null;
+    return Period(Granularity.week, monday);
+  }
 
   /// Der Zeitraum gleicher Art, der [day] enthält.
   static Period containing(Granularity granularity, DateTime day) {
@@ -88,7 +114,7 @@ class Period {
         text = '${_weekdays[start.weekday - 1]}, ${start.day}. ${_monthsShort[start.month - 1]}';
         year = start.year;
       case Granularity.week:
-        text = 'KW ${isoWeek(start)}';
+        text = 'KW ${isoWeekNumber(start)}';
         year = isoWeekYear(start);
       case Granularity.month:
         text = _months[start.month - 1];
