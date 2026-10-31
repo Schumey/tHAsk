@@ -28,9 +28,9 @@ const STRINGS = {
     state_is: "Zustand", state_hint: "leer = an / zuhause; >20 oder <5 für Zahlen", title_contains: "Titel enthält (leer = jeder Termin)",
     from_time: "ab", negate: "umkehren (NICHT)", hold_minutes: "seit Minuten", part_any: "jeder Tag des Termins",
     part_start: "nur Starttag", part_end: "nur Endtag", add_condition: "Weitere Bedingung", combine_and: "alle (UND)",
-    combine_or: "mindestens eine (ODER)", window: "Nur zwischen", days_ahead: "Tage im Voraus", task_title: "Titel der Aufgabe",
+    combine_or: "mindestens eine (ODER)", window: "Nur zwischen", days_ahead: "Anlegen bis zu Tage vorher", days_ahead_hint: "0 = am Tag des Termins, 1 = schon am Vortag, 7 = eine Woche vorher", task_title: "Titel der Aufgabe",
     placeholders: "Platzhalter: {termin}, {datum}, {wochentag}, {zustand}", due_today: "Heute", due_day: "Tag (des Termins)",
-    due_week: "Woche (des Termins)", due_month: "Monat (des Termins)", save: "Speichern", test: "Testen", run_now: "Jetzt ausführen",
+    due_day_before: "Vortag (des Termins)", due_week: "Woche (des Termins)", due_month: "Monat (des Termins)", save: "Speichern", test: "Testen", run_now: "Jetzt ausführen",
     paused_until: "Pausiert bis", paused_until_x: "pausiert bis {0}", history: "Verlauf", undo: "Rückgängig", undone: "rückgängig gemacht",
     no_triggers: "Noch keine Trigger. Ein Trigger legt einmal pro Tag eine Aufgabe an, wenn in Home Assistant etwas zutrifft, z. B. ein Kalendertermin morgen.",
     last_check: "Zuletzt geprüft {0}", test_met: "Trifft jetzt zu", test_not_met: "Trifft jetzt nicht zu", enabled: "Aktiv",
@@ -64,9 +64,9 @@ const STRINGS = {
     state_is: "State", state_hint: "empty = on / home; >20 or <5 for numbers", title_contains: "Title contains (empty = any event)",
     from_time: "from", negate: "invert (NOT)", hold_minutes: "for minutes", part_any: "every day of the event",
     part_start: "first day only", part_end: "last day only", add_condition: "Another condition", combine_and: "all (AND)",
-    combine_or: "at least one (OR)", window: "Only between", days_ahead: "Days ahead", task_title: "Task title",
+    combine_or: "at least one (OR)", window: "Only between", days_ahead: "Add up to days before", days_ahead_hint: "0 = on the day of the event, 1 = the day before, 7 = a week before", task_title: "Task title",
     placeholders: "Placeholders: {event}, {date}, {weekday}, {state}", due_today: "Today", due_day: "Day (of the event)",
-    due_week: "Week (of the event)", due_month: "Month (of the event)", save: "Save", test: "Test", run_now: "Run now",
+    due_day_before: "Day before (the event)", due_week: "Week (of the event)", due_month: "Month (of the event)", save: "Save", test: "Test", run_now: "Run now",
     paused_until: "Paused until", paused_until_x: "paused until {0}", history: "History", undo: "Undo", undone: "undone",
     no_triggers: "No triggers yet. A trigger adds a task once a day when something applies in Home Assistant, e.g. a calendar event tomorrow.",
     last_check: "Last checked {0}", test_met: "Applies now", test_not_met: "Does not apply now", enabled: "Enabled",
@@ -91,7 +91,7 @@ const TASK_SORTS = ["manual", "priority", "due", "title", "created"];
 const VERSION = new URL(import.meta.url).searchParams.get("v") || "";
 
 const CONDITION_KINDS = ["state", "calendar", "time"];
-const TRIGGER_DUE = ["none", "today", "day", "week", "month"];
+const TRIGGER_DUE = ["none", "today", "day_before", "day", "week", "month"];
 // Domains offered for state conditions.
 const STATE_DOMAINS = ["person", "device_tracker", "binary_sensor", "sensor", "input_boolean", "input_select", "switch", "light", "zone", "sun", "alarm_control_panel", "climate", "cover", "lock", "media_player", "vacuum"];
 
@@ -1092,7 +1092,8 @@ class ThaskPanel extends HTMLElement {
         <div class="row"><span class="muted">${esc(this.t("window"))}</span>
           <input type="time" class="field" data-tfield="window_from" value="${esc(draft.window_from)}">
           <input type="time" class="field" data-tfield="window_to" value="${esc(draft.window_to)}"></div>
-        ${hasCalendar ? `<div class="row"><span class="muted">${esc(this.t("days_ahead"))}</span><input type="number" min="0" max="60" class="field number" data-tfield="days_ahead" value="${draft.days_ahead || 0}"></div>` : ""}
+        ${hasCalendar ? `<div class="row" title="${esc(this.t("days_ahead_hint"))}"><span class="muted">${esc(this.t("days_ahead"))}</span><input type="number" min="0" max="60" class="field number" data-tfield="days_ahead" value="${draft.days_ahead || 0}"></div>
+          <span class="muted">${esc(this.t("days_ahead_hint"))}</span>` : ""}
       </div>
       <div class="card">
         <div class="label"><ha-icon icon="mdi:checkbox-marked-circle-outline"></ha-icon>${esc(this.t("then"))}</div>

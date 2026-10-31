@@ -120,10 +120,10 @@ Ein Trigger legt **einmal pro Tag** automatisch eine Aufgabe an, wenn in Home As
 | Uhrzeit | die Uhrzeit erreicht ist |
 
 - **Nur zwischen**: Zeitfenster, auch über Mitternacht (22:00 bis 06:00).
-- **Tage im Voraus** (bei Kalenderbedingungen): Termine bis zu N Tage voraus zählen; die Aufgabe entsteht, sobald der Termin im Fenster liegt. Zustand und Uhrzeit beziehen sich immer auf jetzt.
+- **Anlegen bis zu N Tage vorher** (bei Kalenderbedingungen): Termine bis zu N Tage voraus zählen; die Aufgabe entsteht, sobald der Termin im Fenster liegt (1 = am Vortag, für einen Termin, der erst heute eingetragen wird, noch am selben Tag). Zustand und Uhrzeit beziehen sich immer auf jetzt.
 - Pro Termin entsteht nur eine Aufgabe, auch wenn er mehrere Tage dauert.
 
-**Dann** – eine Aufgabe: Titel mit Platzhaltern `{termin}`, `{datum}`, `{wochentag}`, `{zustand}` (englisch `{event}`, `{date}`, `{weekday}`, `{state}`), Liste, Fälligkeit (*Heute*, *Tag*, *Woche* oder *Monat* des Termins bzw. des Auslösetags), Priorität und optional „Mein Tag“.
+**Dann** – eine Aufgabe: Titel mit Platzhaltern `{termin}`, `{datum}`, `{wochentag}`, `{zustand}` (englisch `{event}`, `{date}`, `{weekday}`, `{state}`), Liste, Fälligkeit (*Heute*, *Vortag*, *Tag*, *Woche* oder *Monat* des Termins bzw. des Auslösetags; der Vortag eines Termins von heute ist heute), Priorität und optional „Mein Tag“.
 
 Auf der Trigger-Seite: Haken = aktiv, Kolben = **Testen** (zeigt, ob die Bedingungen jetzt zutreffen, legt nichts an), Play = **Jetzt ausführen** (legt die Aufgabe sofort für heute an), Pfeil oben = **Jetzt prüfen** (alle Trigger). Im Editor lässt sich ein Trigger bis zu einem Datum **pausieren**. Der **Verlauf** zeigt die angelegten Aufgaben; **Rückgängig** löscht die Aufgabe wieder, und der Trigger legt für diesen Tag nichts mehr an.
 

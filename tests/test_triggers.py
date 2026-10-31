@@ -182,6 +182,16 @@ def test_render_title():
     assert render_title("Plan {unknown}", None, day, "de", TODAY) == "Plan {unknown}"
 
 
+def test_due_the_day_before(collection, source):
+    book = TriggerBook()
+    early_shift_trigger(book, days_ahead=3, task={"title": "{termin} vorbereiten", "due": "day_before"})
+    source.calendar["calendar.arbeit"] = [shift(TODAY + timedelta(days=3), 6), shift(TODAY, 14)]
+    runs = check(book, collection, source)
+    due = {run.day: collection.tasks[run.task_id].due for run in runs}
+    # Created as soon as the event is in sight, due the day before it; today's event is due today.
+    assert due == {"2026-11-03": Period.day(TODAY), "2026-11-06": Period.day(date(2026, 11, 5))}
+
+
 def test_week_due_option(collection, source):
     book = TriggerBook()
     trigger = book.create({"name": "w", "conditions": [{"kind": "time", "match": "00:00"}], "task": {"title": "w", "due": "week"}})

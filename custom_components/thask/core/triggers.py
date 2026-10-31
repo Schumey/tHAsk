@@ -24,7 +24,7 @@ from .period import Granularity, Period
 DATA_VERSION = 1
 CONDITION_KINDS = ("state", "calendar", "time")
 CALENDAR_PARTS = ("any", "start", "end")
-DUE_OPTIONS = ("none", "today", "day", "week", "month")
+DUE_OPTIONS = ("none", "today", "day_before", "day", "week", "month")
 MAX_DAYS_AHEAD = 60
 # Runs are kept this long; they also prevent firing twice for a day.
 RUN_RETENTION_DAYS = 90
@@ -130,7 +130,7 @@ class TaskTemplate:
 
     title: str
     list_id: str | None = None
-    # Relative to the day the task is for: none, today (the day the trigger fires), day, week, month.
+    # Relative to the day the task is for: none, today (the day the trigger fires), day_before, day, week, month.
     due: str = "day"
     my_day: bool = False
     priority: int = 0
@@ -380,6 +380,9 @@ def due_for(option: str, day: date, today: date) -> Period | None:
     match option:
         case "today":
             return Period.day(today)
+        case "day_before":
+            # "Prepare the day before"; for an event today that is today, not an overdue yesterday.
+            return Period.day(max(day - timedelta(days=1), today))
         case "day":
             return Period.day(day)
         case "week":
