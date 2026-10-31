@@ -164,7 +164,7 @@ class TaskStep {
   Map<String, dynamic> toJson() => {'id': id, 'title': title, 'completed': completed};
 }
 
-const taskSorts = ['manual', 'important', 'due', 'title', 'created'];
+const taskSorts = ['manual', 'priority', 'due', 'title', 'created'];
 
 class TaskList {
   const TaskList({
@@ -203,7 +203,7 @@ class Task {
     required this.title,
     this.notes = '',
     this.completed = false,
-    this.important = false,
+    this.priority = 0,
     this.due,
     this.dueTime,
     this.reminder,
@@ -221,7 +221,8 @@ class Task {
   final String title;
   final String notes;
   final bool completed;
-  final bool important;
+  /// 0 keine, 1 niedrig, 2 mittel, 3 hoch.
+  final int priority;
   final Period? due;
   final String? dueTime;
   final String? reminder;
@@ -239,7 +240,8 @@ class Task {
         title: json['title'] as String,
         notes: json['notes'] as String? ?? '',
         completed: json['completed'] as bool? ?? false,
-        important: json['important'] as bool? ?? false,
+        // Ältere Server kennen nur das Wichtig-Kennzeichen; es entspricht Priorität hoch.
+        priority: (json['priority'] as num?)?.toInt() ?? (json['important'] == true ? 3 : 0),
         due: json['due'] == null ? null : Period.fromJson(json['due'] as Map<String, dynamic>),
         dueTime: json['due_time'] as String?,
         reminder: json['reminder'] as String?,
@@ -252,6 +254,8 @@ class Task {
         created: json['created'] as String? ?? '',
         completedAt: json['completed_at'] as String?,
       );
+
+  bool get isHighPriority => priority >= 3;
 
   bool inMyDay(DateTime today) => myDay == isoDate(today);
 
@@ -267,8 +271,9 @@ List<Task> sortTasks(Iterable<Task> tasks, String mode) {
     });
   final far = DateTime(9999);
   switch (mode) {
+    case 'priority':
     case 'important':
-      return _stable(manual, (a, b) => (a.important ? 0 : 1).compareTo(b.important ? 0 : 1));
+      return _stable(manual, (a, b) => b.priority.compareTo(a.priority));
     case 'due':
       return _stable(manual, (a, b) => (a.due?.end ?? far).compareTo(b.due?.end ?? far));
     case 'title':

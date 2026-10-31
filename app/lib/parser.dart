@@ -1,6 +1,7 @@
 /// Schnelleingabe: Fälligkeit, Uhrzeit, Wiederholung und Wichtig aus einem Aufgabentitel lösen.
 ///
-/// „Reifen wechseln nächsten Monat !“ ergibt den Titel „Reifen wechseln“, fällig im nächsten Monat, wichtig.
+/// „Reifen wechseln nächsten Monat !“ ergibt den Titel „Reifen wechseln“, fällig im nächsten Monat,
+/// Priorität niedrig (`!` niedrig, `!!` mittel, `!!!` hoch).
 /// Spiegelt `custom_components/thask/core/parser.py` (gleiche Regeln, gleiche Tests), damit die App
 /// auch ohne Verbindung zu Home Assistant dasselbe erkennt.
 library;
@@ -10,7 +11,7 @@ import 'models.dart';
 const kindDue = 'due';
 const kindTime = 'time';
 const kindRecurrence = 'recurrence';
-const kindImportant = 'important';
+const kindPriority = 'priority';
 
 class Token {
   const Token(this.kind, this.start, this.end, this.text);
@@ -27,7 +28,7 @@ class ParseResult {
     this.due,
     this.dueTime,
     this.recurrence,
-    this.important = false,
+    this.priority = 0,
     this.tokens = const [],
   });
 
@@ -35,7 +36,8 @@ class ParseResult {
   final Period? due;
   final String? dueTime;
   final Recurrence? recurrence;
-  final bool important;
+  /// 0 keine, 1 niedrig (`!`), 2 mittel (`!!`), 3 hoch (`!!!` und mehr).
+  final int priority;
   final List<Token> tokens;
 }
 
@@ -252,7 +254,7 @@ _Fields _month(RegExpMatch m, DateTime today) {
 
 _Fields _year(RegExpMatch m, DateTime today) => {'due': Period.year(int.parse(m[1]!))};
 
-_Fields _important(RegExpMatch m, DateTime today) => {'important': true};
+_Fields _priority(RegExpMatch m, DateTime today) => {'priority': m[0]!.trim().length.clamp(1, 3)};
 
 class _Rule {
   _Rule(this.kind, String pattern, this.handler) : pattern = _re(pattern);
@@ -312,7 +314,7 @@ final _rules = [
   _Rule(kindDue, r'@B@@PREP@(@MONTHFULL@)(?:\s+(\d{4}))?@E@', _month),
   _Rule(kindDue, r'@B@@PREPREQ@(@MONTHSHORT@)\.?(?:\s+(\d{4}))?@E@', _month),
   _Rule(kindDue, r'@B@(?:@PREPREQ@|im\s+jahr\s+|jahr\s+)(\d{4})@E@', _year),
-  _Rule(kindImportant, r'(?<!\S)!+(?!\S)', _important),
+  _Rule(kindPriority, r'(?<!\S)!+(?!\S)', _priority),
 ];
 
 const _trimChars = ' ,;:-–';
@@ -373,7 +375,7 @@ ParseResult parse(String text, DateTime today, {Set<String> disabled = const {}}
     due: due,
     dueTime: dueTime,
     recurrence: fields['recurrence'] as Recurrence?,
-    important: fields['important'] == true,
+    priority: (fields['priority'] as int?) ?? 0,
     tokens: tokens,
   );
 }

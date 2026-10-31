@@ -47,7 +47,9 @@ private val textPrimary = ColorProvider(day = Color(0xFF1C1B1F), night = Color(0
 private val textSecondary = ColorProvider(day = Color(0xFF605D66), night = Color(0xFFC9C5CA))
 private val accent = ColorProvider(day = Color(0xFF3F51B5), night = Color(0xFFB8C4FF))
 private val danger = ColorProvider(day = Color(0xFFB3261E), night = Color(0xFFF2B8B5))
-private val star = ColorProvider(day = Color(0xFFF9A825), night = Color(0xFFFFCA28))
+private val priorityLow = ColorProvider(day = Color(0xFF43A047), night = Color(0xFF66BB6A))
+private val priorityMedium = ColorProvider(day = Color(0xFFF9A825), night = Color(0xFFFDD835))
+private val priorityHigh = ColorProvider(day = Color(0xFFE53935), night = Color(0xFFEF5350))
 
 private const val PREFS = "HomeWidgetPreferences"
 
@@ -58,7 +60,8 @@ internal class WidgetTask(
     val title: String,
     val due: String?,
     val overdue: Boolean,
-    val important: Boolean,
+    /** 0 keine, 1 niedrig, 2 mittel, 3 hoch. */
+    val priority: Int,
 )
 
 internal class WidgetView(val id: String, val title: String, val tasks: List<WidgetTask>)
@@ -81,7 +84,8 @@ internal fun parseViews(json: String?): List<WidgetView> {
                         task.getString("title"),
                         if (task.isNull("due")) null else task.getString("due"),
                         task.optBoolean("overdue"),
-                        task.optBoolean("important"),
+                        // Ältere Daten kennen nur das Wichtig-Kennzeichen.
+                        task.optInt("priority", if (task.optBoolean("important")) 3 else 0),
                     )
                 },
             )
@@ -182,9 +186,21 @@ class ThaskWidget : GlanceAppWidget() {
                     )
                 }
             }
-            if (task.important) {
+            if (task.priority > 0) {
+                // Ein bis drei Ausrufezeichen: die Stufe hängt nicht nur an der Farbe.
                 Spacer(modifier = GlanceModifier.width(4.dp))
-                Text(text = "★", style = TextStyle(color = star, fontSize = 16.sp))
+                Text(
+                    text = "!".repeat(task.priority.coerceAtMost(3)),
+                    style = TextStyle(
+                        color = when (task.priority) {
+                            1 -> priorityLow
+                            2 -> priorityMedium
+                            else -> priorityHigh
+                        },
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                    ),
+                )
             }
         }
     }

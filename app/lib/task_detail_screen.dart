@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'models.dart';
+import 'priority.dart';
 import 'store.dart';
 
 const _granularityNames = {
@@ -275,12 +276,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                   textInputAction: TextInputAction.done,
                   onSubmitted: (_) => _saveTitle(),
                 ),
-                trailing: IconButton(
-                  tooltip: 'Wichtig',
-                  icon: Icon(task.important ? Icons.star : Icons.star_border,
-                      color: task.important ? Colors.amber.shade700 : null),
-                  onPressed: () => _update({'important': !task.important}),
-                ),
               ),
               const Divider(height: 1),
               for (final step in task.steps)
@@ -317,6 +312,28 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                 title: const Text('Mein Tag'),
                 value: task.inMyDay(store.today),
                 onChanged: (v) => _update({'my_day': v ? isoDate(store.today) : null}),
+              ),
+              const Divider(height: 1),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                child: Text('Priorität', style: theme.textTheme.labelLarge),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                child: Wrap(
+                  spacing: 8,
+                  children: [
+                    for (final level in const [0, 1, 2, 3])
+                      ChoiceChip(
+                        avatar: priorityColor(level) == null
+                            ? null
+                            : CircleAvatar(backgroundColor: priorityColor(level), radius: 6),
+                        label: Text(priorityName(level)),
+                        selected: task.priority == level,
+                        onSelected: (_) => _update({'priority': level}),
+                      ),
+                  ],
+                ),
               ),
               const Divider(height: 1),
               Padding(

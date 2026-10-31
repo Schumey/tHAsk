@@ -80,7 +80,7 @@ class WidgetBridge {
                       ? null
                       : '${task.due!.label(today)}${task.dueTime != null ? ', ${task.dueTime}' : ''}',
                   'overdue': task.isOverdue(today),
-                  'important': task.important,
+                  'priority': task.priority,
                 },
             ],
           },

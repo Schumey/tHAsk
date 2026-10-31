@@ -46,17 +46,28 @@ void main() {
   });
 
   test('sortTasks hält die manuelle Reihenfolge bei Gleichstand', () {
-    Task t(String id, double pos, {bool important = false, Period? due}) =>
-        Task(id: id, listId: 'l', title: id, position: pos, important: important, due: due, created: id);
-    final tasks = [t('a', 3), t('b', 1, important: true), t('c', 2, important: true), t('d', 0)];
+    Task t(String id, double pos, {int priority = 0, Period? due}) =>
+        Task(id: id, listId: 'l', title: id, position: pos, priority: priority, due: due, created: id);
+    final tasks = [t('a', 3), t('b', 1, priority: 3), t('c', 2, priority: 1), t('d', 0, priority: 3)];
     expect([for (final x in sortTasks(tasks, 'manual')) x.id], ['d', 'b', 'c', 'a']);
-    expect([for (final x in sortTasks(tasks, 'important')) x.id], ['b', 'c', 'd', 'a']);
+    expect([for (final x in sortTasks(tasks, 'priority')) x.id], ['d', 'b', 'c', 'a']);
+    // Ältere Server nennen die Sortierung noch „important“.
+    expect([for (final x in sortTasks(tasks, 'important')) x.id], ['d', 'b', 'c', 'a']);
     final dated = [
       t('x', 0, due: Period(Granularity.month, DateTime(2026, 12, 1))),
       t('y', 1, due: Period(Granularity.week, DateTime(2026, 11, 9))),
       t('z', 2),
     ];
     expect([for (final x in sortTasks(dated, 'due')) x.id], ['y', 'x', 'z']);
+  });
+
+  test('Priorität: ältere Server senden nur „important“', () {
+    Task parse(Map<String, dynamic> extra) =>
+        Task.fromJson({'id': 't', 'list_id': 'l', 'title': 'x', ...extra});
+    expect(parse({'priority': 2, 'important': false}).priority, 2);
+    expect(parse({'priority': 3, 'important': true}).isHighPriority, isTrue);
+    expect(parse({'important': true}).priority, 3);
+    expect(parse({}).priority, 0);
   });
 
   group('websocketUri', () {
@@ -150,7 +161,7 @@ void main() {
       await store.addQuick('l1', 'Milch morgen !');
       expect(store.pendingCount, 1);
       final milk = store.tasksOf('l1').singleWhere((t) => t.title == 'Milch');
-      expect(milk.important, isTrue);
+      expect(milk.priority, 1);
       expect(milk.due, Period.day(DateTime(2026, 11, 1)));
       expect(cache.outbox, isNotNull);
     });
@@ -178,10 +189,21 @@ void main() {
       expect(jsonDecode(cache.outbox!), isEmpty);
     });
 
+    test('Eine Prioritätsänderung ist sofort sichtbar und geht als priority an den Server', () async {
+      await store.updateTask(store.task('t1')!, {'priority': 2});
+      expect(store.task('t1')!.priority, 2);
+      expect(store.important, isEmpty);
+      await store.updateTask(store.task('t1')!, {'priority': 3});
+      expect(store.important.map((t) => t.id), ['t1']);
+
+      await reconnect();
+      expect(connection.calls.map((c) => c.$2['priority']), [2, 3]);
+    });
+
     test('Eine noch nicht gesendete Aufgabe zu löschen verwirft alle ihre Änderungen', () async {
       await store.addQuick('l1', 'Milch');
       final milk = store.tasksOf('l1').singleWhere((t) => t.title == 'Milch');
-      await store.setImportant(milk, true);
+      await store.setPriority(milk, 3);
       await store.deleteTask(milk);
       expect(store.pendingCount, 0);
       expect(store.tasksOf('l1').map((t) => t.title), ['Steuer']);
@@ -263,13 +285,14 @@ void main() {
       expect(store.myDay, isEmpty);
     });
 
-    test('addQuick erkennt Fälligkeit und Wichtig auf dem Gerät', () async {
+    test('addQuick erkennt Fälligkeit und Priorität auf dem Gerät', () async {
       await signIn();
       await store.addQuick('l1', 'Steuer KW 47 !');
       final create = connection.calls.singleWhere((c) => c.$1 == 'thask/task/create').$2;
       expect(create['title'], 'Steuer');
       expect(create['due'], {'granularity': 'week', 'start': '2026-11-16'});
-      expect(create['important'], true);
+      expect(create['priority'], 1);
+      expect(create.containsKey('important'), isFalse);
       expect(create.containsKey('due_time'), isFalse);
     });
 
@@ -315,6 +338,7 @@ void main() {
       final views = {for (final v in data['views'] as List) (v as Map)['id']: v};
       expect(views.keys, containsAll(['my_day', 'this_week', 'this_month', 'important', 'planned', 'list:l1', 'list:l2']));
       final list = (views['list:l1'] as Map)['tasks'] as List;
+      expect((list.single as Map)['priority'], 0);
       expect(list.map((t) => (t as Map)['title']), ['Steuer']);
       expect((list.single as Map)['due'], 'KW 44');
       expect((list.single as Map)['overdue'], isFalse);
@@ -330,7 +354,7 @@ void main() {
         'kind': 'task',
         'id': 't3',
         'list_id': 'l1',
-        'item': {'id': 't3', 'list_id': 'l1', 'title': 'Ohne Datum', 'important': true},
+        'item': {'id': 't3', 'list_id': 'l1', 'title': 'Ohne Datum', 'priority': 3},
       });
       await Future<void>.delayed(Duration.zero);
       expect(store.important.map((t) => t.title), ['Ohne Datum']);

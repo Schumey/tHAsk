@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'models.dart';
+import 'priority.dart';
 import 'store.dart';
 import 'views.dart';
 import 'task_detail_screen.dart';
@@ -245,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () => select(const ThisMonthView()),
             ),
             ListTile(
-              leading: const Icon(Icons.star_border),
+              leading: const Icon(Icons.flag_outlined),
               title: const Text('Wichtig'),
               selected: _view is ImportantView,
               trailing: _count(store.important.where((t) => !t.completed).length),
@@ -346,7 +347,9 @@ class _TaskTile extends StatelessWidget {
         child: Icon(Icons.delete_outline, color: theme.colorScheme.onError),
       ),
       onDismissed: (_) => guard(() => store.deleteTask(task)),
-      child: ListTile(
+      child: _PriorityBar(
+        priority: task.priority,
+        child: ListTile(
         onTap: () => Navigator.of(context).push(
           MaterialPageRoute<void>(builder: (_) => TaskDetailScreen(store: store, taskId: task.id)),
         ),
@@ -371,12 +374,28 @@ class _TaskTile extends StatelessWidget {
                   if (steps != null) Text(steps),
                 ],
               ),
-        trailing: IconButton(
-          tooltip: 'Wichtig',
-          icon: Icon(task.important ? Icons.star : Icons.star_border,
-              color: task.important ? Colors.amber.shade700 : null),
-          onPressed: () => guard(() => store.setImportant(task, !task.important)),
         ),
+      ),
+    );
+  }
+}
+
+/// Farbiger Balken am linken Rand einer Zeile; je höher die Priorität, desto breiter.
+class _PriorityBar extends StatelessWidget {
+  const _PriorityBar({required this.priority, required this.child});
+
+  final int priority;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = priorityColor(priority);
+    if (color == null) return child;
+    return Semantics(
+      label: 'Priorität ${priorityName(priority)}',
+      child: DecoratedBox(
+        decoration: BoxDecoration(border: Border(left: BorderSide(color: color, width: priorityBarWidth(priority)))),
+        child: child,
       ),
     );
   }

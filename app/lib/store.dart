@@ -123,8 +123,8 @@ class ThaskStore extends ChangeNotifier {
     return sortTasks(_tasks.values.where((t) => !t.completed && t.due != null && !t.due!.end.isAfter(monthEnd)), 'due');
   }
 
-  /// Alle als wichtig markierten Aufgaben, nach Fälligkeit.
-  List<Task> get important => sortTasks(_tasks.values.where((t) => t.important), 'due');
+  /// „Wichtig“: alle Aufgaben mit Priorität hoch, nach Fälligkeit.
+  List<Task> get important => sortTasks(_tasks.values.where((t) => t.isHighPriority), 'due');
 
   /// Alle Aufgaben mit Fälligkeit, nach Ende des Zeitraums.
   List<Task> get planned => sortTasks(_tasks.values.where((t) => t.due != null), 'due');
@@ -399,6 +399,10 @@ class ThaskStore extends ChangeNotifier {
     await _cache?.saveOutbox(jsonEncode([for (final op in _outbox) op.toJson()]));
   }
 
+  /// Priorität aus einer Änderung; vorgemerkte Änderungen älterer App-Versionen enthalten noch `important`.
+  int _priorityOf(Map<String, dynamic> payload) =>
+      (payload['priority'] as num?)?.toInt() ?? (payload['important'] == true ? 3 : 0);
+
   /// Wirkt eine vorgemerkte Änderung auf den lokalen Stand, damit die Anzeige sofort stimmt.
   void _applyOptimistic(_Op op) {
     final payload = op.payload;
@@ -413,7 +417,8 @@ class ThaskStore extends ChangeNotifier {
           'title': payload['title'],
           'notes': '',
           'completed': false,
-          'important': payload['important'] ?? false,
+          'priority': _priorityOf(payload),
+          'important': _priorityOf(payload) >= 3,
           'due': payload['due'],
           'due_time': payload['due_time'],
           'reminder': null,
@@ -433,7 +438,7 @@ class ThaskStore extends ChangeNotifier {
         if (current == null) return;
         final raw = Map<String, dynamic>.of(current);
         payload.forEach((key, value) {
-          if (key == 'task_id') return;
+          if (key == 'task_id' || key == 'important') return;
           raw[key] = key == 'steps'
               ? [
                   for (final step in value as List)
@@ -445,6 +450,10 @@ class ThaskStore extends ChangeNotifier {
                 ]
               : value;
         });
+        if (payload.containsKey('priority') || payload.containsKey('important')) {
+          raw['priority'] = _priorityOf(payload);
+          raw['important'] = _priorityOf(payload) >= 3;
+        }
         if (payload.containsKey('completed')) {
           raw['completed_at'] = payload['completed'] == true ? op.created : null;
         }
@@ -493,14 +502,14 @@ class ThaskStore extends ChangeNotifier {
     }
   }
 
-  Future<void> addTask(String listId, String title, {Period? due, bool important = false, bool myDay = false}) =>
+  Future<void> addTask(String listId, String title, {Period? due, int priority = 0, bool myDay = false}) =>
       _mutate(
         'thask/task/create',
         {
           'list_id': listId,
           'title': title,
           if (due != null) 'due': due.toJson(),
-          if (important) 'important': true,
+          if (priority > 0) 'priority': priority,
           if (myDay) 'my_day': isoDate(today),
         },
         tempId: _newTempId(),
@@ -520,7 +529,7 @@ class ThaskStore extends ChangeNotifier {
         if (parsed.due != null) 'due': parsed.due!.toJson(),
         if (parsed.dueTime != null) 'due_time': parsed.dueTime,
         if (parsed.recurrence != null) 'recurrence': parsed.recurrence!.toJson(),
-        if (parsed.important) 'important': true,
+        if (parsed.priority > 0) 'priority': parsed.priority,
         if (myDay) 'my_day': isoDate(today),
       },
       tempId: _newTempId(),
@@ -533,7 +542,7 @@ class ThaskStore extends ChangeNotifier {
 
   Future<void> setCompleted(Task task, bool completed) => updateTask(task, {'completed': completed});
 
-  Future<void> setImportant(Task task, bool important) => updateTask(task, {'important': important});
+  Future<void> setPriority(Task task, int priority) => updateTask(task, {'priority': priority});
 
   Future<void> deleteTask(Task task) => _mutate('thask/task/delete', {'task_id': task.id});
 

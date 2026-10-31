@@ -101,11 +101,14 @@ void main() {
     expect(result.due, Period.quarter(2027, 2));
   });
 
-  test('Wichtig', () {
+  test('Priorität', () {
     final result = parse('Zahnarzt anrufen diese Woche !', today);
-    expect(result.important, isTrue);
+    expect(result.priority, 1);
     expect(result.title, 'Zahnarzt anrufen');
-    expect(parse('Hallo!', today).important, isFalse);
+    expect(parse('Zahnarzt anrufen !!', today).priority, 2);
+    expect(parse('Zahnarzt anrufen !!!', today).priority, 3);
+    expect(parse('Zahnarzt anrufen !!!!!', today).priority, 3);
+    expect(parse('Hallo!', today).priority, 0);
   });
 
   test('Token und abgeschaltete Arten', () {
