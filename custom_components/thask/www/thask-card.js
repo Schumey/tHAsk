@@ -629,10 +629,10 @@ const STYLE = `
   .section span { font-weight: 400; }
   .section ha-icon { --mdc-icon-size: 18px; }
   .section.overdue { color: var(--thask-danger); }
-  .task { position: relative; display: flex; align-items: flex-start; gap: 12px; padding: 7px 16px 7px 24px; cursor: pointer; }
-  .task:hover { background: var(--secondary-background-color, rgba(127,127,127,.06)); }
-  /* Priority bar a little inside the card, so a theme's thick card border doesn't hide it. */
-  .task[class*="prio-"]::before { content: ""; position: absolute; left: 8px; top: 5px; bottom: 5px; border-radius: 4px; }
+  /* Rows keep clear of the card's edge, so neither the hover nor the priority bar covers a theme's thick card border. */
+  .task { position: relative; display: flex; align-items: flex-start; gap: 12px; margin: 0 8px; padding: 7px 8px 7px 16px; border-radius: 8px; cursor: pointer; }
+  .task:hover { background: color-mix(in srgb, var(--primary-text-color, #000) 6%, transparent); }
+  .task[class*="prio-"]::before { content: ""; position: absolute; left: 0; top: 5px; bottom: 5px; border-radius: 4px; }
   .task.prio-1::before { width: 3px; background: var(--thask-prio-1); }
   .task.prio-2::before { width: 5px; background: var(--thask-prio-2); }
   .task.prio-3::before { width: 7px; background: var(--thask-prio-3); }
