@@ -1709,4 +1709,5 @@ const STYLE = `
   :host([narrow]) [data-pane="detail"] .detail { display: flex; }
 `;
 
-customElements.define("thask-panel", ThaskPanel);
+// After an update HA loads the module again under a new ?v= URL while the old one is still registered.
+if (!customElements.get("thask-panel")) customElements.define("thask-panel", ThaskPanel);
