@@ -1092,7 +1092,8 @@ const STYLE = `
   button { font: inherit; color: inherit; background: none; border: none; cursor: pointer; padding: 0; }
   input, textarea, select { font: inherit; color: inherit; }
   ha-icon { --mdc-icon-size: 20px; flex: none; }
-  .app { display: grid; grid-template-columns: 260px 1fr; height: 100vh; overflow: hidden; }
+  /* --xp-taskbar-height: fixed bottom bar of the HomeAssistantXP theme, 0 without it */
+  .app { display: grid; grid-template-columns: 260px 1fr; height: calc(100vh - var(--xp-taskbar-height, 0px)); overflow: hidden; }
   .app.has-detail { grid-template-columns: 260px 1fr 360px; }
   .sidebar { background: var(--thask-sidebar); border-right: 1px solid var(--thask-divider); overflow-y: auto; padding: 8px 0; display: flex; flex-direction: column; }
   .search { display: flex; align-items: center; gap: 8px; margin: 8px 12px; padding: 0 10px; border-radius: 8px; background: rgba(127, 127, 127, 0.12); color: var(--thask-muted); }
