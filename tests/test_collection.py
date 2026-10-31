@@ -54,6 +54,41 @@ def test_completing_recurring_task_creates_next(collection, list_id):
     assert [step.completed for step in following.steps] == [False]
 
 
+def next_due(collection, task):
+    collection.update_task(task.id, {"completed": True}, TODAY)
+    return next(item for item in collection.tasks.values() if not item.completed and item.title == task.title)
+
+
+def test_recurrence_on_several_weekdays(collection, list_id):
+    # Wednesday and Saturday; TODAY is Tuesday 3 Nov.
+    recurrence = {"unit": "week", "interval": 1, "weekdays": [5, 2]}
+    task = collection.create_task(list_id, "Blumen", due=Period.day(date(2026, 11, 4)).as_dict(), recurrence=recurrence)
+    task = next_due(collection, task)
+    assert task.due == Period.day(date(2026, 11, 7))
+    assert task.recurrence.weekdays == (2, 5)
+    assert next_due(collection, task).due == Period.day(date(2026, 11, 11))
+
+    # Overdue since October: the next one is the first matching day from today on.
+    task = collection.create_task(list_id, "Alt", due=Period.day(date(2026, 10, 3)).as_dict(), recurrence=recurrence)
+    assert next_due(collection, task).due == Period.day(date(2026, 11, 4))
+
+
+def test_every_other_week_on_weekdays(collection, list_id):
+    # Monday and Thursday every other week, starting Monday 2 Nov.
+    recurrence = {"unit": "week", "interval": 2, "weekdays": [0, 3]}
+    task = collection.create_task(list_id, "Training", due=Period.day(date(2026, 11, 2)).as_dict(), recurrence=recurrence)
+    task = next_due(collection, task)
+    assert task.due == Period.day(date(2026, 11, 5))
+    assert next_due(collection, task).due == Period.day(date(2026, 11, 16))
+
+
+def test_weekdays_only_for_weekly_recurrences():
+    task = Task(id="1", list_id="l", title="t")
+    task.apply({"recurrence": {"unit": "month", "weekdays": [1, 2]}})
+    assert task.recurrence.weekdays == ()
+    assert "weekdays" not in task.as_dict()["recurrence"]
+
+
 def test_completing_twice_does_not_duplicate(collection, list_id):
     task = collection.create_task(
         list_id, "Wöchentlich", due=Period.iso_week(2026, 45).as_dict(), recurrence={"unit": "week"}

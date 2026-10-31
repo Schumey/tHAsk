@@ -140,15 +140,30 @@ String isoDate(DateTime d) =>
     '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
 class Recurrence {
-  const Recurrence(this.unit, this.interval);
+  const Recurrence(this.unit, this.interval, [this.weekdays = const []]);
 
   final Granularity unit;
   final int interval;
 
-  factory Recurrence.fromJson(Map<String, dynamic> json) =>
-      Recurrence(Granularity.values.byName(json['unit'] as String), (json['interval'] as num?)?.toInt() ?? 1);
+  /// Wochentage einer wöchentlichen Wiederholung, 0 = Montag … 6 = Sonntag (wie in der Integration).
+  /// Leer heißt: am Wochentag des Fälligkeitstags.
+  final List<int> weekdays;
 
-  Map<String, dynamic> toJson() => {'unit': unit.name, 'interval': interval};
+  factory Recurrence.fromJson(Map<String, dynamic> json) {
+    final unit = Granularity.values.byName(json['unit'] as String);
+    final days = unit == Granularity.week ? (json['weekdays'] as List<dynamic>? ?? const []) : const [];
+    return Recurrence(
+      unit,
+      (json['interval'] as num?)?.toInt() ?? 1,
+      ({for (final d in days) (d as num).toInt()}.toList()..sort()),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'unit': unit.name,
+        'interval': interval,
+        if (weekdays.isNotEmpty) 'weekdays': weekdays,
+      };
 }
 
 class TaskStep {

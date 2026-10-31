@@ -99,6 +99,34 @@ def test_recurrence():
     assert result.due == Period.quarter(2027, 2)
 
 
+def test_recurrence_on_several_weekdays():
+    # TODAY is a Tuesday.
+    result = parse("Blumen gießen jeden Mittwoch und Samstag", TODAY)
+    assert result.title == "Blumen gießen"
+    assert (result.recurrence.unit, result.recurrence.weekdays) == (Granularity.WEEK, (2, 5))
+    assert result.due == Period.day(date(2026, 11, 4))
+
+    result = parse("Sport jeden Mo, Mi und Fr um 18 Uhr", TODAY)
+    assert result.recurrence.weekdays == (0, 2, 4)
+    assert (result.title, result.due_time) == ("Sport", "18:00")
+
+    result = parse("Training alle 2 Wochen am Montag und Donnerstag", TODAY)
+    assert (result.recurrence.interval, result.recurrence.weekdays) == (2, (0, 3))
+    assert result.title == "Training"
+
+    assert parse("Yoga montags und donnerstags", TODAY).recurrence.weekdays == (0, 3)
+    assert parse("Laufen jeden Mi. + Sa.", TODAY).recurrence.weekdays == (2, 5)
+    assert parse("Gym every Tue and Thu", TODAY).due == Period.day(TODAY)
+    assert parse("Zeitung werktags", TODAY).recurrence.weekdays == (0, 1, 2, 3, 4)
+    assert parse("Putzen jedes Wochenende", TODAY).due == Period.day(date(2026, 11, 7))
+
+    # One weekday needs no list, the due day says it.
+    assert parse("Müll montags", TODAY).recurrence.weekdays == ()
+    # Short names alone, or inside words, are not weekdays.
+    assert parse("Montags-Meeting vorbereiten", TODAY).recurrence is None
+    assert parse("Rechnungen jeden Monat", TODAY).recurrence.unit is Granularity.MONTH
+
+
 def test_priority():
     result = parse("Zahnarzt anrufen diese Woche !", TODAY)
     assert result.priority == 1 and result.title == "Zahnarzt anrufen"

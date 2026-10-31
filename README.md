@@ -31,8 +31,8 @@ Beim ersten Start wird die Liste „Aufgaben“ angelegt.
 Nach dem Einrichten erscheint **tHAsk** in der HA-Seitenleiste (auch in der Companion-App auf dem Handy):
 
 - Intelligente Listen **Mein Tag**, **Wichtig** (Priorität Hoch), **Geplant** (gruppiert nach Überfällig / Diese Woche / Diesen Monat / Später), **Diese Woche** und **Diesen Monat** (alles, was bis Monatsende fällig ist, inkl. Überfälligem), darunter die eigenen Listen (mit Gruppen).
-- **Schnelleingabe** mit Erkennung, z. B. „Reifen wechseln nächsten Monat !“, „Steuer KW 47“, „Rechnungen ablegen jeden Monat“, „Zahnarzt morgen um 9:30“. Erkanntes wird als Chip angezeigt; ein Klick auf den Chip nimmt die Erkennung zurück.
-- **Detailbereich**: Schritte, „Mein Tag“, Fälligkeit als Tag/Woche/Monat/Quartal/Jahr mit Vor-/Zurück-Pfeilen, Erinnerung, Wiederholung, Liste, Notizen.
+- **Schnelleingabe** mit Erkennung, z. B. „Reifen wechseln nächsten Monat !“, „Steuer KW 47“, „Rechnungen ablegen jeden Monat“, „Blumen gießen jeden Mi und Sa“, „Training alle 2 Wochen Mo und Do“, „Zeitung werktags“, „Zahnarzt morgen um 9:30“. Erkanntes wird als Chip angezeigt; ein Klick auf den Chip nimmt die Erkennung zurück.
+- **Detailbereich**: Schritte, „Mein Tag“, Fälligkeit als Tag/Woche/Monat/Quartal/Jahr mit Vor-/Zurück-Pfeilen, Erinnerung, Wiederholung (wöchentlich auch an mehreren Wochentagen), Liste, Notizen.
 - Aufgaben per Drag & Drop sortieren oder auf eine andere Liste in der Seitenleiste ziehen.
 - **Suche** (oben in der Seitenleiste) durchsucht alle Listen nach Titel, Notizen, Schritten und Kategorien; mehrere Wörter müssen alle vorkommen.
 - Listen anlegen (unten in der Seitenleiste), umbenennen (auf den Titel klicken), Gruppe per Auswahl setzen (vorhandene Gruppen, „Keine Gruppe“ oder „Neue Gruppe …“), löschen und per Drag & Drop in der Seitenleiste anordnen.
@@ -74,7 +74,7 @@ Beispiel: Erinnerung als Push aufs Handy – Automation mit Trigger *Event* `tha
 
 ## Import aus MS To-Do
 
-Übernommen werden Listen, Aufgaben, Notizen, Schritte, Fälligkeit, Erinnerung, Wiederholung, Priorität (hoch/niedrig, normal = keine), Kategorien und erledigte Aufgaben. Nicht übernommen werden „Mein Tag“ (gibt die Microsoft-API nicht her), Listengruppen und Anhänge.
+Übernommen werden Listen, Aufgaben, Notizen, Schritte, Fälligkeit, Erinnerung, Wiederholung (auch an mehreren Wochentagen), Priorität (hoch/niedrig, normal = keine), Kategorien und erledigte Aufgaben. Nicht übernommen werden „Mein Tag“ (gibt die Microsoft-API nicht her), Listengruppen und Anhänge.
 
 ### 1. App bei Microsoft registrieren (einmalig, ca. 5 Minuten)
 

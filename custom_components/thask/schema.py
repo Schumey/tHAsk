@@ -36,6 +36,8 @@ RECURRENCE_SCHEMA = vol.Schema(
     {
         vol.Required("unit"): vol.In(GRANULARITIES),
         vol.Optional("interval", default=1): vol.All(vol.Coerce(int), vol.Range(min=1)),
+        # Only for weekly recurrences: 0 = Monday … 6 = Sunday.
+        vol.Optional("weekdays"): [vol.All(vol.Coerce(int), vol.Range(min=0, max=6))],
     }
 )
 

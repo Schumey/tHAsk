@@ -20,24 +20,55 @@ def utc_now_iso() -> str:
 
 @dataclass(slots=True)
 class Recurrence:
-    """Repeat every `interval` units. The next due period keeps the task's granularity."""
+    """Repeat every `interval` units. The next due period keeps the task's granularity.
+
+    Weekly recurrences of a day can name several weekdays (0 = Monday): "every Wednesday and Saturday",
+    with an interval "every other week on Monday and Thursday".
+    """
 
     unit: Granularity
     interval: int = 1
+    weekdays: tuple[int, ...] = ()
+
+    def __post_init__(self) -> None:
+        self.weekdays = tuple(sorted({int(day) for day in self.weekdays if 0 <= int(day) <= 6}))
 
     def next_period(self, period: Period, today: date) -> Period:
         """The next period after `period` that has not already ended before today."""
+        if self.weekdays and self.unit is Granularity.WEEK and period.granularity is Granularity.DAY:
+            return Period.day(self._next_weekday(period.start, today))
         following = period.shift(self.interval, self.unit)
         while following.end < today:
             following = following.shift(self.interval, self.unit)
         return following
 
+    def _next_weekday(self, day: date, today: date) -> date:
+        # Weeks are counted from the week of the current due day, so "every other week" stays in step.
+        anchor = day - timedelta(days=day.weekday())
+        while True:
+            day += timedelta(days=1)
+            weeks = (day - anchor).days // 7
+            if weeks % self.interval == 0 and day.weekday() in self.weekdays and day >= today:
+                return day
+
+    def first_day(self, today: date) -> date:
+        """The first of the weekdays from today on, for a new task without a due date."""
+        return next(today + timedelta(days=offset) for offset in range(7) if (today.weekday() + offset) % 7 in self.weekdays)
+
+    def copy(self) -> Recurrence:
+        return Recurrence(self.unit, self.interval, self.weekdays)
+
     def as_dict(self) -> dict[str, Any]:
-        return {"unit": self.unit.value, "interval": self.interval}
+        data: dict[str, Any] = {"unit": self.unit.value, "interval": self.interval}
+        if self.weekdays:
+            data["weekdays"] = list(self.weekdays)
+        return data
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Recurrence:
-        return cls(Granularity(data["unit"]), int(data.get("interval", 1)))
+        unit = Granularity(data["unit"])
+        weekdays = tuple(data.get("weekdays") or ()) if unit is Granularity.WEEK else ()
+        return cls(unit, int(data.get("interval", 1)), weekdays)
 
 
 @dataclass(slots=True)
@@ -211,7 +242,7 @@ class Task:
             due=due,
             due_time=self.due_time,
             reminder=reminder,
-            recurrence=Recurrence(self.recurrence.unit, self.recurrence.interval),
+            recurrence=self.recurrence.copy(),
             steps=[Step(new_id(), step.title) for step in self.steps],
             categories=list(self.categories),
             position=self.position,

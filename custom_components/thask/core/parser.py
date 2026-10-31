@@ -45,6 +45,20 @@ _WEEKDAYS = [
     ("sonntag", "sunday"),
 ]
 _WEEKDAY = "|".join(name for names in _WEEKDAYS for name in names)
+# Short names are only understood in recurrences ("jeden Mi und Sa"), alone they are too ambiguous.
+_WEEKDAYS_SHORT = [
+    ("mo", "mon"),
+    ("di", "tue", "tues"),
+    ("mi", "wed"),
+    ("do", "thu", "thur", "thurs"),
+    ("fr", "fri"),
+    ("sa", "sat"),
+    ("so", "sun"),
+]
+_REC_DAY = "(?:" + _WEEKDAY + "|(?:" + "|".join(name for names in _WEEKDAYS_SHORT for name in names) + r")\.?)"
+_REC_DAYS_ADVERB = "|".join(f"{names[0]}s" for names in _WEEKDAYS)
+_DAY_SEP = r"(?:\s*[,/&+]\s*|\s+(?:und|and|u\.)\s+)"
+_EVERY = r"(?:jede[nrs]?|every)"
 _MONTHS = [
     ("januar", "jan"),
     ("februar", "feb"),
@@ -61,7 +75,10 @@ _MONTHS = [
 ]
 _MONTH_FULL = "|".join(full for full, _ in _MONTHS)
 _MONTH_SHORT = "|".join(short for _, short in _MONTHS)
-_NUMBER_WORDS = {"ein": 1, "eine": 1, "einen": 1, "einer": 1, "einem": 1, "zwei": 2, "drei": 3, "vier": 4, "a": 1, "one": 1, "two": 2, "three": 3}
+_NUMBER_WORDS = {
+    "ein": 1, "eine": 1, "einen": 1, "einer": 1, "einem": 1, "zwei": 2, "drei": 3, "vier": 4,
+    "a": 1, "one": 1, "two": 2, "other": 2, "three": 3, "four": 4,
+}
 
 
 @dataclass(slots=True)
@@ -114,8 +131,12 @@ def _number(word: str) -> int:
 
 
 def _weekday_index(word: str) -> int:
-    word = word.lower()
-    return next(index for index, names in enumerate(_WEEKDAYS) if word in names)
+    word = word.lower().rstrip(".")
+    for table in (_WEEKDAYS, _WEEKDAYS_SHORT):
+        for index, names in enumerate(table):
+            if word in names or (word.endswith("s") and word[:-1] in names):
+                return index
+    raise ValueError(word)
 
 
 def _month_index(word: str) -> int:
@@ -142,9 +163,21 @@ def _year_for(month: int, day: int, today: date) -> int:
 type Handler = Callable[[re.Match[str], date], dict[str, Any] | None]
 
 
-def _recurring_weekday(match: re.Match[str], today: date) -> dict[str, Any]:
-    day = _next_weekday(today, _weekday_index(match[1]), include_today=True)
-    return {"recurrence": Recurrence(Granularity.WEEK), "due": Period.day(day)}
+def _weekly_on(days: list[int], interval: int, today: date) -> dict[str, Any]:
+    """A weekly recurrence on the given weekdays; one weekday needs no list, the due day says it."""
+    recurrence = Recurrence(Granularity.WEEK, max(1, interval), tuple(days) if len(set(days)) > 1 else ())
+    first = min(_next_weekday(today, day, include_today=True) for day in days)
+    return {"recurrence": recurrence, "due": Period.day(first)}
+
+
+def _recurring_weekdays(match: re.Match[str], today: date) -> dict[str, Any]:
+    days = [_weekday_index(day[0]) for day in _REC_DAY_PATTERN.finditer(match["days"])]
+    return _weekly_on(days, _number(match["n"]) if match["n"] else 1, today)
+
+
+def _recurring_workdays(match: re.Match[str], today: date) -> dict[str, Any]:
+    weekend = re.search("wochenend|weekend", match[0], re.IGNORECASE)
+    return _weekly_on([5, 6] if weekend else [0, 1, 2, 3, 4], 1, today)
 
 
 def _recurring_every_n(match: re.Match[str], today: date) -> dict[str, Any]:
@@ -254,8 +287,31 @@ def _rule(kind: str, pattern: str, handler: Handler) -> tuple[str, re.Pattern[st
     return kind, re.compile(pattern, re.IGNORECASE), handler
 
 
+_REC_DAY_PATTERN = re.compile(rf"{_B}(?:{_REC_DAYS_ADVERB}|{_REC_DAY}){_E}", re.IGNORECASE)
+
 _RULES = [
-    _rule(KIND_RECURRENCE, rf"{_B}(?:jede[nrs]?|every)\s+({_WEEKDAY}){_E}", _recurring_weekday),
+    _rule(
+        KIND_RECURRENCE,
+        rf"{_B}(?:alle|every)\s+(?P<n>\d+|zwei|drei|vier|two|three|four|other)\s+(?:wochen|weeks?)\s+(?:(?:am|an|on)\s+)?"
+        rf"(?P<days>{_REC_DAY}(?:{_DAY_SEP}{_REC_DAY})*){_E}",
+        _recurring_weekdays,
+    ),
+    _rule(
+        KIND_RECURRENCE,
+        rf"{_B}{_EVERY}\s+(?P<n>)(?P<days>{_REC_DAY}(?:{_DAY_SEP}(?:{_EVERY}\s+)?{_REC_DAY})*){_E}",
+        _recurring_weekdays,
+    ),
+    _rule(
+        KIND_RECURRENCE,
+        rf"{_B}(?:werktags|wochentags|(?:an\s+)?werktagen|jeden\s+werktag|every\s+weekday|weekdays"
+        rf"|jedes\s+wochenende|wochenends|every\s+weekend)(?![\w-])",
+        _recurring_workdays,
+    ),
+    _rule(
+        KIND_RECURRENCE,
+        rf"{_B}(?:immer\s+)?(?P<n>)(?P<days>(?:{_REC_DAYS_ADVERB})(?:{_DAY_SEP}(?:{_REC_DAYS_ADVERB}))*)(?![\w-])",
+        _recurring_weekdays,
+    ),
     _rule(
         KIND_RECURRENCE,
         rf"{_B}(?:alle|every)\s+(\d+)\s+(tage|wochen|monate|quartale|jahre|days|weeks|months|quarters|years){_E}",

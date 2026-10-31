@@ -14,6 +14,8 @@ from .period import Granularity, Period
 
 EXTERNAL_PREFIX = "ms_todo:"
 
+_WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+
 _RECURRENCE_UNITS = {
     "daily": Granularity.DAY,
     "weekly": Granularity.WEEK,
@@ -127,10 +129,11 @@ def convert_task(raw: dict[str, Any], options: ImportOptions, tz: tzinfo, result
         if pattern := (raw.get("recurrence") or {}).get("pattern"):
             if unit := _RECURRENCE_UNITS.get(pattern.get("type", "")):
                 fields["recurrence"] = {"unit": unit.value, "interval": max(1, int(pattern.get("interval") or 1))}
-                if unit is Granularity.WEEK and len(pattern.get("daysOfWeek") or []) > 1:
-                    result.warnings.append(
-                        f"„{title}“: wiederholt sich an mehreren Wochentagen, übernommen als wöchentlich"
-                    )
+                days = [_WEEKDAYS.index(day) for day in pattern.get("daysOfWeek") or [] if day in _WEEKDAYS]
+                if unit is Granularity.WEEK and len(days) > 1:
+                    fields["recurrence"]["weekdays"] = sorted(days)
+                    # A week period cannot sit on a weekday; the series needs its day back.
+                    fields["due"] = Period.day(due_day).as_dict()
             else:
                 result.warnings.append(f"„{title}“: Wiederholung „{pattern.get('type')}“ nicht übernommen")
 

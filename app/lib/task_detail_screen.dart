@@ -27,14 +27,22 @@ String _everyText(Recurrence r) {
   return r.interval == 1 ? 'Jeden $one' : 'Alle ${r.interval} $many';
 }
 
-String _recurrenceLabel(Recurrence r) => switch (r.unit) {
-      Granularity.day when r.interval == 1 => 'Täglich',
-      Granularity.week when r.interval == 1 => 'Wöchentlich',
-      Granularity.month when r.interval == 1 => 'Monatlich',
-      Granularity.quarter when r.interval == 1 => 'Vierteljährlich',
-      Granularity.year when r.interval == 1 => 'Jährlich',
-      _ => _everyText(r),
-    };
+const _weekdayNames = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+
+String _recurrenceLabel(Recurrence r) {
+  final label = switch (r.unit) {
+    Granularity.day when r.interval == 1 => 'Täglich',
+    Granularity.week when r.interval == 1 => 'Wöchentlich',
+    Granularity.month when r.interval == 1 => 'Monatlich',
+    Granularity.quarter when r.interval == 1 => 'Vierteljährlich',
+    Granularity.year when r.interval == 1 => 'Jährlich',
+    _ => _everyText(r),
+  };
+  return r.weekdays.isEmpty ? label : '$label: ${[for (final d in r.weekdays) _weekdayNames[d]].join(', ')}';
+}
+
+/// Wochentag eines Datums, 0 = Montag.
+int _weekdayOf(DateTime d) => d.weekday - 1;
 
 /// Alle Eigenschaften einer Aufgabe bearbeiten. Jede Änderung wird sofort an Home Assistant geschickt.
 class TaskDetailScreen extends StatefulWidget {
@@ -187,12 +195,23 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   // -- Wiederholung ----------------------------------------------------------
 
   Future<void> _pickRecurrence(Task task) async {
+    final dueDay = task.due?.granularity == Granularity.day ? task.due!.start : null;
     final result = await showDialog<Recurrence>(
       context: context,
-      builder: (_) => _RecurrenceDialog(initial: task.recurrence),
+      builder: (_) => _RecurrenceDialog(initial: task.recurrence, dueDay: dueDay),
     );
     if (result == null) return;
-    _update({'recurrence': result.toJson()});
+    final patch = <String, dynamic>{'recurrence': result.toJson()};
+    // Die Reihe läuft an Tagen: Fälligkeit auf den nächsten gewählten Wochentag legen, wenn sie keiner ist.
+    if (result.weekdays.isNotEmpty && (dueDay == null || !result.weekdays.contains(_weekdayOf(dueDay)))) {
+      final today = store.today;
+      final from = dueDay != null && dueDay.isAfter(today) ? dueDay : today;
+      final next = [
+        for (var n = 0; n < 7; n++) DateTime(from.year, from.month, from.day + n),
+      ].firstWhere((d) => result.weekdays.contains(_weekdayOf(d)));
+      patch['due'] = Period.day(next).toJson();
+    }
+    _update(patch);
   }
 
   // -- Schritte --------------------------------------------------------------
@@ -460,9 +479,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
 }
 
 class _RecurrenceDialog extends StatefulWidget {
-  const _RecurrenceDialog({this.initial});
+  const _RecurrenceDialog({this.initial, this.dueDay});
 
   final Recurrence? initial;
+  final DateTime? dueDay;
 
   @override
   State<_RecurrenceDialog> createState() => _RecurrenceDialogState();
@@ -471,42 +491,87 @@ class _RecurrenceDialog extends StatefulWidget {
 class _RecurrenceDialogState extends State<_RecurrenceDialog> {
   late int _interval = widget.initial?.interval ?? 1;
   late Granularity _unit = widget.initial?.unit ?? Granularity.week;
+  // Ohne Liste gilt der Wochentag des Fälligkeitstags.
+  late final Set<int> _weekdays = {
+    ...?widget.initial?.weekdays,
+    if ((widget.initial?.weekdays.isEmpty ?? true) && widget.dueDay != null) _weekdayOf(widget.dueDay!),
+  };
+
+  Recurrence get _result => Recurrence(
+        _unit,
+        _interval,
+        _unit == Granularity.week && _weekdays.isNotEmpty ? (_weekdays.toList()..sort()) : const [],
+      );
 
   @override
   Widget build(BuildContext context) {
     final (one, many) = _unitNames[_unit]!;
     return AlertDialog(
       title: const Text('Wiederholung'),
-      content: Row(
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Alle'),
-          IconButton(
-            icon: const Icon(Icons.remove),
-            onPressed: _interval > 1 ? () => setState(() => _interval--) : null,
+          Row(
+            children: [
+              const Text('Alle'),
+              IconButton(
+                icon: const Icon(Icons.remove),
+                onPressed: _interval > 1 ? () => setState(() => _interval--) : null,
+              ),
+              Text('$_interval'),
+              IconButton(icon: const Icon(Icons.add), onPressed: () => setState(() => _interval++)),
+              Expanded(
+                child: DropdownButton<Granularity>(
+                  isExpanded: true,
+                  value: _unit,
+                  items: [
+                    for (final g in Granularity.values)
+                      DropdownMenuItem(
+                        value: g,
+                        child: Text(_interval == 1 ? _unitNames[g]!.$1 : _unitNames[g]!.$2),
+                      ),
+                  ],
+                  onChanged: (g) => setState(() => _unit = g ?? _unit),
+                ),
+              ),
+            ],
           ),
-          Text('$_interval'),
-          IconButton(icon: const Icon(Icons.add), onPressed: () => setState(() => _interval++)),
-          Expanded(
-            child: DropdownButton<Granularity>(
-              isExpanded: true,
-              value: _unit,
-              items: [
-                for (final g in Granularity.values)
-                  DropdownMenuItem(
-                    value: g,
-                    child: Text(_interval == 1 ? _unitNames[g]!.$1 : _unitNames[g]!.$2),
+          if (_unit == Granularity.week) ...[
+            const SizedBox(height: 8),
+            const Text('An'),
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 4,
+              runSpacing: 4,
+              children: [
+                for (var d = 0; d < 7; d++)
+                  FilterChip(
+                    label: Text(_weekdayNames[d]),
+                    showCheckmark: false,
+                    visualDensity: VisualDensity.compact,
+                    selected: _weekdays.contains(d),
+                    // Mindestens ein Tag bleibt gewählt.
+                    onSelected: (on) => setState(() {
+                      if (on) {
+                        _weekdays.add(d);
+                      } else if (_weekdays.length > 1) {
+                        _weekdays.remove(d);
+                      }
+                    }),
                   ),
               ],
-              onChanged: (g) => setState(() => _unit = g ?? _unit),
             ),
-          ),
+          ],
         ],
       ),
       actions: [
         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Abbrechen')),
         FilledButton(
-          onPressed: () => Navigator.pop(context, Recurrence(_unit, _interval)),
-          child: Text('Alle $_interval ${_interval == 1 ? one : many}'),
+          onPressed: () => Navigator.pop(context, _result),
+          child: Text(_unit == Granularity.week && _weekdays.length > 1
+              ? _recurrenceLabel(_result)
+              : 'Alle $_interval ${_interval == 1 ? one : many}'),
         ),
       ],
     );

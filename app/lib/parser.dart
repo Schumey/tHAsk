@@ -58,6 +58,11 @@ const _tokens = {
   '@NEXT@': r'(?:n@AE@chste[nrsm]?|kommende[nrsm]?|next)',
   '@AFTERNEXT@': r'(?:@UE@bern@AE@chste[nrsm]?)',
   '@WEEKDAY@': 'montag|monday|dienstag|tuesday|mittwoch|wednesday|donnerstag|thursday|freitag|friday|samstag|saturday|sonntag|sunday',
+  // Kurzformen nur in Wiederholungen („jeden Mi und Sa“), allein sind sie zu mehrdeutig.
+  '@RECDAY@': r'(?:@WEEKDAY@|(?:mo|mon|di|tue|tues|mi|wed|do|thu|thur|thurs|fr|fri|sa|sat|so|sun)\.?)',
+  '@RECADVERB@': 'montags|dienstags|mittwochs|donnerstags|freitags|samstags|sonntags',
+  '@DAYSEP@': r'(?:\s*[,/&+]\s*|\s+(?:und|and|u\.)\s+)',
+  '@EVERY@': r'(?:jede[nrs]?|every)',
   '@MONTHFULL@': r'januar|februar|m@AE@rz|april|mai|juni|juli|august|september|oktober|november|dezember',
   '@MONTHSHORT@': r'jan|feb|m@AE@r|mrz|apr|mai|jun|jul|aug|sept|sep|okt|nov|dez',
 };
@@ -102,8 +107,18 @@ final _monthPatterns = [for (final (full, short) in _months) RegExp('^(?:${_expa
 
 const _numberWords = {
   'ein': 1, 'eine': 1, 'einen': 1, 'einer': 1, 'einem': 1, 'zwei': 2, 'drei': 3, 'vier': 4,
-  'a': 1, 'one': 1, 'two': 2, 'three': 3,
+  'a': 1, 'one': 1, 'two': 2, 'other': 2, 'three': 3, 'four': 4,
 };
+
+const _weekdaysShort = [
+  ['mo', 'mon'],
+  ['di', 'tue', 'tues'],
+  ['mi', 'wed'],
+  ['do', 'thu', 'thur', 'thurs'],
+  ['fr', 'fri'],
+  ['sa', 'sat'],
+  ['so', 'sun'],
+];
 
 Granularity _unit(String word) {
   final w = word.toLowerCase();
@@ -118,10 +133,13 @@ Granularity _unit(String word) {
 
 int _number(String word) => int.tryParse(word) ?? _numberWords[word.toLowerCase()]!;
 
-/// Index des Wochentags, Montag = 1.
+/// Index des Wochentags, Montag = 1. Versteht auch Kurzformen („Mi.“) und „montags“.
 int _weekdayIndex(String word) {
-  final w = word.toLowerCase();
-  return _weekdays.indexWhere((names) => names.$1 == w || names.$2 == w) + 1;
+  final w = word.toLowerCase().replaceAll(RegExp(r'\.+$'), '');
+  bool matches(List<String> names) =>
+      names.contains(w) || (w.endsWith('s') && names.contains(w.substring(0, w.length - 1)));
+  final full = _weekdays.indexWhere((names) => matches([names.$1, names.$2]));
+  return (full >= 0 ? full : _weekdaysShort.indexWhere(matches)) + 1;
 }
 
 int _monthIndex(String word) {
@@ -152,10 +170,33 @@ DateTime _plusDays(DateTime d, int days) => DateTime(d.year, d.month, d.day + da
 typedef _Fields = Map<String, Object?>;
 typedef _Handler = _Fields? Function(RegExpMatch match, DateTime today);
 
-_Fields _recurringWeekday(RegExpMatch m, DateTime today) => {
-      'recurrence': const Recurrence(Granularity.week, 1),
-      'due': Period.day(_nextWeekday(today, _weekdayIndex(m[1]!), includeToday: true)),
-    };
+/// Wöchentlich an den Tagen (Montag = 1); ein einzelner Tag braucht keine Liste, das sagt der Fälligkeitstag.
+_Fields _weeklyOn(List<int> days, int interval, DateTime today) {
+  final unique = days.toSet().toList()..sort();
+  final first = [for (final d in unique) _nextWeekday(today, d, includeToday: true)]
+      .reduce((a, b) => a.isBefore(b) ? a : b);
+  return {
+    'recurrence': Recurrence(
+      Granularity.week,
+      interval < 1 ? 1 : interval,
+      unique.length > 1 ? [for (final d in unique) d - 1] : const [],
+    ),
+    'due': Period.day(first),
+  };
+}
+
+final _recDayPattern = _re(r'@B@(?:@RECADVERB@|@RECDAY@)@E@');
+
+_Fields _recurringWeekdays(RegExpMatch m, DateTime today) {
+  final days = [for (final d in _recDayPattern.allMatches(m.namedGroup('days')!)) _weekdayIndex(d[0]!)];
+  final n = m.namedGroup('n');
+  return _weeklyOn(days, n == null || n.isEmpty ? 1 : _number(n), today);
+}
+
+_Fields _recurringWorkdays(RegExpMatch m, DateTime today) {
+  final weekend = RegExp('wochenend|weekend', caseSensitive: false).hasMatch(m[0]!);
+  return _weeklyOn(weekend ? [6, 7] : [1, 2, 3, 4, 5], 1, today);
+}
 
 _Fields _recurringEveryN(RegExpMatch m, DateTime today) {
   final unit = _unit(m[2]!);
@@ -265,7 +306,28 @@ class _Rule {
 }
 
 final _rules = [
-  _Rule(kindRecurrence, r'@B@(?:jede[nrs]?|every)\s+(@WEEKDAY@)@E@', _recurringWeekday),
+  _Rule(
+    kindRecurrence,
+    r'@B@(?:alle|every)\s+(?<n>\d+|zwei|drei|vier|two|three|four|other)\s+(?:wochen|weeks?)\s+(?:(?:am|an|on)\s+)?'
+    r'(?<days>@RECDAY@(?:@DAYSEP@@RECDAY@)*)@E@',
+    _recurringWeekdays,
+  ),
+  _Rule(
+    kindRecurrence,
+    r'@B@@EVERY@\s+(?<n>)(?<days>@RECDAY@(?:@DAYSEP@(?:@EVERY@\s+)?@RECDAY@)*)@E@',
+    _recurringWeekdays,
+  ),
+  _Rule(
+    kindRecurrence,
+    r'@B@(?:werktags|wochentags|(?:an\s+)?werktagen|jeden\s+werktag|every\s+weekday|weekdays'
+    r'|jedes\s+wochenende|wochenends|every\s+weekend)(?![\p{L}\p{N}_-])',
+    _recurringWorkdays,
+  ),
+  _Rule(
+    kindRecurrence,
+    r'@B@(?:immer\s+)?(?<n>)(?<days>(?:@RECADVERB@)(?:@DAYSEP@(?:@RECADVERB@))*)(?![\p{L}\p{N}_-])',
+    _recurringWeekdays,
+  ),
   _Rule(
     kindRecurrence,
     r'@B@(?:alle|every)\s+(\d+)\s+(tage|wochen|monate|quartale|jahre|days|weeks|months|quarters|years)@E@',

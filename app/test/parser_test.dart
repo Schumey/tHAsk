@@ -101,6 +101,42 @@ void main() {
     expect(result.due, Period.quarter(2027, 2));
   });
 
+  test('Wiederholung an mehreren Wochentagen', () {
+    var result = parse('Blumen gießen jeden Mittwoch und Samstag', today);
+    expect(result.title, 'Blumen gießen');
+    expect(result.recurrence!.unit, Granularity.week);
+    expect(result.recurrence!.weekdays, [2, 5]);
+    expect(result.due, Period.day(DateTime(2026, 11, 4)));
+
+    result = parse('Sport jeden Mo, Mi und Fr um 18 Uhr', today);
+    expect(result.recurrence!.weekdays, [0, 2, 4]);
+    expect((result.title, result.dueTime), ('Sport', '18:00'));
+
+    result = parse('Training alle 2 Wochen am Montag und Donnerstag', today);
+    expect(result.recurrence!.interval, 2);
+    expect(result.recurrence!.weekdays, [0, 3]);
+    expect(result.title, 'Training');
+
+    expect(parse('Yoga montags und donnerstags', today).recurrence!.weekdays, [0, 3]);
+    expect(parse('Laufen jeden Mi. + Sa.', today).recurrence!.weekdays, [2, 5]);
+    expect(parse('Gym every Tue and Thu', today).due, Period.day(today));
+    expect(parse('Zeitung werktags', today).recurrence!.weekdays, [0, 1, 2, 3, 4]);
+    expect(parse('Putzen jedes Wochenende', today).due, Period.day(DateTime(2026, 11, 7)));
+
+    // Ein einzelner Wochentag braucht keine Liste, das sagt der Fälligkeitstag.
+    expect(parse('Müll montags', today).recurrence!.weekdays, isEmpty);
+    // Kurzformen allein oder in Wörtern sind keine Wochentage.
+    expect(parse('Montags-Meeting vorbereiten', today).recurrence, isNull);
+    expect(parse('Rechnungen jeden Monat', today).recurrence!.unit, Granularity.month);
+  });
+
+  test('Wochentage in JSON', () {
+    final r = Recurrence.fromJson({'unit': 'week', 'interval': 1, 'weekdays': [5, 2]});
+    expect(r.weekdays, [2, 5]);
+    expect(r.toJson(), {'unit': 'week', 'interval': 1, 'weekdays': [2, 5]});
+    expect(Recurrence.fromJson({'unit': 'month', 'weekdays': [1]}).toJson(), {'unit': 'month', 'interval': 1});
+  });
+
   test('Priorität', () {
     final result = parse('Zahnarzt anrufen diese Woche !', today);
     expect(result.priority, 1);

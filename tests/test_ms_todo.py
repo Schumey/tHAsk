@@ -50,6 +50,12 @@ def export():
                     ),
                     graph_task("t22", "Rasen mähen", dueDateTime=due("2026-11-08T00:00:00")),
                     graph_task(
+                        "t5",
+                        "Blumen",
+                        dueDateTime=due("2026-11-04T00:00:00"),
+                        recurrence={"pattern": {"type": "weekly", "interval": 1, "daysOfWeek": ["saturday", "wednesday"]}},
+                    ),
+                    graph_task(
                         "t333",
                         "Erledigt",
                         status="completed",
@@ -88,7 +94,7 @@ def test_dry_run_changes_nothing(collection, export):
     assert collection.dump() == before
     assert result.lists_merged == ["Aufgaben"]
     assert result.lists_created == ["Einkauf"]
-    assert result.tasks_imported == 4
+    assert result.tasks_imported == 5
     assert result.tasks_completed == 1
     assert (result.month_end_candidates, result.sunday_candidates) == (1, 1)
 
@@ -107,6 +113,7 @@ def test_import_converts_fields(collection, export):
     assert steuer.created.startswith("2026-10-12T08:00:00.123456")
     # Midnight UTC is 01:00 local, still the same day.
     assert tasks["Rasen mähen"].due == Period.day(date(2026, 11, 8))
+    assert tasks["Blumen"].recurrence.weekdays == (2, 5)
     assert tasks["Erledigt"].completed and tasks["Erledigt"].completed_at.startswith("2026-10-25T10:00")
     assert tasks["Erinnerung"].reminder == "2026-11-05T07:30:00+00:00"
     assert any("Anhänge" in warning for warning in result.warnings)
@@ -130,7 +137,7 @@ def test_reimport_skips_existing(collection, export):
     count = len(collection.tasks)
     result = import_export(collection, export, ImportOptions(), CET, dry_run=False)
     assert len(collection.tasks) == count
-    assert result.tasks_skipped_existing == 4
+    assert result.tasks_skipped_existing == 5
     assert result.lists_created == []
 
 

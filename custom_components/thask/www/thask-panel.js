@@ -16,7 +16,7 @@ const STRINGS = {
     next_week: "Nächste Woche", next_month: "Nächsten Monat", steps_of: "{0} von {1}",
     rec_day: "Täglich", rec_week: "Wöchentlich", rec_month: "Monatlich", rec_quarter: "Vierteljährlich",
     rec_year: "Jährlich", rec_every: "Alle {0} {1}", units_day: "Tage", units_week: "Wochen",
-    units_month: "Monate", units_quarter: "Quartale", units_year: "Jahre", close: "Schließen",
+    units_month: "Monate", units_quarter: "Quartale", units_year: "Jahre", close: "Schließen", on_weekdays: "An",
     back: "Zurück", loading: "Lade …", not_loaded: "tHAsk ist nicht geladen. Ist die Integration eingerichtet?",
     kind_due: "Fällig", kind_time: "Uhrzeit", kind_recurrence: "Wiederholung", kind_priority: "Priorität",
     ignore: "Nicht erkennen", priority: "Priorität", priority_0: "Keine", priority_1: "Niedrig", priority_2: "Mittel", priority_3: "Hoch", complete: "Erledigt", week_short: "KW",
@@ -38,7 +38,7 @@ const STRINGS = {
     next_week: "Next week", next_month: "Next month", steps_of: "{0} of {1}",
     rec_day: "Daily", rec_week: "Weekly", rec_month: "Monthly", rec_quarter: "Quarterly", rec_year: "Yearly",
     rec_every: "Every {0} {1}", units_day: "days", units_week: "weeks", units_month: "months",
-    units_quarter: "quarters", units_year: "years", close: "Close", back: "Back", loading: "Loading …",
+    units_quarter: "quarters", units_year: "years", close: "Close", on_weekdays: "On", back: "Back", loading: "Loading …",
     not_loaded: "tHAsk is not loaded. Is the integration set up?",
     kind_due: "Due", kind_time: "Time", kind_recurrence: "Repeat", kind_priority: "Priority",
     ignore: "Don't detect", priority: "Priority", priority_0: "None", priority_1: "Low", priority_2: "Medium", priority_3: "High", complete: "Completed", week_short: "Week",
@@ -643,7 +643,7 @@ class ThaskPanel extends HTMLElement {
       meta.push(`<span class="meta">${esc(this.t("steps_of", doneSteps, task.steps.length))}</span>`);
     }
     if (task.due) meta.push(this._dueChip(task));
-    if (task.recurrence) meta.push(`<span class="meta"><ha-icon icon="mdi:repeat"></ha-icon></span>`);
+    if (task.recurrence) meta.push(`<span class="meta" title="${esc(this._recurrenceLabel(task.recurrence))}"><ha-icon icon="mdi:repeat"></ha-icon></span>`);
     if (task.reminder && !task.completed) meta.push(`<span class="meta"><ha-icon icon="mdi:bell-outline"></ha-icon></span>`);
     if (task.notes) meta.push(`<span class="meta"><ha-icon icon="mdi:note-text-outline"></ha-icon></span>`);
     return `
@@ -683,8 +683,17 @@ class ThaskPanel extends HTMLElement {
 
   _recurrenceLabel(recurrence) {
     if (!recurrence) return "";
-    if (recurrence.interval > 1) return this.t("rec_every", recurrence.interval, this.t(`units_${recurrence.unit}`));
-    return this.t(`rec_${recurrence.unit}`);
+    const label = recurrence.interval > 1
+      ? this.t("rec_every", recurrence.interval, this.t(`units_${recurrence.unit}`))
+      : this.t(`rec_${recurrence.unit}`);
+    const days = recurrence.unit === "week" ? recurrence.weekdays || [] : [];
+    return days.length ? `${label}: ${days.map((d) => WEEKDAYS_SHORT[this._lang][d]).join(", ")}` : label;
+  }
+
+  // Weekdays of a weekly recurrence; without a list it is the weekday of the due day.
+  _recurrenceDays(task) {
+    if (task.recurrence?.weekdays?.length) return task.recurrence.weekdays;
+    return task.due?.granularity === "day" ? [weekdayIndex(parseISO(task.due.start))] : [];
   }
 
   _renderDetail() {
@@ -775,6 +784,10 @@ class ThaskPanel extends HTMLElement {
           </select>
           ${task.recurrence ? `<span class="muted">${esc(this.t("every"))}</span><input type="number" min="1" class="field number" data-field="recurrence-interval" value="${task.recurrence.interval}">` : ""}
         </div>
+        ${task.recurrence?.unit === "week" ? `
+          <div class="row weekdays"><span class="muted">${esc(this.t("on_weekdays"))}</span>
+            <div class="segmented">${WEEKDAYS_SHORT[lang].map((name, d) => `<button class="${this._recurrenceDays(task).includes(d) ? "on" : ""}" data-action="recurrence-weekday" data-weekday="${d}">${esc(name)}</button>`).join("")}</div>
+          </div>` : ""}
       </div>
       <div class="card">
         <div class="label"><ha-icon icon="mdi:format-list-bulleted"></ha-icon>${esc(this.t("list"))}</div>
@@ -948,6 +961,22 @@ class ThaskPanel extends HTMLElement {
       case "clear-reminder":
         this._updateTask(task, { reminder: null });
         break;
+      case "recurrence-weekday": {
+        const day = Number(target.dataset.weekday);
+        const current = this._recurrenceDays(task);
+        const weekdays = current.includes(day) ? current.filter((d) => d !== day) : [...current, day].sort();
+        if (!weekdays.length) break;
+        const patch = { recurrence: { ...task.recurrence, weekdays } };
+        // The series runs on days: move the due date to the next chosen weekday unless it already is one.
+        const due = task.due?.granularity === "day" ? parseISO(task.due.start) : null;
+        if (!due || !weekdays.includes(weekdayIndex(due))) {
+          const from = due && due > this._today ? due : this._today;
+          const offset = [0, 1, 2, 3, 4, 5, 6].find((n) => weekdays.includes(weekdayIndex(addDays(from, n))));
+          patch.due = { granularity: "day", start: toISO(addDays(from, offset)) };
+        }
+        this._updateTask(task, patch);
+        break;
+      }
       case "delete-task":
         if (confirm(this.t("delete_task_confirm", task.title))) this._call("thask/task/delete", { task_id: task.id });
         break;
@@ -1269,6 +1298,8 @@ const STYLE = `
   .segmented button { flex: 1 1 auto; padding: 6px 6px; font-size: 12px; border-right: 1px solid var(--thask-divider); }
   .segmented button:last-child { border-right: none; }
   .segmented button.on { background: var(--thask-accent); color: var(--text-primary-color, #fff); }
+  .row.weekdays { margin-top: 8px; }
+  .row.weekdays .segmented { flex: 1; }
   .stepper { display: flex; align-items: center; gap: 4px; }
   .stepper-label { flex: 1; display: flex; flex-direction: column; align-items: center; }
   .stepper-label span { font-size: 12px; color: var(--thask-muted); }
