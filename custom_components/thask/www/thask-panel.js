@@ -11,7 +11,7 @@ const STRINGS = {
     time: "Uhrzeit", reminder: "Erinnerung", recurrence: "Wiederholung", every: "alle", notes: "Notizen",
     notes_hint: "Notiz hinzufügen", list: "Liste", delete: "Löschen", rename: "Umbenennen", group: "Gruppe",
     delete_task_confirm: "Aufgabe „{0}“ löschen?", delete_list_confirm: "Liste „{0}“ mit allen Aufgaben löschen?",
-    group_prompt: "Gruppe für diese Liste (leer = keine):", created: "Erstellt", overdue: "Überfällig",
+    no_group: "Keine Gruppe", new_group: "Neue Gruppe …", group_name: "Name der Gruppe", created: "Erstellt", overdue: "Überfällig",
     search: "Suche", search_results: "Suchergebnisse", later: "Später", this_month: "Diesen Monat", empty: "Keine Aufgaben", today: "Heute", tomorrow: "Morgen",
     next_week: "Nächste Woche", next_month: "Nächsten Monat", steps_of: "{0} von {1}",
     rec_day: "Täglich", rec_week: "Wöchentlich", rec_month: "Monatlich", rec_quarter: "Vierteljährlich",
@@ -33,7 +33,7 @@ const STRINGS = {
     time: "Time", reminder: "Reminder", recurrence: "Repeat", every: "every", notes: "Notes",
     notes_hint: "Add a note", list: "List", delete: "Delete", rename: "Rename", group: "Group",
     delete_task_confirm: "Delete task “{0}”?", delete_list_confirm: "Delete list “{0}” with all its tasks?",
-    group_prompt: "Group for this list (empty = none):", created: "Created", overdue: "Overdue",
+    no_group: "No group", new_group: "New group …", group_name: "Group name", created: "Created", overdue: "Overdue",
     search: "Search", search_results: "Search results", later: "Later", this_month: "This month", empty: "No tasks", today: "Today", tomorrow: "Tomorrow",
     next_week: "Next week", next_month: "Next month", steps_of: "{0} of {1}",
     rec_day: "Daily", rec_week: "Weekly", rec_month: "Monthly", rec_quarter: "Quarterly", rec_year: "Yearly",
@@ -203,6 +203,7 @@ class ThaskPanel extends HTMLElement {
     this._selectedTask = null;
     this._showCompleted = false;
     this._search = "";
+    this._groupMenu = null; // null | "pick" | "new"
     this._pane = "list";
     this._loaded = false;
     this._error = null;
@@ -411,6 +412,7 @@ class ThaskPanel extends HTMLElement {
             <h1 class="view-title"></h1>
             <span class="view-actions"></span>
           </header>
+          <div class="group-menu" hidden></div>
           <div class="quick-add">
             <div class="quick-row">
               <ha-icon icon="mdi:plus"></ha-icon>
@@ -476,6 +478,7 @@ class ThaskPanel extends HTMLElement {
     }
     this._renderSidebar();
     this._renderHeader();
+    this._renderGroupMenu();
     this._renderTasks();
     this._renderChips();
     if (!this._isEditingDetail() || this._detailFor !== this._selectedTask) this._renderDetail();
@@ -546,6 +549,40 @@ class ThaskPanel extends HTMLElement {
       title.innerHTML = `${esc(this._viewTitle())}${sub}`;
       root.querySelector(".view-actions").innerHTML = "";
     }
+  }
+
+  _renderGroupMenu() {
+    const menu = this.shadowRoot.querySelector(".group-menu");
+    const list = this._view.type === "list" && !this._search.trim() ? this._lists.find((l) => l.id === this._view.id) : null;
+    if (!list || !this._groupMenu) {
+      this._groupMenu = null;
+      menu.hidden = true;
+      menu.dataset.state = "";
+      return;
+    }
+    if (menu.dataset.state === this._groupMenu && !menu.hidden) return; // keep the typed name while other data changes
+    menu.dataset.state = this._groupMenu;
+    menu.hidden = false;
+    if (this._groupMenu === "new") {
+      menu.innerHTML = `<input class="group-input" placeholder="${esc(this.t("group_name"))}" autocomplete="off">`;
+      menu.querySelector(".group-input").focus();
+      return;
+    }
+    const groups = [...new Set(this._lists.map((l) => l.group).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+    const item = (label, icon, attrs, on) => `<button class="menu-item ${on ? "on" : ""}" ${attrs}>
+      <ha-icon icon="${icon}"></ha-icon><span>${esc(label)}</span></button>`;
+    menu.innerHTML = [
+      ...groups.map((g) => item(g, g === list.group ? "mdi:check" : "mdi:folder-outline", `data-action="group-set" data-group="${esc(g)}"`, g === list.group)),
+      item(this.t("no_group"), !list.group ? "mdi:check" : "mdi:folder-off-outline", 'data-action="group-set" data-group=""', !list.group),
+      item(this.t("new_group"), "mdi:folder-plus-outline", 'data-action="group-new"', false),
+    ].join("");
+  }
+
+  _setGroup(name) {
+    const list = this._lists.find((l) => l.id === this._view.id);
+    this._groupMenu = null;
+    this._render();
+    if (list && (name || null) !== (list.group || null)) this._call("thask/list/update", { list_id: list.id, group: name || null });
   }
 
   _renderTasks() {
@@ -833,6 +870,10 @@ class ThaskPanel extends HTMLElement {
   }
 
   _onClick(ev) {
+    if (this._groupMenu && !ev.target.closest(".group-menu, [data-action='list-group']")) {
+      this._groupMenu = null;
+      this._render();
+    }
     const target = ev.target.closest("[data-action]");
     if (!target) return;
     const action = target.dataset.action;
@@ -845,6 +886,7 @@ class ThaskPanel extends HTMLElement {
         this._selectedTask = null;
         this._showCompleted = false;
         this._search = "";
+        this._groupMenu = null;
         this._pane = "list";
         this._render();
         break;
@@ -920,12 +962,17 @@ class ThaskPanel extends HTMLElement {
         }
         break;
       }
-      case "list-group": {
-        const list = this._lists.find((l) => l.id === this._view.id);
-        const group = list && prompt(this.t("group_prompt"), list.group || "");
-        if (group !== null && group !== undefined) this._call("thask/list/update", { list_id: list.id, group: group.trim() || null });
+      case "list-group":
+        this._groupMenu = this._groupMenu ? null : "pick";
+        this._render();
         break;
-      }
+      case "group-set":
+        this._setGroup(target.dataset.group);
+        break;
+      case "group-new":
+        this._groupMenu = "new";
+        this._render();
+        break;
     }
   }
 
@@ -965,6 +1012,14 @@ class ThaskPanel extends HTMLElement {
 
   _onKeyDown(ev) {
     const target = ev.target;
+    if (target.matches?.(".group-input")) {
+      if (ev.key === "Enter" && target.value.trim()) this._setGroup(target.value.trim());
+      if (ev.key === "Escape") {
+        this._groupMenu = null;
+        this._render();
+      }
+      return;
+    }
     if (ev.key === "Enter" && !ev.shiftKey && target.matches?.(".title-input, .step-input, .list-name, .new-list-input")) {
       ev.preventDefault();
       if (target.dataset.field === "new-step") this._commitField(target);
@@ -1123,13 +1178,19 @@ const STYLE = `
   .version { padding: 8px 16px 12px; font-size: 12px; color: var(--thask-muted); }
   .new-list { display: flex; align-items: center; gap: 12px; padding: 10px 16px; color: var(--thask-accent); }
   .new-list input { flex: 1; min-width: 0; border: none; background: none; outline: none; }
-  .main { display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
+  .main { position: relative; display: flex; flex-direction: column; min-width: 0; overflow: hidden; }
   .toolbar { display: flex; align-items: center; gap: 8px; padding: 12px 24px 8px; min-height: 64px; }
   .toolbar .menu-slot, .toolbar .back { display: none; }
   .view-title { flex: 1; margin: 0; font-size: 24px; font-weight: 500; color: var(--thask-accent); display: flex; flex-direction: column; min-width: 0; }
   .view-title .subtitle { font-size: 13px; font-weight: 400; color: var(--thask-muted); }
   .list-name { font-size: 24px; font-weight: 500; color: var(--thask-accent); border: none; background: none; outline: none; padding: 0; width: 100%; border-bottom: 1px solid transparent; }
   .list-name:focus { border-bottom-color: var(--thask-accent); }
+  .group-menu { position: absolute; right: 24px; top: 56px; z-index: 5; min-width: 200px; padding: 6px 0; border-radius: 8px; background: var(--thask-surface); box-shadow: var(--ha-card-box-shadow, 0 4px 16px rgba(0,0,0,0.3)); }
+  .group-menu[hidden] { display: none; }
+  .menu-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 16px; text-align: left; color: var(--thask-text); }
+  .menu-item:hover { background: rgba(127, 127, 127, 0.14); }
+  .menu-item.on { color: var(--thask-accent); }
+  .group-input { box-sizing: border-box; width: calc(100% - 24px); margin: 4px 12px; padding: 8px; border: 1px solid var(--thask-accent); border-radius: 6px; background: none; outline: none; color: var(--thask-text); }
   .view-actions { display: flex; gap: 4px; align-items: center; }
   .sort { display: inline-flex; align-items: center; gap: 4px; color: var(--thask-muted); padding: 0 4px; }
   .sort select { border: none; background: none; color: var(--thask-text); font-size: 13px; cursor: pointer; max-width: 130px; }
