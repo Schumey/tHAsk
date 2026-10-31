@@ -222,6 +222,24 @@ class ThaskStore extends ChangeNotifier {
     _retry = Timer(Duration(seconds: seconds), _run);
   }
 
+  /// Wartet, bis die Verbindung steht und der erste Stand vom Server da ist; false nach Ablauf der Zeit.
+  Future<bool> waitUntilConnected(Duration timeout) async {
+    if (connection == LinkState.connected) return true;
+    final result = Completer<bool>();
+    void check() {
+      if (connection == LinkState.connected && !result.isCompleted) result.complete(true);
+    }
+
+    addListener(check);
+    final timer = Timer(timeout, () {
+      if (!result.isCompleted) result.complete(false);
+    });
+    final connected = await result.future;
+    removeListener(check);
+    timer.cancel();
+    return connected;
+  }
+
   /// Nach Rückkehr in die App sofort neu verbinden statt auf den Timer zu warten.
   void resume() {
     if (_stopped || _address == null || connection == LinkState.connected) return;

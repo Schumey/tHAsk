@@ -5,15 +5,21 @@ import 'home_screen.dart';
 import 'login_screen.dart';
 import 'snapshot_cache.dart';
 import 'store.dart';
+import 'widget_bridge.dart';
 
-void main() {
-  runApp(ThaskApp(store: ThaskStore(SecureCredentialStore(), cache: PrefsSnapshotCache())));
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final store = ThaskStore(SecureCredentialStore(), cache: PrefsSnapshotCache());
+  final bridge = WidgetBridge(store);
+  await bridge.attach();
+  runApp(ThaskApp(store: store, bridge: bridge));
 }
 
 class ThaskApp extends StatefulWidget {
-  const ThaskApp({super.key, required this.store});
+  const ThaskApp({super.key, required this.store, this.bridge});
 
   final ThaskStore store;
+  final WidgetBridge? bridge;
 
   @override
   State<ThaskApp> createState() => _ThaskAppState();
@@ -49,7 +55,7 @@ class _ThaskAppState extends State<ThaskApp> with WidgetsBindingObserver {
         builder: (context, _) {
           if (!widget.store.loaded) return const Scaffold(body: Center(child: CircularProgressIndicator()));
           if (!widget.store.hasCredentials) return LoginScreen(store: widget.store);
-          return HomeScreen(store: widget.store);
+          return HomeScreen(store: widget.store, launch: widget.bridge?.launch);
         },
       ),
     );

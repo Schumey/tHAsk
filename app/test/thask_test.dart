@@ -5,6 +5,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:thask/ha_client.dart';
 import 'package:thask/models.dart';
 import 'package:thask/store.dart';
+import 'package:thask/views.dart';
+import 'package:thask/widget_bridge.dart';
 
 void main() {
   group('Period', () {
@@ -195,6 +197,28 @@ void main() {
       }
       await Future<void>.delayed(Duration.zero);
       expect(store.thisMonth.map((t) => t.title), ['b', 'a']);
+    });
+
+    test('Widget-Daten enthalten alle Ansichten mit offenen Aufgaben', () async {
+      await signIn();
+      connection.emit({
+        'type': 'change',
+        'action': 'created',
+        'kind': 'task',
+        'id': 't4',
+        'list_id': 'l1',
+        'item': {'id': 't4', 'list_id': 'l1', 'title': 'Erledigt', 'completed': true},
+      });
+      await Future<void>.delayed(Duration.zero);
+      final data = jsonDecode(WidgetBridge.encode(store)) as Map<String, dynamic>;
+      final views = {for (final v in data['views'] as List) (v as Map)['id']: v};
+      expect(views.keys, containsAll(['my_day', 'this_week', 'this_month', 'important', 'planned', 'list:l1', 'list:l2']));
+      final list = (views['list:l1'] as Map)['tasks'] as List;
+      expect(list.map((t) => (t as Map)['title']), ['Steuer']);
+      expect((list.single as Map)['due'], 'KW 44');
+      expect((list.single as Map)['overdue'], isFalse);
+      expect(ViewRef.fromId('list:l1'), isA<ListRef>());
+      expect(ViewRef.fromId('gibt-es-nicht'), isA<MyDayView>());
     });
 
     test('Wichtig und Geplant', () async {

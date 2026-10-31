@@ -2,42 +2,16 @@ import 'package:flutter/material.dart';
 
 import 'models.dart';
 import 'store.dart';
+import 'views.dart';
 import 'task_detail_screen.dart';
 
-/// Welche Ansicht gerade gezeigt wird: eine intelligente Liste oder eine eigene.
-sealed class ViewRef {
-  const ViewRef();
-}
-
-class MyDayView extends ViewRef {
-  const MyDayView();
-}
-
-class ThisWeekView extends ViewRef {
-  const ThisWeekView();
-}
-
-class ThisMonthView extends ViewRef {
-  const ThisMonthView();
-}
-
-class ImportantView extends ViewRef {
-  const ImportantView();
-}
-
-class PlannedView extends ViewRef {
-  const PlannedView();
-}
-
-class ListRef extends ViewRef {
-  const ListRef(this.listId);
-  final String listId;
-}
-
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.store});
+  const HomeScreen({super.key, required this.store, this.launch});
 
   final ThaskStore store;
+
+  /// Aufforderung aus dem Android-Widget: Ansicht öffnen und Schnelleingabe fokussieren.
+  final ValueNotifier<Uri?>? launch;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -50,29 +24,37 @@ class _HomeScreenState extends State<HomeScreen> {
 
   ThaskStore get store => widget.store;
 
+  final _entryFocus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    widget.launch?.addListener(_handleLaunch);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _handleLaunch());
+  }
+
+  void _handleLaunch() {
+    final uri = widget.launch?.value;
+    if (uri == null || !mounted) return;
+    widget.launch!.value = null;
+    final view = uri.queryParameters['view'];
+    setState(() {
+      if (view != null) _view = ViewRef.fromId(view);
+    });
+    if (uri.host == 'add') _entryFocus.requestFocus();
+  }
+
   @override
   void dispose() {
+    widget.launch?.removeListener(_handleLaunch);
+    _entryFocus.dispose();
     _entry.dispose();
     super.dispose();
   }
 
-  String get _title => switch (_view) {
-        MyDayView() => 'Mein Tag',
-        ThisWeekView() => 'Diese Woche',
-        ThisMonthView() => 'Diesen Monat',
-        ImportantView() => 'Wichtig',
-        PlannedView() => 'Geplant',
-        ListRef(:final listId) => store.list(listId)?.name ?? 'Liste',
-      };
+  String get _title => _view.title(store);
 
-  List<Task> get _tasks => switch (_view) {
-        MyDayView() => store.myDay,
-        ThisWeekView() => store.thisWeek,
-        ThisMonthView() => store.thisMonth,
-        ImportantView() => store.important,
-        PlannedView() => store.planned,
-        ListRef(:final listId) => store.tasksOf(listId),
-      };
+  List<Task> get _tasks => _view.tasks(store);
 
   /// Liste, in die neue Aufgaben kommen: die gewählte, sonst die erste.
   String? get _targetList => switch (_view) {
@@ -207,6 +189,7 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
         child: TextField(
           controller: _entry,
+          focusNode: _entryFocus,
           enabled: !_sending,
           textInputAction: TextInputAction.send,
           onSubmitted: (_) => _submit(),
@@ -373,6 +356,7 @@ class _TaskTile extends StatelessWidget {
             ? null
             : Wrap(
                 spacing: 12,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   if (dueText != null)
                     Text(dueText, style: TextStyle(color: overdue ? theme.colorScheme.error : null)),
