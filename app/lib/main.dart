@@ -3,10 +3,11 @@ import 'package:flutter/material.dart';
 import 'credentials.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
+import 'snapshot_cache.dart';
 import 'store.dart';
 
 void main() {
-  runApp(ThaskApp(store: ThaskStore(SecureCredentialStore())));
+  runApp(ThaskApp(store: ThaskStore(SecureCredentialStore(), cache: PrefsSnapshotCache())));
 }
 
 class ThaskApp extends StatefulWidget {

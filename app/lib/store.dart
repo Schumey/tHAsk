@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
@@ -14,15 +15,24 @@ abstract class CredentialStore {
   Future<void> clear();
 }
 
+/// Letzter bekannter Stand, damit die App auch ohne Verbindung etwas zeigt.
+abstract class SnapshotCache {
+  Future<String?> load();
+  Future<void> save(String json);
+  Future<void> clear();
+}
+
 typedef ClientFactory = Future<HaConnection> Function(String address, String token);
 
 /// Hält Listen und Aufgaben, hält die Verbindung zu Home Assistant und wendet Änderungen an.
 class ThaskStore extends ChangeNotifier {
-  ThaskStore(this._credentials, {ClientFactory? connect, DateTime Function()? clock})
+  ThaskStore(this._credentials, {this._cache, ClientFactory? connect, DateTime Function()? clock})
       : _connect = connect ?? HaClient.connect,
         _clock = clock ?? DateTime.now;
 
   final CredentialStore _credentials;
+  final SnapshotCache? _cache;
+  Timer? _saveTimer;
   final ClientFactory _connect;
   final DateTime Function() _clock;
 
@@ -33,6 +43,11 @@ class ThaskStore extends ChangeNotifier {
 
   final Map<String, TaskList> _lists = {};
   final Map<String, Task> _tasks = {};
+  // Unveränderte Server-Daten, aus denen der Zwischenspeicher geschrieben wird.
+  final Map<String, Map<String, dynamic>> _rawLists = {};
+  final Map<String, Map<String, dynamic>> _rawTasks = {};
+  /// Zeigt, dass die Anzeige aus dem Zwischenspeicher stammt und noch nicht aktuell ist.
+  bool fromCache = false;
   late DateTime today = dateOnly(_clock());
 
   String? _address;
@@ -61,6 +76,12 @@ class ThaskStore extends ChangeNotifier {
     return sortTasks(_tasks.values.where((t) => !t.completed && t.due != null && !t.due!.end.isAfter(weekEnd)), 'due');
   }
 
+  /// Alle als wichtig markierten Aufgaben, nach Fälligkeit.
+  List<Task> get important => sortTasks(_tasks.values.where((t) => t.important), 'due');
+
+  /// Alle Aufgaben mit Fälligkeit, nach Ende des Zeitraums.
+  List<Task> get planned => sortTasks(_tasks.values.where((t) => t.due != null), 'due');
+
   int openCount(String listId) => _tasks.values.where((t) => t.listId == listId && !t.completed).length;
 
   // -- Verbindung ----------------------------------------------------------
@@ -76,8 +97,32 @@ class ThaskStore extends ChangeNotifier {
     _address = saved.address;
     _token = saved.token;
     _stopped = false;
+    await _loadCache();
     unawaited(_run());
     notifyListeners();
+  }
+
+  Future<void> _loadCache() async {
+    final cached = await _cache?.load();
+    if (cached == null) return;
+    try {
+      _apply({'type': 'snapshot', ...(jsonDecode(cached) as Map<String, dynamic>)}, fromServer: false);
+      fromCache = true;
+    } catch (_) {
+      // Ein unlesbarer Zwischenspeicher wird beim nächsten Snapshot überschrieben.
+    }
+  }
+
+  void _scheduleSave() {
+    if (_cache == null) return;
+    _saveTimer?.cancel();
+    _saveTimer = Timer(const Duration(seconds: 2), () {
+      _cache.save(jsonEncode({
+        'today': isoDate(today),
+        'lists': _rawLists.values.toList(),
+        'tasks': _rawTasks.values.toList(),
+      }));
+    });
   }
 
   /// Anmelden mit neuen Zugangsdaten; wirft bei falscher Adresse oder falschem Token.
@@ -99,8 +144,13 @@ class ThaskStore extends ChangeNotifier {
     _client = null;
     await _credentials.clear();
     _address = _token = null;
+    _saveTimer?.cancel();
+    await _cache?.clear();
     _lists.clear();
     _tasks.clear();
+    _rawLists.clear();
+    _rawTasks.clear();
+    fromCache = false;
     connection = LinkState.disconnected;
     error = null;
     notifyListeners();
@@ -173,19 +223,25 @@ class ThaskStore extends ChangeNotifier {
     unawaited(_run());
   }
 
-  void _apply(Map<String, dynamic> event) {
+  void _apply(Map<String, dynamic> event, {bool fromServer = true}) {
     switch (event['type']) {
       case 'snapshot':
+        _rawLists
+          ..clear()
+          ..addEntries([
+            for (final l in event['lists'] as List) MapEntry((l as Map)['id'] as String, l.cast<String, dynamic>()),
+          ]);
+        _rawTasks
+          ..clear()
+          ..addEntries([
+            for (final t in event['tasks'] as List) MapEntry((t as Map)['id'] as String, t.cast<String, dynamic>()),
+          ]);
         _lists
           ..clear()
-          ..addEntries([
-            for (final l in event['lists'] as List) MapEntry((l as Map)['id'] as String, TaskList.fromJson(l.cast())),
-          ]);
+          ..addEntries([for (final e in _rawLists.entries) MapEntry(e.key, TaskList.fromJson(e.value))]);
         _tasks
           ..clear()
-          ..addEntries([
-            for (final t in event['tasks'] as List) MapEntry((t as Map)['id'] as String, Task.fromJson(t.cast())),
-          ]);
+          ..addEntries([for (final e in _rawTasks.entries) MapEntry(e.key, Task.fromJson(e.value))]);
         today = dateOnly(DateTime.parse(event['today'] as String));
       case 'day_changed':
         today = dateOnly(DateTime.parse(event['today'] as String));
@@ -195,16 +251,24 @@ class ThaskStore extends ChangeNotifier {
         if (event['kind'] == 'list') {
           if (item == null) {
             _lists.remove(id);
+            _rawLists.remove(id);
           } else {
             _lists[id] = TaskList.fromJson(item);
+            _rawLists[id] = item;
           }
         } else {
           if (item == null) {
             _tasks.remove(id);
+            _rawTasks.remove(id);
           } else {
             _tasks[id] = Task.fromJson(item);
+            _rawTasks[id] = item;
           }
         }
+    }
+    if (fromServer) {
+      fromCache = false;
+      _scheduleSave();
     }
     notifyListeners();
   }
@@ -268,6 +332,7 @@ class ThaskStore extends ChangeNotifier {
   void dispose() {
     _stopped = true;
     _retry?.cancel();
+    _saveTimer?.cancel();
     _events?.cancel();
     _client?.close();
     super.dispose();

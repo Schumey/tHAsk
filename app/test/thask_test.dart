@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:thask/ha_client.dart';
@@ -62,6 +63,38 @@ void main() {
 
     test('lehnt Leeres ab', () {
       expect(() => websocketUri('  '), throwsA(isA<HaException>()));
+    });
+  });
+
+  group('Zwischenspeicher', () {
+    test('Beim Start wird der letzte Stand angezeigt, auch ohne Verbindung', () async {
+      final cache = _MemoryCache()..json = jsonEncode({'today': '2026-10-31', 'lists': [{'id': 'l2', 'name': 'Einkauf', 'position': 2}], 'tasks': []});
+      final credentials = _MemoryCredentials()..saved = (address: 'ha', token: 't');
+      final store = ThaskStore(credentials,
+          cache: cache, connect: (_, _) async => throw HaException('offline'), clock: () => DateTime(2026, 10, 31));
+      await store.start();
+      expect(store.lists.map((l) => l.name), ['Einkauf']);
+      expect(store.fromCache, isTrue);
+      expect(store.connection, isNot(LinkState.connected));
+      store.dispose();
+    });
+
+    test('Der Snapshot vom Server wird gespeichert', () async {
+      final cache = _MemoryCache();
+      final connection = _FakeConnection();
+      final store = ThaskStore(_MemoryCredentials(),
+          cache: cache, connect: (_, _) async => connection, clock: () => DateTime(2026, 10, 31));
+      final login = store.login('ha', 't');
+      await Future<void>.delayed(Duration.zero);
+      connection.emit(_snapshot);
+      await login;
+      await Future<void>.delayed(const Duration(seconds: 3));
+      final saved = jsonDecode(cache.json!) as Map<String, dynamic>;
+      expect((saved['tasks'] as List).length, 1);
+      expect(store.fromCache, isFalse);
+      await store.logout();
+      expect(cache.json, isNull);
+      store.dispose();
     });
   });
 
@@ -139,6 +172,21 @@ void main() {
       expect(update, {'task_id': 't1', 'due': null, 'notes': 'x'});
     });
 
+    test('Wichtig und Geplant', () async {
+      await signIn();
+      connection.emit({
+        'type': 'change',
+        'action': 'created',
+        'kind': 'task',
+        'id': 't3',
+        'list_id': 'l1',
+        'item': {'id': 't3', 'list_id': 'l1', 'title': 'Ohne Datum', 'important': true},
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect(store.important.map((t) => t.title), ['Ohne Datum']);
+      expect(store.planned.map((t) => t.title), ['Steuer']);
+    });
+
     test('Abmelden löscht Zugangsdaten und Daten', () async {
       await signIn();
       await store.logout();
@@ -203,4 +251,17 @@ class _MemoryCredentials implements CredentialStore {
 
   @override
   Future<void> clear() async => saved = null;
+}
+
+class _MemoryCache implements SnapshotCache {
+  String? json;
+
+  @override
+  Future<String?> load() async => json;
+
+  @override
+  Future<void> save(String value) async => json = value;
+
+  @override
+  Future<void> clear() async => json = null;
 }

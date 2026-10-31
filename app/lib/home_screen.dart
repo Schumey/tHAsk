@@ -17,6 +17,14 @@ class ThisWeekView extends ViewRef {
   const ThisWeekView();
 }
 
+class ImportantView extends ViewRef {
+  const ImportantView();
+}
+
+class PlannedView extends ViewRef {
+  const PlannedView();
+}
+
 class ListRef extends ViewRef {
   const ListRef(this.listId);
   final String listId;
@@ -47,12 +55,16 @@ class _HomeScreenState extends State<HomeScreen> {
   String get _title => switch (_view) {
         MyDayView() => 'Mein Tag',
         ThisWeekView() => 'Diese Woche',
+        ImportantView() => 'Wichtig',
+        PlannedView() => 'Geplant',
         ListRef(:final listId) => store.list(listId)?.name ?? 'Liste',
       };
 
   List<Task> get _tasks => switch (_view) {
         MyDayView() => store.myDay,
         ThisWeekView() => store.thisWeek,
+        ImportantView() => store.important,
+        PlannedView() => store.planned,
         ListRef(:final listId) => store.tasksOf(listId),
       };
 
@@ -127,7 +139,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       )
                     : ListView(
                         children: [
-                          for (final task in open) _TaskTile(task: task, store: store, guard: _guard),
+                          if (_view is PlannedView)
+                            ..._plannedSections(context, open)
+                          else
+                            for (final task in open) _TaskTile(task: task, store: store, guard: _guard),
                           if (done.isNotEmpty)
                             ExpansionTile(
                               title: Text('Erledigt (${done.length})'),
@@ -142,6 +157,41 @@ class _HomeScreenState extends State<HomeScreen> {
         );
       },
     );
+  }
+
+  /// „Geplant“ nach Überfällig / Diese Woche / Diesen Monat / Später gruppieren.
+  List<Widget> _plannedSections(BuildContext context, List<Task> open) {
+    final today = store.today;
+    final weekEnd = Period.containing(Granularity.week, today).end;
+    final monthEnd = Period.containing(Granularity.month, today).end;
+    final sections = <String, List<Task>>{'Überfällig': [], 'Diese Woche': [], 'Diesen Monat': [], 'Später': []};
+    for (final task in open) {
+      final end = task.due!.end;
+      final key = end.isBefore(today)
+          ? 'Überfällig'
+          : !end.isAfter(weekEnd)
+              ? 'Diese Woche'
+              : !end.isAfter(monthEnd)
+                  ? 'Diesen Monat'
+                  : 'Später';
+      sections[key]!.add(task);
+    }
+    final theme = Theme.of(context);
+    return [
+      for (final entry in sections.entries)
+        if (entry.value.isNotEmpty) ...[
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+            child: Text(
+              entry.key,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: entry.key == 'Überfällig' ? theme.colorScheme.error : null,
+              ),
+            ),
+          ),
+          for (final task in entry.value) _TaskTile(task: task, store: store, guard: _guard),
+        ],
+    ];
   }
 
   Widget _buildEntry(BuildContext context) {
@@ -194,6 +244,20 @@ class _HomeScreenState extends State<HomeScreen> {
               trailing: _count(store.thisWeek.length),
               onTap: () => select(const ThisWeekView()),
             ),
+            ListTile(
+              leading: const Icon(Icons.star_border),
+              title: const Text('Wichtig'),
+              selected: _view is ImportantView,
+              trailing: _count(store.important.where((t) => !t.completed).length),
+              onTap: () => select(const ImportantView()),
+            ),
+            ListTile(
+              leading: const Icon(Icons.calendar_month_outlined),
+              title: const Text('Geplant'),
+              selected: _view is PlannedView,
+              trailing: _count(store.planned.where((t) => !t.completed).length),
+              onTap: () => select(const PlannedView()),
+            ),
             const Divider(),
             for (final group in groups) ...[
               if (group != null)
@@ -241,7 +305,9 @@ class _ConnectionBanner extends StatelessWidget {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                connecting ? 'Verbinde …' : (store.error ?? 'Nicht verbunden'),
+                connecting
+                    ? (store.fromCache ? 'Verbinde … (letzter Stand)' : 'Verbinde …')
+                    : (store.fromCache ? 'Offline – letzter Stand' : (store.error ?? 'Nicht verbunden')),
                 style: TextStyle(color: scheme.onErrorContainer),
               ),
             ),
