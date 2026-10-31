@@ -148,6 +148,15 @@ class ThaskPanel extends HTMLElement {
     this._triggerStatus = {};
     this._triggerDraft = null;
     this._triggerTests = {};
+    // The module waits for its helpers before defining the element, so Home Assistant may already have set
+    // these on the plain element; such values would hide the setters below. Hand them over.
+    for (const prop of ["narrow", "hass"]) {
+      if (Object.prototype.hasOwnProperty.call(this, prop)) {
+        const value = this[prop];
+        delete this[prop];
+        this[prop] = value;
+      }
+    }
   }
 
   set hass(hass) {

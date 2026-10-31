@@ -109,8 +109,8 @@ PAGE = """<!doctype html>
 </head>
 <body>
 <thask-panel></thask-panel>
-<script type="module">
-  await customElements.whenDefined("thask-panel");
+<script>
+  // Like Home Assistant: hass and narrow are set right away, possibly before the module has defined the element.
   const panel = document.querySelector("thask-panel");
   const narrow = () => (panel.narrow = window.innerWidth < 870);
   narrow();
@@ -276,13 +276,15 @@ CARD_PAGE = PAGE.replace("<thask-panel></thask-panel>", """<div class="cards">
 </div>
 <style>.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; padding: 12px; }
   ha-card { display: block; background: var(--card-background-color, #fff); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.2); }</style>""").replace(
-    """  await customElements.whenDefined("thask-panel");
+    """<script>
+  // Like Home Assistant: hass and narrow are set right away, possibly before the module has defined the element.
   const panel = document.querySelector("thask-panel");
   const narrow = () => (panel.narrow = window.innerWidth < 870);
   narrow();
   window.addEventListener("resize", narrow);
   panel.hass = window.fakeHass;""",
-    """  await customElements.whenDefined("thask-card");
+    """<script type="module">
+  await customElements.whenDefined("thask-card");
   if (!customElements.get("ha-card")) customElements.define("ha-card", class extends HTMLElement {});
   for (const card of document.querySelectorAll("thask-card")) {
     card.setConfig(JSON.parse(card.dataset.config));

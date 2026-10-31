@@ -81,6 +81,12 @@ class ThaskCard extends HTMLElement {
     this._overdueCollapsed = readStorage(OVERDUE_COLLAPSED_KEY) === "1";
     this._parseTimer = null;
     this._parsed = null;
+    // Like the panel: a hass set before the element was defined would hide the setter.
+    if (Object.prototype.hasOwnProperty.call(this, "hass")) {
+      const hass = this.hass;
+      delete this.hass;
+      this.hass = hass;
+    }
   }
 
   static getConfigElement() {
