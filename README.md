@@ -22,6 +22,7 @@ Nach dem Einrichten erscheint **tHAsk** in der HA-Seitenleiste (auch in der Comp
 - **Schnelleingabe** mit Erkennung, z. B. „Reifen wechseln nächsten Monat !“, „Steuer KW 47“, „Rechnungen ablegen jeden Monat“, „Zahnarzt morgen um 9:30“. Erkanntes wird als Chip angezeigt; ein Klick auf den Chip nimmt die Erkennung zurück.
 - **Detailbereich**: Schritte, „Mein Tag“, Fälligkeit als Tag/Woche/Monat/Quartal/Jahr mit Vor-/Zurück-Pfeilen, Erinnerung, Wiederholung, Liste, Notizen.
 - Aufgaben per Drag & Drop sortieren oder auf eine andere Liste in der Seitenleiste ziehen.
+- **Suche** (oben in der Seitenleiste) durchsucht alle Listen nach Titel, Notizen, Schritten und Kategorien; mehrere Wörter müssen alle vorkommen.
 - Listen anlegen (unten in der Seitenleiste), umbenennen (auf den Titel klicken), Gruppe setzen, löschen und per Drag & Drop in der Seitenleiste anordnen.
 - Aufgaben pro Liste sortieren: manuell, nach Wichtigkeit, Fälligkeit, alphabetisch oder Erstellungsdatum (gilt auch für die HA-Entity). Bei automatischer Sortierung ist Drag & Drop innerhalb der Liste aus.
 - **Erledigte löschen** (Besen-Symbol im Listenkopf).

@@ -12,7 +12,7 @@ const STRINGS = {
     notes_hint: "Notiz hinzufügen", list: "Liste", delete: "Löschen", rename: "Umbenennen", group: "Gruppe",
     delete_task_confirm: "Aufgabe „{0}“ löschen?", delete_list_confirm: "Liste „{0}“ mit allen Aufgaben löschen?",
     group_prompt: "Gruppe für diese Liste (leer = keine):", created: "Erstellt", overdue: "Überfällig",
-    later: "Später", this_month: "Diesen Monat", empty: "Keine Aufgaben", today: "Heute", tomorrow: "Morgen",
+    search: "Suche", search_results: "Suchergebnisse", later: "Später", this_month: "Diesen Monat", empty: "Keine Aufgaben", today: "Heute", tomorrow: "Morgen",
     next_week: "Nächste Woche", next_month: "Nächsten Monat", steps_of: "{0} von {1}",
     rec_day: "Täglich", rec_week: "Wöchentlich", rec_month: "Monatlich", rec_quarter: "Vierteljährlich",
     rec_year: "Jährlich", rec_every: "Alle {0} {1}", units_day: "Tage", units_week: "Wochen",
@@ -34,7 +34,7 @@ const STRINGS = {
     notes_hint: "Add a note", list: "List", delete: "Delete", rename: "Rename", group: "Group",
     delete_task_confirm: "Delete task “{0}”?", delete_list_confirm: "Delete list “{0}” with all its tasks?",
     group_prompt: "Group for this list (empty = none):", created: "Created", overdue: "Overdue",
-    later: "Later", this_month: "This month", empty: "No tasks", today: "Today", tomorrow: "Tomorrow",
+    search: "Search", search_results: "Search results", later: "Later", this_month: "This month", empty: "No tasks", today: "Today", tomorrow: "Tomorrow",
     next_week: "Next week", next_month: "Next month", steps_of: "{0} of {1}",
     rec_day: "Daily", rec_week: "Weekly", rec_month: "Monthly", rec_quarter: "Quarterly", rec_year: "Yearly",
     rec_every: "Every {0} {1}", units_day: "days", units_week: "weeks", units_month: "months",
@@ -198,6 +198,7 @@ class ThaskPanel extends HTMLElement {
     this._view = { type: "smart", key: "my_day" };
     this._selectedTask = null;
     this._showCompleted = false;
+    this._search = "";
     this._pane = "list";
     this._loaded = false;
     this._error = null;
@@ -341,15 +342,25 @@ class ThaskPanel extends HTMLElement {
     return false;
   }
 
+  _matchesSearch(task) {
+    const query = this._search.trim().toLowerCase();
+    if (!query) return true;
+    const haystack = [task.title, task.notes, ...(task.steps || []).map((s) => s.title), ...(task.categories || [])];
+    return query.split(/\s+/).every((word) => haystack.some((text) => (text || "").toLowerCase().includes(word)));
+  }
+
   _viewTasks(view = this._view) {
+    // An active search looks through all lists; the sidebar counts (explicit view) stay unaffected.
+    const searching = view === this._view && this._search.trim();
     const tasks = [...this._tasks.values()].filter((task) =>
-      view.type === "list" ? task.list_id === view.id : this._matchesSmart(task, view.key)
+      searching ? this._matchesSearch(task)
+        : view.type === "list" ? task.list_id === view.id : this._matchesSmart(task, view.key)
     );
     const dueKey = (task) => (task.due ? toISO(periodEndOf(task.due)) : "9999");
     let sorted;
-    if (view.type === "list") {
+    if (view.type === "list" && !searching) {
       sorted = sortTasks(tasks, this._listSort(view.id));
-    } else if (view.key === "my_day") {
+    } else if (view.key === "my_day" && !searching) {
       sorted = sortTasks(tasks, "manual");
     } else {
       sorted = tasks.sort((a, b) => dueKey(a).localeCompare(dueKey(b)) || b.important - a.important || a.position - b.position);
@@ -365,6 +376,7 @@ class ThaskPanel extends HTMLElement {
   }
 
   _viewTitle() {
+    if (this._search.trim()) return this.t("search_results");
     if (this._view.type === "smart") return this.t(this._view.key);
     return this._lists.find((l) => l.id === this._view.id)?.name ?? "";
   }
@@ -414,6 +426,13 @@ class ThaskPanel extends HTMLElement {
     quick.addEventListener("keydown", (ev) => {
       if (ev.key === "Enter") this._quickAdd();
       if (ev.key === "Escape") this._resetQuickAdd();
+    });
+    root.addEventListener("input", (ev) => {
+      if (!ev.target.classList?.contains("search-input")) return;
+      this._search = ev.target.value;
+      this._selectedTask = null;
+      this._pane = "list";
+      this._render();
     });
     root.addEventListener("click", (ev) => this._onClick(ev));
     root.addEventListener("change", (ev) => this._onChange(ev));
@@ -470,7 +489,7 @@ class ThaskPanel extends HTMLElement {
         <span class="count">${count(view) || ""}</span>
       </button>`;
 
-    let html = `<div class="nav-section">${SMART_VIEWS.map((v) => item({ type: "smart", key: v.key }, v.icon, this.t(v.key))).join("")}</div><div class="divider"></div><div class="nav-section lists">`;
+    let html = `<div class="search"><ha-icon icon="mdi:magnify"></ha-icon><input class="search-input" type="search" placeholder="${esc(this.t("search"))}" autocomplete="off"></div><div class="nav-section">${SMART_VIEWS.map((v) => item({ type: "smart", key: v.key }, v.icon, this.t(v.key))).join("")}</div><div class="divider"></div><div class="nav-section lists">`;
     let group = null;
     for (const list of this._lists) {
       if ((list.group || null) !== group) {
@@ -484,16 +503,20 @@ class ThaskPanel extends HTMLElement {
     const sidebar = this.shadowRoot.querySelector(".sidebar");
     const focused = this.shadowRoot.activeElement?.classList.contains("new-list-input");
     const pending = sidebar.querySelector(".new-list-input")?.value || "";
+    const searchFocused = this.shadowRoot.activeElement?.classList.contains("search-input");
     sidebar.innerHTML = html;
     const input = sidebar.querySelector(".new-list-input");
     input.value = pending;
     if (focused) input.focus();
+    const searchInput = sidebar.querySelector(".search-input");
+    searchInput.value = this._search;
+    if (searchFocused) searchInput.focus();
   }
 
   _renderHeader() {
     const root = this.shadowRoot;
     const title = root.querySelector(".view-title");
-    if (this._view.type === "list") {
+    if (this._view.type === "list" && !this._search.trim()) {
       if (!title.querySelector("input") || root.activeElement !== title.querySelector("input")) {
         title.innerHTML = `<input class="list-name" value="${esc(this._viewTitle())}" title="${esc(this.t("rename"))}">`;
       }
@@ -506,7 +529,7 @@ class ThaskPanel extends HTMLElement {
         <button class="icon-button" data-action="list-group" title="${esc(this.t("group"))}"><ha-icon icon="mdi:folder-outline"></ha-icon></button>
         <button class="icon-button" data-action="list-delete" title="${esc(this.t("delete"))}"><ha-icon icon="mdi:delete-outline"></ha-icon></button>`;
     } else {
-      const sub = this._view.key === "my_day"
+      const sub = this._view.key === "my_day" && !this._search.trim()
         ? `<span class="subtitle">${esc(this._today.toLocaleDateString(this._lang === "de" ? "de-DE" : "en-GB", { weekday: "long", day: "numeric", month: "long" }))}</span>`
         : "";
       title.innerHTML = `${esc(this._viewTitle())}${sub}`;
@@ -516,9 +539,10 @@ class ThaskPanel extends HTMLElement {
 
   _renderTasks() {
     const { open, done } = this._viewTasks();
-    const reorderable = this._view.type === "list" && this._listSort(this._view.id) === "manual";
+    const searching = !!this._search.trim();
+    const reorderable = !searching && this._view.type === "list" && this._listSort(this._view.id) === "manual";
     let html = "";
-    if (this._view.type === "smart" && this._view.key === "planned") {
+    if (!searching && this._view.type === "smart" && this._view.key === "planned") {
       const weekEnd = this._weekEnd();
       const monthEnd = periodEnd("month", periodStart("month", this._today));
       const groups = { overdue: [], this_week: [], this_month: [], later: [] };
@@ -808,6 +832,7 @@ class ThaskPanel extends HTMLElement {
           : { type: "smart", key: target.dataset.view };
         this._selectedTask = null;
         this._showCompleted = false;
+        this._search = "";
         this._pane = "list";
         this._render();
         break;
@@ -1070,6 +1095,8 @@ const STYLE = `
   .app { display: grid; grid-template-columns: 260px 1fr; height: 100vh; overflow: hidden; }
   .app.has-detail { grid-template-columns: 260px 1fr 360px; }
   .sidebar { background: var(--thask-sidebar); border-right: 1px solid var(--thask-divider); overflow-y: auto; padding: 8px 0; display: flex; flex-direction: column; }
+  .search { display: flex; align-items: center; gap: 8px; margin: 8px 12px; padding: 0 10px; border-radius: 8px; background: rgba(127, 127, 127, 0.12); color: var(--thask-muted); }
+  .search-input { flex: 1; min-width: 0; border: none; background: none; outline: none; padding: 8px 0; font-size: 14px; color: var(--thask-text); }
   .nav-section { display: flex; flex-direction: column; }
   .nav-section.lists { flex: 1; }
   .nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 16px; text-align: left; border-left: 3px solid transparent; }
