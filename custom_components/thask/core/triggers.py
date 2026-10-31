@@ -132,7 +132,6 @@ class TaskTemplate:
     list_id: str | None = None
     # Relative to the day the task is for: none, today (the day the trigger fires), day_before, day, week, month.
     due: str = "day"
-    my_day: bool = False
     priority: int = 0
     notes: str = ""
 
@@ -141,7 +140,6 @@ class TaskTemplate:
             "title": self.title,
             "list_id": self.list_id,
             "due": self.due,
-            "my_day": self.my_day,
             "priority": self.priority,
             "notes": self.notes,
         }
@@ -152,7 +150,6 @@ class TaskTemplate:
             title=data["title"],
             list_id=data.get("list_id"),
             due=data.get("due", "day"),
-            my_day=bool(data.get("my_day", False)),
             priority=int(data.get("priority", 0)),
             notes=data.get("notes", "") or "",
         )
@@ -485,8 +482,6 @@ class TriggerBook:
         fields: dict[str, Any] = {"priority": template.priority, "notes": template.notes}
         if due := due_for(template.due, day, today):
             fields["due"] = due.as_dict()
-        if template.my_day:
-            fields["my_day"] = today.isoformat()
         task = collection.create_task(list_id, title, **fields)
         event_key = match.event.key(match.event_entity or "") if match and match.event else None
         run = TriggerRun(

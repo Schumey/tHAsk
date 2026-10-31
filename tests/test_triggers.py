@@ -104,7 +104,7 @@ def test_state_condition_with_hold_time_and_window(collection, source):
             "conditions": [{"kind": "state", "entity": "person.max", "match": "Fitnessstudio", "hold_minutes": 20}],
             "window_from": "06:00",
             "window_to": "21:00",
-            "task": {"title": "Protein kaufen ({zustand})", "due": "none", "my_day": True, "priority": 2},
+            "task": {"title": "Protein kaufen ({zustand})", "due": "none", "priority": 2},
         }
     )
     source.states["person.max"] = EntityState("fitnessstudio", NOW - timedelta(minutes=5))
@@ -113,7 +113,7 @@ def test_state_condition_with_hold_time_and_window(collection, source):
     assert check(book, collection, source, NOW.replace(hour=22)) == []
     [run] = check(book, collection, source)
     task = collection.tasks[run.task_id]
-    assert (task.title, task.due, task.my_day, task.priority) == ("Protein kaufen (fitnessstudio)", None, "2026-11-03", 2)
+    assert (task.title, task.due, task.priority) == ("Protein kaufen (fitnessstudio)", None, 2)
 
 
 def test_combine_and_or_with_negation(collection, source):

@@ -98,6 +98,25 @@ def test_completing_twice_does_not_duplicate(collection, list_id):
     assert len(collection.tasks) == 2
 
 
+def test_today_shows_what_is_due():
+    tz = timezone.utc
+    due_today = Task(id="1", list_id="l", title="t", due=Period.day(TODAY))
+    overdue = Task(id="2", list_id="l", title="t", due=Period.day(date(2026, 11, 1)))
+    # A week ending today (Sunday) is due today; one ending later is not.
+    week_ends_today = Task(id="3", list_id="l", title="t", due=Period.iso_week(2026, 45))
+    tomorrow = Task(id="4", list_id="l", title="t", due=Period.day(date(2026, 11, 4)))
+    undated = Task(id="5", list_id="l", title="t")
+    sunday = date(2026, 11, 8)
+    assert due_today.in_today(TODAY, tz) and overdue.in_today(TODAY, tz)
+    assert week_ends_today.in_today(sunday, tz) and not week_ends_today.in_today(TODAY, tz)
+    assert not tomorrow.in_today(TODAY, tz) and not undated.in_today(TODAY, tz)
+    done_today = Task(id="6", list_id="l", title="t", due=Period.day(TODAY), completed=True,
+                      completed_at=datetime(2026, 11, 3, 9, tzinfo=tz).isoformat())
+    done_earlier = Task(id="7", list_id="l", title="t", due=Period.day(date(2026, 11, 1)), completed=True,
+                        completed_at=datetime(2026, 11, 1, 9, tzinfo=tz).isoformat())
+    assert done_today.in_today(TODAY, tz) and not done_earlier.in_today(TODAY, tz)
+
+
 def test_due_by_includes_whole_period():
     task = Task(id="1", list_id="l", title="t", due=Period.month(2026, 11))
     week_end = Period(Granularity.WEEK, TODAY).end

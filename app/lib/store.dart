@@ -25,6 +25,10 @@ abstract class SnapshotCache {
   Future<String?> loadOutbox();
   Future<void> saveOutbox(String json);
 
+  /// Einstellungen dieses Geräts, z. B. der Zeitraum von „Wichtig“.
+  Future<String?> loadSetting(String key);
+  Future<void> saveSetting(String key, String value);
+
   /// Löscht Stand und Änderungen.
   Future<void> clear();
 }
@@ -108,8 +112,8 @@ class ThaskStore extends ChangeNotifier {
     return sortTasks(_tasks.values.where((t) => t.listId == listId), list?.sort ?? 'manual');
   }
 
-  /// Aufgaben für „Mein Tag“ über alle Listen.
-  List<Task> get myDay => sortTasks(_tasks.values.where((t) => t.inMyDay(today)), 'manual');
+  /// „Heute“: alles, was bis heute fällig ist (inkl. Überfälligem), und was heute erledigt wurde.
+  List<Task> get dueToday => sortTasks(_tasks.values.where((t) => t.inToday(today)), 'due');
 
   /// Alles, was bis zum Ende der laufenden Woche fällig ist (inkl. Überfälligem), ohne Erledigtes.
   List<Task> get thisWeek {
@@ -123,8 +127,26 @@ class ThaskStore extends ChangeNotifier {
     return sortTasks(_tasks.values.where((t) => !t.completed && t.due != null && !t.due!.end.isAfter(monthEnd)), 'due');
   }
 
-  /// „Wichtig“: alle Aufgaben mit Priorität hoch, nach Fälligkeit.
-  List<Task> get important => sortTasks(_tasks.values.where((t) => t.isHighPriority), 'due');
+  /// Zeitraum von „Wichtig“: `all` oder `week`, `month`, `quarter`, `year` (fällig bis zu dessen Ende).
+  String importantRange = 'all';
+
+  static const importantRanges = ['all', 'week', 'month', 'quarter', 'year'];
+
+  Future<void> setImportantRange(String range) async {
+    importantRange = range;
+    notifyListeners();
+    await _cache?.saveSetting('important_range', range);
+  }
+
+  /// „Wichtig“: Aufgaben mit Priorität hoch im gewählten Zeitraum, nach Fälligkeit.
+  List<Task> get important {
+    final unit = Granularity.values.where((g) => g.name == importantRange).firstOrNull;
+    final end = unit == null ? null : Period.containing(unit, today).end;
+    return sortTasks(
+      _tasks.values.where((t) => t.isHighPriority && (end == null || (t.due != null && !t.due!.end.isAfter(end)))),
+      'due',
+    );
+  }
 
   /// Alle Aufgaben mit Fälligkeit, nach Ende des Zeitraums.
   List<Task> get planned => sortTasks(_tasks.values.where((t) => t.due != null), 'due');
@@ -150,6 +172,8 @@ class ThaskStore extends ChangeNotifier {
   }
 
   Future<void> _loadCache() async {
+    final range = await _cache?.loadSetting('important_range');
+    if (range != null && importantRanges.contains(range)) importantRange = range;
     final pending = await _cache?.loadOutbox();
     if (pending != null) {
       try {
@@ -502,7 +526,7 @@ class ThaskStore extends ChangeNotifier {
     }
   }
 
-  Future<void> addTask(String listId, String title, {Period? due, int priority = 0, bool myDay = false}) =>
+  Future<void> addTask(String listId, String title, {Period? due, int priority = 0}) =>
       _mutate(
         'thask/task/create',
         {
@@ -510,14 +534,13 @@ class ThaskStore extends ChangeNotifier {
           'title': title,
           if (due != null) 'due': due.toJson(),
           if (priority > 0) 'priority': priority,
-          if (myDay) 'my_day': isoDate(today),
         },
         tempId: _newTempId(),
       );
 
   /// Aufgabe aus einem Schnelleingabe-Text anlegen („Steuer KW 47 !“). Erkannt wird auf dem Gerät,
-  /// deshalb geht das auch ohne Verbindung.
-  Future<void> addQuick(String listId, String text, {bool myDay = false}) {
+  /// deshalb geht das auch ohne Verbindung. Mit [dueToday] wird sie ohne erkannte Fälligkeit heute fällig.
+  Future<void> addQuick(String listId, String text, {bool dueToday = false}) {
     final parsed = parse(text, today);
     final title = parsed.title.isEmpty ? text.trim() : parsed.title;
     if (title.isEmpty) return Future.value();
@@ -526,11 +549,13 @@ class ThaskStore extends ChangeNotifier {
       {
         'list_id': listId,
         'title': title,
-        if (parsed.due != null) 'due': parsed.due!.toJson(),
+        if (parsed.due != null)
+          'due': parsed.due!.toJson()
+        else if (dueToday)
+          'due': Period.day(today).toJson(),
         if (parsed.dueTime != null) 'due_time': parsed.dueTime,
         if (parsed.recurrence != null) 'recurrence': parsed.recurrence!.toJson(),
         if (parsed.priority > 0) 'priority': parsed.priority,
-        if (myDay) 'my_day': isoDate(today),
       },
       tempId: _newTempId(),
     );

@@ -20,6 +20,13 @@ class PrefsSnapshotCache implements SnapshotCache {
   Future<void> saveOutbox(String json) async => (await SharedPreferences.getInstance()).setString(_outboxKey, json);
 
   @override
+  Future<String?> loadSetting(String key) async => (await SharedPreferences.getInstance()).getString('thask_$key');
+
+  @override
+  Future<void> saveSetting(String key, String value) async =>
+      (await SharedPreferences.getInstance()).setString('thask_$key', value);
+
+  @override
   Future<void> clear() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_key);

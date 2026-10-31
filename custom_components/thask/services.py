@@ -38,6 +38,7 @@ ADD_TASK_SCHEMA = vol.Schema(
         vol.Optional("due_granularity"): vol.In(GRANULARITIES),
         vol.Optional("due_date"): cv.date,
         vol.Optional("priority", default=0): vol.All(vol.Coerce(int), vol.In(PRIORITIES)),
+        # Deprecated (the former "My Day"): due today unless a due date is given.
         vol.Optional("my_day", default=False): cv.boolean,
     }
 )
@@ -122,8 +123,8 @@ def async_setup_services(hass: HomeAssistant) -> None:
         if "due_granularity" in call.data or "due_date" in call.data:
             granularity = Granularity(call.data.get("due_granularity", Granularity.DAY))
             fields["due"] = Period(granularity, call.data.get("due_date", data.today)).as_dict()
-        if call.data["my_day"]:
-            fields["my_day"] = data.today.isoformat()
+        elif call.data["my_day"]:
+            fields["due"] = Period.day(data.today).as_dict()
         task = data.collection.create_task(list_id, call.data["title"], **fields)
         return data.task_info(task) if call.return_response else None
 

@@ -13,7 +13,7 @@
   "entity": {
     "todo": {
       "my_day": {
-        "name": "My Day"
+        "name": "Today"
       },
       "this_week": {
         "name": "This week"
@@ -68,10 +68,6 @@
         "priority": {
           "name": "Priority",
           "description": "0 = none, 1 = low, 2 = medium, 3 = high."
-        },
-        "my_day": {
-          "name": "Add to My Day",
-          "description": "Show the task in My Day today."
         }
       }
     },

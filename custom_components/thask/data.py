@@ -34,6 +34,7 @@ from .const import (
 )
 from .core.collection import Change, TaskCollection
 from .core.models import Task
+from .core.period import Period
 from .core.triggers import Evaluator, Match, TriggerBook, TriggerRun
 from .trigger_source import HassSource
 
@@ -75,6 +76,8 @@ class ThaskData:
     async def async_start(self) -> None:
         if data := await self._store.async_load():
             self.collection.load(data)
+        if self._migrate_my_day():
+            await self._store.async_save(self.collection.dump())
         if not self.collection.lists:
             self.collection.create_list("Aufgaben" if self.language.startswith("de") else "Tasks")
             await self._store.async_save(self.collection.dump())
@@ -93,6 +96,16 @@ class ThaskData:
                 self.hass, self.async_check_triggers, timedelta(seconds=TRIGGER_INTERVAL_SECONDS)
             )
         )
+
+    def _migrate_my_day(self) -> bool:
+        """What was put into today's "My Day" without a date becomes due today, so it stays in "Today"."""
+        today = self.today.isoformat()
+        changed = False
+        for task in self.collection.tasks.values():
+            if task.my_day == today and task.due is None and not task.completed:
+                task.apply({"due": Period.day(self.today).as_dict()})
+                changed = True
+        return changed
 
     async def async_stop(self) -> None:
         for unsub in [*self._unsubs, *self._reminders.values()]:

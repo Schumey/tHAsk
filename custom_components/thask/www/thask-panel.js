@@ -3,10 +3,11 @@
 
 const STRINGS = {
   de: {
-    my_day: "Mein Tag", important: "Wichtig", planned: "Geplant", this_week: "Diese Woche",
+    my_day: "Heute", important: "Wichtig", planned: "Geplant", this_week: "Diese Woche",
     lists: "Listen", add_task: "Aufgabe hinzufügen", quick_hint: "z. B. „Reifen wechseln nächsten Monat !“",
     new_list: "Neue Liste", completed: "Erledigt", steps: "Schritte", add_step: "Nächster Schritt",
-    add_to_my_day: "Zu „Mein Tag“ hinzufügen", remove_from_my_day: "Aus „Mein Tag“ entfernen",
+    range: "Zeitraum", range_all: "Alle", range_week: "Bis Ende der Woche", range_month: "Bis Ende des Monats",
+    range_quarter: "Bis Ende des Quartals", range_year: "Bis Ende des Jahres",
     due: "Fällig", none: "Keine", day: "Tag", week: "Woche", month: "Monat", quarter: "Quartal", year: "Jahr",
     time: "Uhrzeit", reminder: "Erinnerung", recurrence: "Wiederholung", every: "alle", notes: "Notizen",
     notes_hint: "Notiz hinzufügen", list: "Liste", delete: "Löschen", rename: "Umbenennen", group: "Gruppe",
@@ -39,10 +40,11 @@ const STRINGS = {
     is_on: "an", by_hand: "von Hand",
   },
   en: {
-    my_day: "My Day", important: "Important", planned: "Planned", this_week: "This week",
+    my_day: "Today", important: "Important", planned: "Planned", this_week: "This week",
     lists: "Lists", add_task: "Add a task", quick_hint: "e.g. “Change tyres next month !”",
     new_list: "New list", completed: "Completed", steps: "Steps", add_step: "Next step",
-    add_to_my_day: "Add to My Day", remove_from_my_day: "Remove from My Day",
+    range: "Period", range_all: "All", range_week: "By end of week", range_month: "By end of month",
+    range_quarter: "By end of quarter", range_year: "By end of year",
     due: "Due", none: "None", day: "Day", week: "Week", month: "Month", quarter: "Quarter", year: "Year",
     time: "Time", reminder: "Reminder", recurrence: "Repeat", every: "every", notes: "Notes",
     notes_hint: "Add a note", list: "List", delete: "Delete", rename: "Rename", group: "Group",
@@ -87,6 +89,9 @@ const MONTHS_SHORT = {
 const WEEKDAYS_SHORT = { de: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"], en: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] };
 const GRANULARITIES = ["day", "week", "month", "quarter", "year"];
 const TASK_SORTS = ["manual", "priority", "due", "title", "created"];
+// Period of the "Important" view: everything, or what is due by the end of this week, month …
+const IMPORTANT_RANGES = ["all", "week", "month", "quarter", "year"];
+const RANGE_STORAGE_KEY = "thask.importantRange";
 // The integration appends its version to the module URL (cache busting), so the panel can show it.
 const VERSION = new URL(import.meta.url).searchParams.get("v") || "";
 
@@ -96,7 +101,7 @@ const TRIGGER_DUE = ["none", "today", "day_before", "day", "week", "month"];
 const STATE_DOMAINS = ["person", "device_tracker", "binary_sensor", "sensor", "input_boolean", "input_select", "switch", "light", "zone", "sun", "alarm_control_panel", "climate", "cover", "lock", "media_player", "vacuum"];
 
 const SMART_VIEWS = [
-  { key: "my_day", icon: "mdi:white-balance-sunny" },
+  { key: "my_day", icon: "mdi:calendar-today" },
   { key: "important", icon: "mdi:flag-outline" },
   { key: "planned", icon: "mdi:calendar-month-outline" },
   { key: "this_week", icon: "mdi:calendar-week" },
@@ -244,6 +249,13 @@ class ThaskPanel extends HTMLElement {
     this._disabledKinds = new Set();
     this._parseSeq = 0;
     this._dragTask = null;
+    this._importantRange = "all";
+    try {
+      const stored = localStorage.getItem(RANGE_STORAGE_KEY);
+      if (IMPORTANT_RANGES.includes(stored)) this._importantRange = stored;
+    } catch {
+      // storage blocked: keep the default
+    }
     this._triggers = null; // null until the trigger subscription answered
     this._triggerRuns = [];
     this._triggerStatus = {};
@@ -379,9 +391,13 @@ class ThaskPanel extends HTMLElement {
   _matchesSmart(task, key) {
     switch (key) {
       case "my_day":
-        return task.my_day === this._todayISO;
+        // Today: everything due by today (overdue included), and what was completed today.
+        if (!this._dueBy(task, this._today)) return false;
+        return !task.completed || this._completedSince(task, this._today);
       case "important":
-        return task.priority >= 3;
+        if (task.priority < 3) return false;
+        if (this._importantRange === "all") return true;
+        return this._dueBy(task, periodEnd(this._importantRange, periodStart(this._importantRange, this._today)));
       case "planned":
         return !!task.due;
       case "this_week":
@@ -412,8 +428,6 @@ class ThaskPanel extends HTMLElement {
     let sorted;
     if (view.type === "list" && !searching) {
       sorted = sortTasks(tasks, this._listSort(view.id));
-    } else if (view.key === "my_day" && !searching) {
-      sorted = sortTasks(tasks, "manual");
     } else {
       sorted = tasks.sort((a, b) => dueKey(a).localeCompare(dueKey(b)) || b.priority - a.priority || a.position - b.position);
     }
@@ -611,7 +625,10 @@ class ThaskPanel extends HTMLElement {
         ? `<span class="subtitle">${esc(this._today.toLocaleDateString(this._lang === "de" ? "de-DE" : "en-GB", { weekday: "long", day: "numeric", month: "long" }))}</span>`
         : "";
       title.innerHTML = `${esc(this._viewTitle())}${sub}`;
-      root.querySelector(".view-actions").innerHTML = "";
+      root.querySelector(".view-actions").innerHTML = this._view.key === "important" && !this._search.trim()
+        ? `<label class="sort" title="${esc(this.t("range"))}"><ha-icon icon="mdi:calendar-range"></ha-icon>
+            <select data-field="important-range">${IMPORTANT_RANGES.map((r) => `<option value="${r}" ${r === this._importantRange ? "selected" : ""}>${esc(this.t(`range_${r}`))}</option>`).join("")}</select></label>`
+        : "";
     }
   }
 
@@ -699,9 +716,6 @@ class ThaskPanel extends HTMLElement {
       const list = this._lists.find((l) => l.id === task.list_id);
       if (list) meta.push(`<span class="meta">${esc(list.name)}</span>`);
     }
-    if (task.my_day === this._todayISO && !(this._view.type === "smart" && this._view.key === "my_day")) {
-      meta.push(`<span class="meta"><ha-icon icon="mdi:white-balance-sunny"></ha-icon>${esc(this.t("my_day"))}</span>`);
-    }
     if (task.steps.length) {
       const doneSteps = task.steps.filter((s) => s.completed).length;
       meta.push(`<span class="meta">${esc(this.t("steps_of", doneSteps, task.steps.length))}</span>`);
@@ -770,7 +784,6 @@ class ThaskPanel extends HTMLElement {
       return;
     }
     const lang = this._lang;
-    const inMyDay = task.my_day === this._todayISO;
     const granularity = task.due?.granularity || "";
     const reminderLocal = task.reminder ? (() => {
       const d = new Date(task.reminder);
@@ -825,8 +838,6 @@ class ThaskPanel extends HTMLElement {
           ${[0, 1, 2, 3].map((n) => `<button class="prio-btn prio-${n} ${n === (task.priority || 0) ? "on" : ""}" data-action="priority-set" data-priority="${n}">${esc(this.t(`priority_${n}`))}</button>`).join("")}
         </div>
       </div>
-      <button class="card action ${inMyDay ? "on" : ""}" data-action="toggle-my-day">
-        <ha-icon icon="mdi:white-balance-sunny"></ha-icon>${esc(this.t(inMyDay ? "remove_from_my_day" : "add_to_my_day"))}</button>
       <div class="card">
         <div class="label"><ha-icon icon="mdi:calendar-range"></ha-icon>${esc(this.t("due"))}</div>
         <div class="segmented">
@@ -926,7 +937,7 @@ class ThaskPanel extends HTMLElement {
     if (parsed.due_time) data.due_time = parsed.due_time;
     if (parsed.recurrence) data.recurrence = parsed.recurrence;
     if (this._view.type === "smart") {
-      if (this._view.key === "my_day") data.my_day = this._todayISO;
+      if (this._view.key === "my_day" && !data.due) data.due = makePeriod("day", this._today);
       if (this._view.key === "important") data.priority = Math.max(data.priority, 3);
       if (this._view.key === "this_week" && !data.due) data.due = makePeriod("week", this._today);
       if (this._view.key === "this_month" && !data.due) data.due = makePeriod("month", this._today);
@@ -966,7 +977,7 @@ class ThaskPanel extends HTMLElement {
     return {
       name: "", enabled: true, combine: "and", window_from: "", window_to: "", days_ahead: 0, paused_until: null,
       conditions: [this._emptyCondition()],
-      task: { title: "", list_id: this._lists[0]?.id || null, due: "day", my_day: false, priority: 0, notes: "" },
+      task: { title: "", list_id: this._lists[0]?.id || null, due: "day", priority: 0, notes: "" },
     };
   }
 
@@ -1105,7 +1116,6 @@ class ThaskPanel extends HTMLElement {
         <div class="segmented">
           ${[0, 1, 2, 3].map((n) => `<button class="prio-btn prio-${n} ${n === draft.task.priority ? "on" : ""}" data-action="trigger-priority" data-priority="${n}">${esc(this.t(`priority_${n}`))}</button>`).join("")}
         </div>
-        <label class="row muted"><input type="checkbox" data-tfield="task.my_day" ${draft.task.my_day ? "checked" : ""}>${esc(this.t("add_to_my_day"))}</label>
       </div>
       <div class="card">
         <div class="row"><span class="muted">${esc(this.t("paused_until"))}</span>
@@ -1302,9 +1312,6 @@ class ThaskPanel extends HTMLElement {
         this._runParse();
         this.shadowRoot.querySelector(".quick-input").focus();
         break;
-      case "toggle-my-day":
-        this._updateTask(task, { my_day: task.my_day === this._todayISO ? null : this._todayISO });
-        break;
       case "toggle-step": {
         const steps = task.steps.map((s, i) => (i === Number(target.dataset.index) ? { ...s, completed: !s.completed } : s));
         this._updateTask(task, { steps });
@@ -1383,6 +1390,16 @@ class ThaskPanel extends HTMLElement {
       return;
     }
     const field = ev.target.dataset?.field;
+    if (field === "important-range") {
+      this._importantRange = ev.target.value;
+      try {
+        localStorage.setItem(RANGE_STORAGE_KEY, this._importantRange);
+      } catch {
+        // not remembered, still applied
+      }
+      this._render();
+      return;
+    }
     if (field === "list-sort" && this._view.type === "list") {
       const listId = this._view.id;
       this._lists = this._lists.map((l) => (l.id === listId ? { ...l, sort: ev.target.value } : l));

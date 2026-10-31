@@ -272,7 +272,14 @@ class Task {
 
   bool get isHighPriority => priority >= 3;
 
-  bool inMyDay(DateTime today) => myDay == isoDate(today);
+  /// „Heute“: offen und bis heute fällig (Überfälliges eingeschlossen), oder heute erledigt.
+  bool inToday(DateTime today) {
+    final day = dateOnly(today);
+    if (due == null || due!.end.isAfter(day)) return false;
+    if (!completed) return true;
+    final done = completedAt == null ? null : DateTime.tryParse(completedAt!)?.toLocal();
+    return done != null && !dateOnly(done).isBefore(day);
+  }
 
   bool isOverdue(DateTime today) => !completed && due != null && due!.end.isBefore(dateOnly(today));
 }

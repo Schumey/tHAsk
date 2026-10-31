@@ -134,14 +134,13 @@ def seed(collection: TaskCollection, today: date) -> None:
         notes="Belege aus dem Ordner sammeln",
         steps=[{"title": "Belege scannen", "completed": True}, {"title": "Elster ausfüllen"}],
     )
-    collection.create_task(tasks.id, "Zahnarzt anrufen", due=Period.day(today).as_dict(), due_time="09:30",
-                           my_day=today.isoformat())
+    collection.create_task(tasks.id, "Zahnarzt anrufen", due=Period.day(today).as_dict(), due_time="09:30")
     collection.create_task(tasks.id, "Rechnungen ablegen", due=Period(Granularity.MONTH, today).as_dict(),
                            recurrence={"unit": "month", "interval": 1})
     collection.create_task(tasks.id, "Paket zurückschicken", due=Period.day(today - timedelta(days=2)).as_dict())
     done = collection.create_task(tasks.id, "Fenster putzen")
     collection.update_task(done.id, {"completed": True}, today)
-    collection.create_task(shopping.id, "Milch", my_day=today.isoformat())
+    collection.create_task(shopping.id, "Milch", due=Period.day(today).as_dict(), priority=3)
     collection.create_task(shopping.id, "Kaffee")
     collection.create_task(house.id, "Dachrinne prüfen", due=Period(Granularity.YEAR, today).as_dict())
 
@@ -176,7 +175,7 @@ def seed_triggers(book: TriggerBook, collection: TaskCollection) -> None:
             "name": "Frühschicht",
             "conditions": [{"kind": "calendar", "entity": "calendar.arbeit", "match": "Frühschicht", "part": "start"}],
             "days_ahead": 1,
-            "task": {"title": "{termin} vorbereiten", "list_id": collection.default_list().id, "due": "today", "my_day": True},
+            "task": {"title": "{termin} vorbereiten", "list_id": collection.default_list().id, "due": "day_before"},
         }
     )
 

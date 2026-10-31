@@ -111,7 +111,6 @@ TASK_TEMPLATE_SCHEMA = vol.Schema(
         vol.Required("title"): vol.All(str, vol.Strip, vol.Length(min=1)),
         vol.Optional("list_id"): vol.Any(None, str),
         vol.Optional("due", default="day"): vol.In(DUE_OPTIONS),
-        vol.Optional("my_day", default=False): bool,
         vol.Optional("priority", default=0): vol.In(PRIORITIES),
         vol.Optional("notes", default=""): str,
     }

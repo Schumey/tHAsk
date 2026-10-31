@@ -12,19 +12,19 @@ sealed class ViewRef {
 
   List<Task> tasks(ThaskStore store);
 
-  /// Die Ansicht zu einer Kennung; unbekannte Kennungen ergeben „Mein Tag“.
+  /// Die Ansicht zu einer Kennung; unbekannte Kennungen ergeben „Heute“.
   static ViewRef fromId(String id) => switch (id) {
         'this_week' => const ThisWeekView(),
         'this_month' => const ThisMonthView(),
         'important' => const ImportantView(),
         'planned' => const PlannedView(),
         _ when id.startsWith('list:') => ListRef(id.substring(5)),
-        _ => const MyDayView(),
+        _ => const TodayView(),
       };
 
   /// Alle Ansichten, die es gerade gibt: zuerst die intelligenten, dann die eigenen Listen.
   static List<ViewRef> all(ThaskStore store) => [
-        const MyDayView(),
+        const TodayView(),
         const ThisWeekView(),
         const ThisMonthView(),
         const ImportantView(),
@@ -33,14 +33,15 @@ sealed class ViewRef {
       ];
 }
 
-class MyDayView extends ViewRef {
-  const MyDayView();
+class TodayView extends ViewRef {
+  const TodayView();
+  // Kennung des früheren „Mein Tag“, damit eingerichtete Widgets ihre Ansicht behalten.
   @override
   String get id => 'my_day';
   @override
-  String title(ThaskStore store) => 'Mein Tag';
+  String title(ThaskStore store) => 'Heute';
   @override
-  List<Task> tasks(ThaskStore store) => store.myDay;
+  List<Task> tasks(ThaskStore store) => store.dueToday;
 }
 
 class ThisWeekView extends ViewRef {

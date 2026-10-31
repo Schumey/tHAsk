@@ -7,6 +7,14 @@ import 'store.dart';
 import 'views.dart';
 import 'task_detail_screen.dart';
 
+const _rangeNames = {
+  'all': 'Alle',
+  'week': 'Bis Ende der Woche',
+  'month': 'Bis Ende des Monats',
+  'quarter': 'Bis Ende des Quartals',
+  'year': 'Bis Ende des Jahres',
+};
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.store, this.launch});
 
@@ -20,7 +28,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  ViewRef _view = const MyDayView();
+  ViewRef _view = const TodayView();
   final _entry = TextEditingController();
   bool _sending = false;
 
@@ -84,7 +92,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final listId = _targetList;
     if (text.isEmpty || listId == null || _sending) return;
     setState(() => _sending = true);
-    final added = await _guard(() => store.addQuick(listId, text, myDay: _view is MyDayView));
+    final added = await _guard(() => store.addQuick(listId, text, dueToday: _view is TodayView));
     if (!mounted) return;
     setState(() => _sending = false);
     if (added) _entry.clear();
@@ -116,7 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final confirmed = await confirmDelete(context, list.name);
         if (!confirmed || !mounted) return;
         if (await _guard(() => store.deleteList(list.id)) && mounted) {
-          setState(() => _view = const MyDayView());
+          setState(() => _view = const TodayView());
         }
     }
   }
@@ -135,6 +143,17 @@ class _HomeScreenState extends State<HomeScreen> {
           appBar: AppBar(
             title: Text(_title),
             actions: [
+              if (_view is ImportantView)
+                PopupMenuButton<String>(
+                  tooltip: 'Zeitraum',
+                  icon: const Icon(Icons.date_range_outlined),
+                  initialValue: store.importantRange,
+                  onSelected: store.setImportantRange,
+                  itemBuilder: (_) => [
+                    for (final MapEntry(:key, :value) in _rangeNames.entries)
+                      CheckedPopupMenuItem(value: key, checked: key == store.importantRange, child: Text(value)),
+                  ],
+                ),
               if (listView)
                 IconButton(
                   tooltip: 'Erledigte löschen',
@@ -275,11 +294,11 @@ class _HomeScreenState extends State<HomeScreen> {
         child: ListView(
           children: [
             ListTile(
-              leading: const Icon(Icons.wb_sunny_outlined),
-              title: const Text('Mein Tag'),
-              selected: _view is MyDayView,
-              trailing: _count(store.myDay.where((t) => !t.completed).length),
-              onTap: () => select(const MyDayView()),
+              leading: const Icon(Icons.today_outlined),
+              title: const Text('Heute'),
+              selected: _view is TodayView,
+              trailing: _count(store.dueToday.where((t) => !t.completed).length),
+              onTap: () => select(const TodayView()),
             ),
             ListTile(
               leading: const Icon(Icons.date_range_outlined),

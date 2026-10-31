@@ -8,7 +8,7 @@ Version 0.4 – Integration mit Weboberfläche in der HA-Seitenleiste und Androi
 
 ## Android-App
 
-Die App spiegelt die Weboberfläche: Mein Tag, Diese Woche, Diesen Monat, Wichtig, Geplant und die eigenen Listen, Detailbereich, Schnelleingabe mit Erkennung, Priorität als farbiger Balken. Sie hält Verbindung zu Home Assistant über die WebSocket-API, zeigt offline den letzten Stand und merkt Änderungen ohne Verbindung vor, bis sie gesendet werden können. Das Widget zeigt eine wählbare Ansicht, hakt Aufgaben ab und öffnet mit „+“ die Schnelleingabe.
+Die App spiegelt die Weboberfläche: Heute, Diese Woche, Diesen Monat, Wichtig, Geplant und die eigenen Listen, Detailbereich, Schnelleingabe mit Erkennung, Priorität als farbiger Balken. Sie hält Verbindung zu Home Assistant über die WebSocket-API, zeigt offline den letzten Stand und merkt Änderungen ohne Verbindung vor, bis sie gesendet werden können. Das Widget zeigt eine wählbare Ansicht, hakt Aufgaben ab und öffnet mit „+“ die Schnelleingabe.
 
 Anmeldung mit Adresse von Home Assistant und einem **langlebigen Zugriffstoken** (HA-Profil → Sicherheit). Die App wird bisher nicht als fertiges Paket ausgeliefert, sondern aus dem Quellcode gebaut:
 
@@ -30,9 +30,9 @@ Beim ersten Start wird die Liste „Aufgaben“ angelegt.
 
 Nach dem Einrichten erscheint **tHAsk** in der HA-Seitenleiste (auch in der Companion-App auf dem Handy):
 
-- Intelligente Listen **Mein Tag**, **Wichtig** (Priorität Hoch), **Geplant** (gruppiert nach Überfällig / Diese Woche / Diesen Monat / Später), **Diese Woche** und **Diesen Monat** (alles, was bis Monatsende fällig ist, inkl. Überfälligem), darunter die eigenen Listen (mit Gruppen).
+- Intelligente Listen **Heute** (alles, was bis heute fällig ist, inkl. Überfälligem und Zeiträumen, die heute enden), **Wichtig** (Priorität Hoch, Zeitraum oben rechts wählbar: alle oder fällig bis Ende der Woche / des Monats / des Quartals / des Jahres; jedes Gerät merkt sich die Wahl), **Geplant** (gruppiert nach Überfällig / Diese Woche / Diesen Monat / Später), **Diese Woche** und **Diesen Monat** (alles, was bis Monatsende fällig ist, inkl. Überfälligem), darunter die eigenen Listen (mit Gruppen).
 - **Schnelleingabe** mit Erkennung, z. B. „Reifen wechseln nächsten Monat !“, „Steuer KW 47“, „Rechnungen ablegen jeden Monat“, „Blumen gießen jeden Mi und Sa“, „Training alle 2 Wochen Mo und Do“, „Zeitung werktags“, „Zahnarzt morgen um 9:30“. Erkanntes wird als Chip angezeigt; ein Klick auf den Chip nimmt die Erkennung zurück.
-- **Detailbereich**: Schritte, „Mein Tag“, Fälligkeit als Tag/Woche/Monat/Quartal/Jahr mit Vor-/Zurück-Pfeilen, Erinnerung, Wiederholung (wöchentlich auch an mehreren Wochentagen), Liste, Notizen.
+- **Detailbereich**: Schritte, Priorität, Fälligkeit als Tag/Woche/Monat/Quartal/Jahr mit Vor-/Zurück-Pfeilen, Erinnerung, Wiederholung (wöchentlich auch an mehreren Wochentagen), Liste, Notizen.
 - Aufgaben per Drag & Drop sortieren oder auf eine andere Liste in der Seitenleiste ziehen.
 - **Suche** (oben in der Seitenleiste) durchsucht alle Listen nach Titel, Notizen, Schritten und Kategorien; mehrere Wörter müssen alle vorkommen.
 - Listen anlegen (unten in der Seitenleiste), umbenennen (auf den Titel klicken), Gruppe per Auswahl setzen (vorhandene Gruppen, „Keine Gruppe“ oder „Neue Gruppe …“), löschen und per Drag & Drop in der Seitenleiste anordnen.
@@ -49,7 +49,7 @@ Jede Aufgabe hat eine Priorität von 0 bis 3, im Panel als farbiger Balken an de
 | Entity | Inhalt |
 |---|---|
 | `todo.thask_<liste>` | eine pro Liste |
-| `todo.thask_mein_tag` | Aufgaben, die heute zu „Mein Tag“ hinzugefügt wurden |
+| `todo.thask_mein_tag` | „Heute“: alles, was bis heute fällig ist (der Name der Entity stammt noch von „Mein Tag“); neue Aufgaben dort werden heute fällig |
 | `todo.thask_diese_woche` | alles, was bis Sonntag erledigt sein muss (inkl. Überfälligem) |
 
 Home Assistant kennt nur exakte Daten. Deshalb zeigt es bei einer Zeitraum-Fälligkeit das **letzte Datum** des Zeitraums an (KW 46 → 15.11.). Solange das Datum dort nicht geändert wird, bleibt der Zeitraum erhalten.
@@ -123,7 +123,7 @@ Ein Trigger legt **einmal pro Tag** automatisch eine Aufgabe an, wenn in Home As
 - **Anlegen bis zu N Tage vorher** (bei Kalenderbedingungen): Termine bis zu N Tage voraus zählen; die Aufgabe entsteht, sobald der Termin im Fenster liegt (1 = am Vortag, für einen Termin, der erst heute eingetragen wird, noch am selben Tag). Zustand und Uhrzeit beziehen sich immer auf jetzt.
 - Pro Termin entsteht nur eine Aufgabe, auch wenn er mehrere Tage dauert.
 
-**Dann** – eine Aufgabe: Titel mit Platzhaltern `{termin}`, `{datum}`, `{wochentag}`, `{zustand}` (englisch `{event}`, `{date}`, `{weekday}`, `{state}`), Liste, Fälligkeit (*Heute*, *Vortag*, *Tag*, *Woche* oder *Monat* des Termins bzw. des Auslösetags; der Vortag eines Termins von heute ist heute), Priorität und optional „Mein Tag“.
+**Dann** – eine Aufgabe: Titel mit Platzhaltern `{termin}`, `{datum}`, `{wochentag}`, `{zustand}` (englisch `{event}`, `{date}`, `{weekday}`, `{state}`), Liste, Fälligkeit (*Heute*, *Vortag*, *Tag*, *Woche* oder *Monat* des Termins bzw. des Auslösetags; der Vortag eines Termins von heute ist heute), Priorität.
 
 Auf der Trigger-Seite: Haken = aktiv, Kolben = **Testen** (zeigt, ob die Bedingungen jetzt zutreffen, legt nichts an), Play = **Jetzt ausführen** (legt die Aufgabe sofort für heute an), Pfeil oben = **Jetzt prüfen** (alle Trigger). Im Editor lässt sich ein Trigger bis zu einem Datum **pausieren**. Der **Verlauf** zeigt die angelegten Aufgaben; **Rückgängig** löscht die Aufgabe wieder, und der Trigger legt für diesen Tag nichts mehr an.
 
@@ -150,7 +150,7 @@ Alle Befehle laufen über die normale HA-WebSocket-Verbindung (Authentifizierung
 | `thask/trigger/check` | – (alle Trigger jetzt prüfen) |
 | `thask/trigger/undo` | `run_id` |
 
-Aufgabenfelder: `list_id`, `title`, `notes`, `completed`, `priority` (0 keine, 1 niedrig, 2 mittel, 3 hoch), `due` (`{"granularity": "day|week|month|quarter|year", "start": "2026-11-09"}`), `due_time` (`"HH:MM"`, nur bei Tagen), `reminder` (ISO-Datum mit Uhrzeit), `recurrence` (`{"unit": "month", "interval": 1}`, wöchentlich an mehreren Tagen: `{"unit": "week", "interval": 1, "weekdays": [2, 5]}` mit 0 = Montag), `my_day` (ISO-Datum), `steps`, `categories`.
+Aufgabenfelder: `list_id`, `title`, `notes`, `completed`, `priority` (0 keine, 1 niedrig, 2 mittel, 3 hoch), `due` (`{"granularity": "day|week|month|quarter|year", "start": "2026-11-09"}`), `due_time` (`"HH:MM"`, nur bei Tagen), `reminder` (ISO-Datum mit Uhrzeit), `recurrence` (`{"unit": "month", "interval": 1}`, wöchentlich an mehreren Tagen: `{"unit": "week", "interval": 1, "weekdays": [2, 5]}` mit 0 = Montag), `steps`, `categories`. `my_day` wird noch angenommen, hat aber keine Wirkung mehr („Heute“ richtet sich nach der Fälligkeit).
 
 Wird eine wiederkehrende Aufgabe erledigt, entsteht eine neue Aufgabe für den nächsten Zeitraum, der noch nicht vorbei ist.
 

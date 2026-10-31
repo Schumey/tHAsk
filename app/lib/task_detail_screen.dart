@@ -326,13 +326,6 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                 ),
               ),
               const Divider(height: 1),
-              SwitchListTile(
-                secondary: const Icon(Icons.wb_sunny_outlined),
-                title: const Text('Mein Tag'),
-                value: task.inMyDay(store.today),
-                onChanged: (v) => _update({'my_day': v ? isoDate(store.today) : null}),
-              ),
-              const Divider(height: 1),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
                 child: Text('Priorität', style: theme.textTheme.labelLarge),

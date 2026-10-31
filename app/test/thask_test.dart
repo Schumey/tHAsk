@@ -265,7 +265,7 @@ void main() {
       expect(store.thisWeek.map((t) => t.title), ['Steuer']);
       // KW 44 endet am 1. November und gehört deshalb nicht mehr in den Oktober.
       expect(store.thisMonth, isEmpty);
-      expect(store.myDay, isEmpty);
+      expect(store.dueToday, isEmpty);
     });
 
     test('Änderungen werden angewendet', () async {
@@ -276,13 +276,13 @@ void main() {
         'kind': 'task',
         'id': 't2',
         'list_id': 'l1',
-        'item': {'id': 't2', 'list_id': 'l1', 'title': 'Neu', 'my_day': '2026-10-31'},
+        'item': {'id': 't2', 'list_id': 'l1', 'title': 'Neu', 'due': {'granularity': 'day', 'start': '2026-10-31'}},
       });
       await Future<void>.delayed(Duration.zero);
-      expect(store.myDay.map((t) => t.title), ['Neu']);
+      expect(store.dueToday.map((t) => t.title), ['Neu']);
       connection.emit({'type': 'change', 'action': 'removed', 'kind': 'task', 'id': 't2', 'list_id': 'l1', 'item': null});
       await Future<void>.delayed(Duration.zero);
-      expect(store.myDay, isEmpty);
+      expect(store.dueToday, isEmpty);
     });
 
     test('addQuick erkennt Fälligkeit und Priorität auf dem Gerät', () async {
@@ -381,7 +381,7 @@ void main() {
       expect((list.single as Map)['due'], 'KW 44');
       expect((list.single as Map)['overdue'], isFalse);
       expect(ViewRef.fromId('list:l1'), isA<ListRef>());
-      expect(ViewRef.fromId('gibt-es-nicht'), isA<MyDayView>());
+      expect(ViewRef.fromId('gibt-es-nicht'), isA<TodayView>());
     });
 
     test('Wichtig und Geplant', () async {
@@ -397,6 +397,73 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       expect(store.important.map((t) => t.title), ['Ohne Datum']);
       expect(store.planned.map((t) => t.title), ['Steuer']);
+    });
+
+    test('Wichtig mit Zeitraum', () async {
+      await signIn();
+      for (final (id, due) in [('w', '2026-11-01'), ('m', '2026-10-31'), ('q', '2026-12-31'), ('o', null)]) {
+        connection.emit({
+          'type': 'change',
+          'action': 'created',
+          'kind': 'task',
+          'id': id,
+          'list_id': 'l1',
+          'item': {
+            'id': id,
+            'list_id': 'l1',
+            'title': id,
+            'priority': 3,
+            if (due != null) 'due': {'granularity': 'day', 'start': due},
+          },
+        });
+      }
+      await Future<void>.delayed(Duration.zero);
+      // Heute ist Samstag, 31. Oktober: die Woche endet morgen, der Monat heute.
+      expect(store.important.map((t) => t.id), ['m', 'w', 'q', 'o']);
+      await store.setImportantRange('week');
+      expect(store.important.map((t) => t.id), ['m', 'w']);
+      await store.setImportantRange('month');
+      expect(store.important.map((t) => t.id), ['m']);
+      await store.setImportantRange('quarter');
+      expect(store.important.map((t) => t.id), ['m', 'w', 'q']);
+    });
+
+    test('Heute zeigt Fälliges, Überfälliges und heute Erledigtes', () async {
+      await signIn();
+      final items = {
+        'heute': {'due': {'granularity': 'day', 'start': '2026-10-31'}},
+        'alt': {'due': {'granularity': 'day', 'start': '2026-10-20'}},
+        'morgen': {'due': {'granularity': 'day', 'start': '2026-11-01'}},
+        'ohne': <String, dynamic>{},
+        'erledigt': {
+          'due': {'granularity': 'day', 'start': '2026-10-31'},
+          'completed': true,
+          'completed_at': DateTime(2026, 10, 31, 9).toUtc().toIso8601String(),
+        },
+      };
+      for (final MapEntry(:key, :value) in items.entries) {
+        connection.emit({
+          'type': 'change',
+          'action': 'created',
+          'kind': 'task',
+          'id': key,
+          'list_id': 'l1',
+          'item': {'id': key, 'list_id': 'l1', 'title': key, ...value},
+        });
+      }
+      await Future<void>.delayed(Duration.zero);
+      expect(store.dueToday.map((t) => t.id).toSet(), {'heute', 'alt', 'erledigt'});
+    });
+
+    test('Schnelleingabe in „Heute“ macht die Aufgabe heute fällig', () async {
+      await signIn();
+      await store.addQuick('l1', 'Milch', dueToday: true);
+      await store.addQuick('l1', 'Steuer KW 47', dueToday: true);
+      final creates = connection.calls.where((c) => c.$1 == 'thask/task/create').map((c) => c.$2['due']).toList();
+      expect(creates, [
+        {'granularity': 'day', 'start': '2026-10-31'},
+        {'granularity': 'week', 'start': '2026-11-16'},
+      ]);
     });
 
     test('Abmelden löscht Zugangsdaten und Daten', () async {
@@ -483,6 +550,14 @@ class _MemoryCache implements SnapshotCache {
 
   @override
   Future<void> save(String value) async => json = value;
+
+  final settings = <String, String>{};
+
+  @override
+  Future<String?> loadSetting(String key) async => settings[key];
+
+  @override
+  Future<void> saveSetting(String key, String value) async => settings[key] = value;
 
   @override
   Future<void> clear() async {

@@ -170,7 +170,8 @@ class Task:
     # Aware ISO datetime.
     reminder: str | None = None
     recurrence: Recurrence | None = None
-    # ISO date of the day the task was added to "My Day"; stale values simply mean "not in My Day".
+    # Deprecated: ISO date of the day the task was added to the former "My Day". "Today" now shows what is
+    # due; the field is kept so older clients can still send it.
     my_day: str | None = None
     steps: list[Step] = field(default_factory=list)
     categories: list[str] = field(default_factory=list)
@@ -212,8 +213,11 @@ class Task:
             self.due_time = None
         self.modified = utc_now_iso()
 
-    def in_my_day(self, today: date) -> bool:
-        return self.my_day == today.isoformat()
+    def in_today(self, today: date, tz: tzinfo) -> bool:
+        """The "Today" view: open tasks due by today (overdue included), and those completed today."""
+        if not self.due_by(today):
+            return False
+        return not self.completed or self.completed_on_or_after(today, tz)
 
     def due_by(self, day: date) -> bool:
         """Whether the task has to be done by the end of `day` (overdue tasks included)."""

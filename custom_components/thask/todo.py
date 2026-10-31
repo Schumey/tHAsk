@@ -1,4 +1,4 @@
-"""Todo entities: one per task list plus the smart lists "My Day" and "This week"."""
+"""Todo entities: one per task list plus the smart lists "Today" and "This week"."""
 
 from __future__ import annotations
 
@@ -32,6 +32,7 @@ PARALLEL_UPDATES = 0
 # Completed tasks shown in Home Assistant per list; the apps see all of them.
 MAX_COMPLETED_ITEMS = 100
 
+# "Today" keeps the key of the former "My Day", so its entity id stays the same.
 SMART_MY_DAY = "my_day"
 SMART_THIS_WEEK = "this_week"
 
@@ -234,7 +235,7 @@ class ThaskSmartListEntity(ThaskTodoEntity):
 
     def _matches(self, task: Task, today: date) -> bool:
         if self._key == SMART_MY_DAY:
-            return task.in_my_day(today)
+            return task.in_today(today, self._data.tz)
         week_end = Period(Granularity.WEEK, today).end
         if task.completed:
             return task.due_by(week_end) and task.completed_on_or_after(
@@ -264,6 +265,6 @@ class ThaskSmartListEntity(ThaskTodoEntity):
             fields.update(due_from_ha(item.due, self._data.tz))
         elif self._key == SMART_THIS_WEEK:
             fields["due"] = Period(Granularity.WEEK, today).as_dict()
-        if self._key == SMART_MY_DAY:
-            fields["my_day"] = today.isoformat()
+        elif self._key == SMART_MY_DAY:
+            fields["due"] = Period.day(today).as_dict()
         self._data.collection.create_task(default.id, item.summary or "", **fields)
