@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'list_dialogs.dart';
 import 'models.dart';
 import 'priority.dart';
 import 'store.dart';
@@ -89,6 +90,37 @@ class _HomeScreenState extends State<HomeScreen> {
     if (added) _entry.clear();
   }
 
+  Future<void> _newList() async {
+    final result = await showListDialog(context, store);
+    if (result == null || !mounted) return;
+    String? id;
+    final ok = await _guard(() async => id = await store.createList(result.name, group: result.group));
+    if (ok && id != null && mounted) setState(() => _view = ListRef(id!));
+  }
+
+  Future<void> _listMenu(String action, TaskList list) async {
+    switch (action) {
+      case 'rename':
+        final name = await showNameDialog(context, title: 'Liste umbenennen', initial: list.name);
+        if (name != null && name != list.name) await _guard(() => store.updateList(list.id, {'name': name}));
+      case 'group':
+        final group = await pickGroup(context, store, current: list.group);
+        if (group != null && group.value != list.group) {
+          await _guard(() => store.updateList(list.id, {'group': group.value}));
+        }
+      case 'sort':
+        final sort = await pickSort(context, current: list.sort);
+        if (sort != null && sort != list.sort) await _guard(() => store.updateList(list.id, {'sort': sort}));
+      case 'delete':
+        if (store.lists.length == 1) return;
+        final confirmed = await confirmDelete(context, list.name);
+        if (!confirmed || !mounted) return;
+        if (await _guard(() => store.deleteList(list.id)) && mounted) {
+          setState(() => _view = const MyDayView());
+        }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -98,6 +130,7 @@ class _HomeScreenState extends State<HomeScreen> {
         final open = tasks.where((t) => !t.completed).toList();
         final done = tasks.where((t) => t.completed).toList();
         final listView = _view is ListRef;
+        final list = listView ? store.list((_view as ListRef).listId) : null;
         return Scaffold(
           appBar: AppBar(
             title: Text(_title),
@@ -112,9 +145,26 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               PopupMenuButton<String>(
                 onSelected: (value) {
-                  if (value == 'logout') store.logout();
+                  if (value == 'logout') {
+                    store.logout();
+                  } else if (list != null) {
+                    _listMenu(value, list);
+                  }
                 },
-                itemBuilder: (_) => const [PopupMenuItem(value: 'logout', child: Text('Abmelden'))],
+                itemBuilder: (_) => [
+                  if (list != null) ...[
+                    const PopupMenuItem(value: 'rename', child: Text('Umbenennen')),
+                    const PopupMenuItem(value: 'group', child: Text('Gruppe …')),
+                    const PopupMenuItem(value: 'sort', child: Text('Sortieren …')),
+                    PopupMenuItem(
+                      value: 'delete',
+                      enabled: store.lists.length > 1,
+                      child: const Text('Liste löschen'),
+                    ),
+                    const PopupMenuDivider(),
+                  ],
+                  const PopupMenuItem(value: 'logout', child: Text('Abmelden')),
+                ],
               ),
             ],
           ),
@@ -275,6 +325,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   onTap: () => select(ListRef(list.id)),
                 ),
             ],
+            ListTile(
+              leading: const Icon(Icons.add),
+              title: const Text('Neue Liste'),
+              enabled: store.connection == LinkState.connected,
+              onTap: () {
+                Navigator.pop(context);
+                _newList();
+              },
+            ),
           ],
         ),
       ),

@@ -556,6 +556,32 @@ class ThaskStore extends ChangeNotifier {
 
   Future<void> clearCompleted(String listId) => _call('thask/list/clear_completed', {'list_id': listId});
 
+  // -- Listen (nur mit Verbindung) ---------------------------------------------
+
+  /// Vorhandene Listengruppen, alphabetisch.
+  List<String> get groups {
+    final names = {
+      for (final list in _lists.values)
+        if (list.group != null && list.group!.isNotEmpty) list.group!,
+    }.toList();
+    return names..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+  }
+
+  /// Legt eine Liste an und liefert ihre Id.
+  Future<String?> createList(String name, {String? group}) async {
+    final result = await _call('thask/list/create', {'name': name, 'group': ?group});
+    return (result as Map?)?['id'] as String?;
+  }
+
+  /// Felder wie `name`, `group` (null = keine Gruppe) oder `sort`.
+  Future<void> updateList(String listId, Map<String, dynamic> patch) async {
+    await _call('thask/list/update', {'list_id': listId, ...patch});
+  }
+
+  Future<void> deleteList(String listId) async {
+    await _call('thask/list/delete', {'list_id': listId});
+  }
+
   @override
   void dispose() {
     _stopped = true;

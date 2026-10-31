@@ -296,6 +296,44 @@ void main() {
       expect(create.containsKey('due_time'), isFalse);
     });
 
+    test('Listen anlegen, ändern und löschen', () async {
+      await signIn();
+      connection.results['thask/list/create'] = {'id': 'l9', 'name': 'Garten'};
+      expect(await store.createList('Garten', group: 'Zuhause'), 'l9');
+      await store.updateList('l1', {'group': null, 'sort': 'due'});
+      await store.deleteList('l2');
+      final calls = connection.calls.where((c) => c.$1.startsWith('thask/list/'));
+      expect(calls.map((c) => c.$1), ['thask/list/create', 'thask/list/update', 'thask/list/delete']);
+      expect(calls.map((c) => c.$2), [
+        {'name': 'Garten', 'group': 'Zuhause'},
+        {'list_id': 'l1', 'group': null, 'sort': 'due'},
+        {'list_id': 'l2'},
+      ]);
+      // Ohne Gruppe wird keine gesendet.
+      await store.createList('Ohne');
+      expect(connection.calls.last.$2, {'name': 'Ohne'});
+    });
+
+    test('Gruppen sind eindeutig und sortiert', () async {
+      await signIn();
+      for (final (id, group) in [('l1', 'zuhause'), ('l2', 'Auto'), ('l3', 'Auto')]) {
+        connection.emit({
+          'type': 'change',
+          'action': 'updated',
+          'kind': 'list',
+          'id': id,
+          'list_id': id,
+          'item': {'id': id, 'name': id, 'group': group},
+        });
+      }
+      await Future<void>.delayed(Duration.zero);
+      expect(store.groups, ['Auto', 'zuhause']);
+    });
+
+    test('Listen ändern braucht eine Verbindung', () async {
+      expect(() => store.updateList('l1', {'name': 'x'}), throwsA(isA<HaException>()));
+    });
+
     test('updateTask schickt nur die geänderten Felder', () async {
       await signIn();
       await store.updateTask(store.task('t1')!, {'due': null, 'notes': 'x'});
