@@ -5,3 +5,6 @@ __pycache__/
 
 # Exports may contain personal data
 thask_ms_todo.json
+
+# Private companion repo Schumey/tHAsk-local
+local/

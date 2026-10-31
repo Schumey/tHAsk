@@ -4,7 +4,7 @@ Lokale Aufgabenverwaltung für Home Assistant – mit **unscharfen Fälligkeiten
 
 ## Status
 
-Version 0.1 – die Integration (Backend). Android-App und Widget folgen.
+Version 0.2 – Integration mit Weboberfläche in der HA-Seitenleiste. Android-App und Widget folgen.
 
 ## Installation
 
@@ -13,6 +13,16 @@ Version 0.1 – die Integration (Backend). Android-App und Widget folgen.
 3. **Einstellungen → Geräte & Dienste → Integration hinzufügen → tHAsk**.
 
 Beim ersten Start wird die Liste „Aufgaben“ angelegt.
+
+## Weboberfläche
+
+Nach dem Einrichten erscheint **tHAsk** in der HA-Seitenleiste (auch in der Companion-App auf dem Handy):
+
+- Intelligente Listen **Mein Tag**, **Wichtig**, **Geplant** (gruppiert nach Überfällig / Diese Woche / Diesen Monat / Später) und **Diese Woche**, darunter die eigenen Listen (mit Gruppen).
+- **Schnelleingabe** mit Erkennung, z. B. „Reifen wechseln nächsten Monat !“, „Steuer KW 47“, „Rechnungen ablegen jeden Monat“, „Zahnarzt morgen um 9:30“. Erkanntes wird als Chip angezeigt; ein Klick auf den Chip nimmt die Erkennung zurück.
+- **Detailbereich**: Schritte, „Mein Tag“, Fälligkeit als Tag/Woche/Monat/Quartal/Jahr mit Vor-/Zurück-Pfeilen, Erinnerung, Wiederholung, Liste, Notizen.
+- Aufgaben per Drag & Drop sortieren oder auf eine andere Liste in der Seitenleiste ziehen.
+- Listen anlegen (unten in der Seitenleiste), umbenennen (auf den Titel klicken), Gruppe setzen, löschen.
 
 ## Was in Home Assistant entsteht
 
@@ -87,6 +97,7 @@ Alle Befehle laufen über die normale HA-WebSocket-Verbindung (Authentifizierung
 | `thask/list/create`, `thask/list/update`, `thask/list/delete` | `name`, `group`, `color`, `icon`, `position` / `list_id` |
 | `thask/task/create`, `thask/task/update`, `thask/task/delete` | siehe unten / `task_id` |
 | `thask/task/move` | `task_id`, `previous_id` |
+| `thask/parse` | `text`, `disabled` (Liste aus `due`, `time`, `recurrence`, `important`) – Schnelleingabe |
 
 Aufgabenfelder: `list_id`, `title`, `notes`, `completed`, `important`, `due` (`{"granularity": "day|week|month|quarter|year", "start": "2026-11-09"}`), `due_time` (`"HH:MM"`, nur bei Tagen), `reminder` (ISO-Datum mit Uhrzeit), `recurrence` (`{"unit": "month", "interval": 1}`), `my_day` (ISO-Datum), `steps`, `categories`.
 
@@ -99,3 +110,11 @@ Die Datums- und Datenlogik in `custom_components/thask/core` hängt nicht von Ho
 ```bash
 python -m pytest
 ```
+
+Die Weboberfläche lässt sich ohne Home Assistant im Browser testen, mit der echten Datenlogik und Beispieldaten im Speicher:
+
+```bash
+python tools/panel_dev_server.py
+```
+
+Dann http://localhost:8765 öffnen.

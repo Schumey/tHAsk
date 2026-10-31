@@ -16,6 +16,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from .const import SIGNAL_DAY_CHANGED
 from .core.collection import Change, NotFoundError
 from .core.models import Task, TaskList
+from .core.parser import KIND_DUE, KIND_IMPORTANT, KIND_RECURRENCE, KIND_TIME, parse
 from .data import ThaskData, async_get_data
 from .schema import LIST_FIELDS, TASK_FIELDS
 
@@ -38,6 +39,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
         ws_task_update,
         ws_task_delete,
         ws_task_move,
+        ws_parse,
     ):
         websocket_api.async_register_command(hass, command)
 
@@ -184,3 +186,17 @@ def ws_task_delete(hass, connection, msg, data: ThaskData) -> None:
 def ws_task_move(hass, connection, msg, data: ThaskData) -> None:
     task = data.collection.move_task(msg["task_id"], msg.get("previous_id"))
     connection.send_result(msg["id"], task.as_dict())
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "thask/parse",
+        vol.Required("text"): str,
+        vol.Optional("disabled", default=[]): [vol.In([KIND_DUE, KIND_TIME, KIND_RECURRENCE, KIND_IMPORTANT])],
+    }
+)
+@_with_data
+def ws_parse(hass, connection, msg, data: ThaskData) -> None:
+    """Quick entry preview: split typed text into title and structured fields."""
+    result = parse(msg["text"], data.today, set(msg["disabled"]))
+    connection.send_result(msg["id"], result.as_dict(data.language, data.today))
