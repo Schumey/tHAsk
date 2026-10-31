@@ -4,7 +4,19 @@ Lokale Aufgabenverwaltung für Home Assistant – mit **unscharfen Fälligkeiten
 
 ## Status
 
-Version 0.3 – Integration mit Weboberfläche in der HA-Seitenleiste. Android-App und Widget folgen.
+Version 0.4 – Integration mit Weboberfläche in der HA-Seitenleiste und Android-App mit Widget (Quellcode in `app/`, Flutter).
+
+## Android-App
+
+Die App spiegelt die Weboberfläche: Mein Tag, Diese Woche, Diesen Monat, Wichtig, Geplant und die eigenen Listen, Detailbereich, Schnelleingabe mit Erkennung, Priorität als farbiger Balken. Sie hält Verbindung zu Home Assistant über die WebSocket-API, zeigt offline den letzten Stand und merkt Änderungen ohne Verbindung vor, bis sie gesendet werden können. Das Widget zeigt eine wählbare Ansicht, hakt Aufgaben ab und öffnet mit „+“ die Schnelleingabe.
+
+Anmeldung mit Adresse von Home Assistant und einem **langlebigen Zugriffstoken** (HA-Profil → Sicherheit). Die App wird bisher nicht als fertiges Paket ausgeliefert, sondern aus dem Quellcode gebaut:
+
+```bash
+cd app
+flutter run            # Handy per USB, USB-Debugging an
+flutter build apk      # APK in app/build/app/outputs/flutter-apk/
+```
 
 ## Installation
 
