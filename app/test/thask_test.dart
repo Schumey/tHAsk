@@ -132,6 +132,13 @@ void main() {
       expect(create.containsKey('due_time'), isFalse);
     });
 
+    test('updateTask schickt nur die geänderten Felder', () async {
+      await signIn();
+      await store.updateTask(store.task('t1')!, {'due': null, 'notes': 'x'});
+      final update = connection.calls.singleWhere((c) => c.$1 == 'thask/task/update').$2;
+      expect(update, {'task_id': 't1', 'due': null, 'notes': 'x'});
+    });
+
     test('Abmelden löscht Zugangsdaten und Daten', () async {
       await signIn();
       await store.logout();

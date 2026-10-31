@@ -121,15 +121,15 @@ class Recurrence {
   Map<String, dynamic> toJson() => {'unit': unit.name, 'interval': interval};
 }
 
-class Step {
-  const Step({required this.id, required this.title, this.completed = false});
+class TaskStep {
+  const TaskStep({required this.id, required this.title, this.completed = false});
 
   final String id;
   final String title;
   final bool completed;
 
-  factory Step.fromJson(Map<String, dynamic> json) =>
-      Step(id: json['id'] as String, title: json['title'] as String, completed: json['completed'] as bool? ?? false);
+  factory TaskStep.fromJson(Map<String, dynamic> json) =>
+      TaskStep(id: json['id'] as String, title: json['title'] as String, completed: json['completed'] as bool? ?? false);
 
   Map<String, dynamic> toJson() => {'id': id, 'title': title, 'completed': completed};
 }
@@ -197,7 +197,7 @@ class Task {
   final String? reminder;
   final Recurrence? recurrence;
   final String? myDay;
-  final List<Step> steps;
+  final List<TaskStep> steps;
   final List<String> categories;
   final double position;
   final String created;
@@ -216,7 +216,7 @@ class Task {
         recurrence:
             json['recurrence'] == null ? null : Recurrence.fromJson(json['recurrence'] as Map<String, dynamic>),
         myDay: json['my_day'] as String?,
-        steps: [for (final s in json['steps'] as List? ?? const []) Step.fromJson(s as Map<String, dynamic>)],
+        steps: [for (final s in json['steps'] as List? ?? const []) TaskStep.fromJson(s as Map<String, dynamic>)],
         categories: [for (final c in json['categories'] as List? ?? const []) c as String],
         position: (json['position'] as num?)?.toDouble() ?? 0,
         created: json['created'] as String? ?? '',

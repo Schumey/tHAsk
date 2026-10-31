@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'models.dart';
 import 'store.dart';
+import 'task_detail_screen.dart';
 
 /// Welche Ansicht gerade gezeigt wird: eine intelligente Liste oder eine eigene.
 sealed class ViewRef {
@@ -277,6 +278,9 @@ class _TaskTile extends StatelessWidget {
       ),
       onDismissed: (_) => guard(() => store.deleteTask(task)),
       child: ListTile(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => TaskDetailScreen(store: store, taskId: task.id)),
+        ),
         leading: Checkbox(
           value: task.completed,
           shape: const CircleBorder(),

@@ -244,6 +244,12 @@ class ThaskStore extends ChangeNotifier {
     });
   }
 
+  Task? task(String id) => _tasks[id];
+
+  /// Felder einer Aufgabe ändern (in der Form der API, z. B. `{'notes': '…', 'due': null}`).
+  Future<void> updateTask(Task task, Map<String, dynamic> patch) =>
+      _call('thask/task/update', {'task_id': task.id, ...patch});
+
   Future<void> setCompleted(Task task, bool completed) =>
       _call('thask/task/update', {'task_id': task.id, 'completed': completed});
 
