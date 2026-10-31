@@ -213,11 +213,20 @@ class Task:
             self.due_time = None
         self.modified = utc_now_iso()
 
-    def in_today(self, today: date, tz: tzinfo) -> bool:
-        """The "Today" view: open tasks due by today (overdue included), and those completed today."""
+    def in_today(self, today: date, tz: tzinfo, overdue: bool = True) -> bool:
+        """The "Today" view: open tasks due by today, and those completed today.
+
+        Overdue tasks are left out when `overdue` is false (they then have a view of their own).
+        """
         if not self.due_by(today):
             return False
-        return not self.completed or self.completed_on_or_after(today, tz)
+        if self.completed:
+            return self.completed_on_or_after(today, tz)
+        return overdue or not self.overdue(today)
+
+    def overdue(self, today: date) -> bool:
+        """Open and due before today."""
+        return not self.completed and self.due is not None and self.due.end < today
 
     def due_by(self, day: date) -> bool:
         """Whether the task has to be done by the end of `day` (overdue tasks included)."""

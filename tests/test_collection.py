@@ -117,6 +117,19 @@ def test_today_shows_what_is_due():
     assert done_today.in_today(TODAY, tz) and not done_earlier.in_today(TODAY, tz)
 
 
+def test_overdue_can_be_left_out_of_today():
+    tz = timezone.utc
+    overdue = Task(id="1", list_id="l", title="t", due=Period.day(date(2026, 11, 1)))
+    due_today = Task(id="2", list_id="l", title="t", due=Period.day(TODAY))
+    done_late = Task(id="3", list_id="l", title="t", due=Period.day(date(2026, 11, 1)), completed=True,
+                     completed_at=datetime(2026, 11, 3, 9, tzinfo=tz).isoformat())
+    assert overdue.overdue(TODAY) and not due_today.overdue(TODAY) and not done_late.overdue(TODAY)
+    assert not overdue.in_today(TODAY, tz, overdue=False)
+    assert due_today.in_today(TODAY, tz, overdue=False)
+    # Completed today, though late: it stays in "Today" so the day's work is visible.
+    assert done_late.in_today(TODAY, tz, overdue=False)
+
+
 def test_due_by_includes_whole_period():
     task = Task(id="1", list_id="l", title="t", due=Period.month(2026, 11))
     week_end = Period(Granularity.WEEK, TODAY).end

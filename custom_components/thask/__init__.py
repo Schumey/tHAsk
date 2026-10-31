@@ -36,8 +36,10 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ThaskConfigEntry) -> bool:
     data = ThaskData(hass)
+    data.set_options(entry.options)
     await data.async_start()
     entry.runtime_data = data
+    entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     integration = await async_get_integration(hass, DOMAIN)
@@ -51,6 +53,11 @@ async def async_setup_entry(hass: HomeAssistant, entry: ThaskConfigEntry) -> boo
         module_url=f"{PANEL_STATIC_URL}/thask-panel.js?v={integration.version}",
     )
     return True
+
+
+async def _async_options_updated(hass: HomeAssistant, entry: ThaskConfigEntry) -> None:
+    """Options apply at once, without a reload that would cut off the apps' subscriptions."""
+    entry.runtime_data.set_options(entry.options)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ThaskConfigEntry) -> bool:

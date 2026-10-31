@@ -15,6 +15,9 @@
       "my_day": {
         "name": "Heute"
       },
+      "overdue": {
+        "name": "Überfällig"
+      },
       "this_week": {
         "name": "Diese Woche"
       }
@@ -37,6 +40,13 @@
         "this_month": "Bis Ende dieses Monats",
         "overdue": "Überfällig",
         "all": "Alle"
+      }
+    },
+    "overdue_in_today": {
+      "options": {
+        "section": "Oben als eigener Abschnitt „Überfällig“",
+        "mixed": "Zwischen den heutigen Aufgaben",
+        "separate": "Nicht in „Heute“, sondern in einer eigenen Ansicht „Überfällig“"
       }
     }
   },
@@ -130,6 +140,19 @@
         "older_than_days": {
           "name": "Älter als (Tage)",
           "description": "Nur Aufgaben, die vor mehr als so vielen Tagen erledigt wurden."
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "tHAsk-Optionen",
+        "data": {
+          "overdue_in_today": "Überfällige Aufgaben in „Heute“"
+        },
+        "data_description": {
+          "overdue_in_today": "Gilt für die Weboberfläche, die App, das Widget und die Liste „Heute“ in Home Assistant."
         }
       }
     }

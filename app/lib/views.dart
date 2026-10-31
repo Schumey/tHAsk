@@ -18,6 +18,7 @@ sealed class ViewRef {
         'this_month' => const ThisMonthView(),
         'important' => const ImportantView(),
         'planned' => const PlannedView(),
+        'overdue' => const OverdueView(),
         _ when id.startsWith('list:') => ListRef(id.substring(5)),
         _ => const TodayView(),
       };
@@ -25,6 +26,7 @@ sealed class ViewRef {
   /// Alle Ansichten, die es gerade gibt: zuerst die intelligenten, dann die eigenen Listen.
   static List<ViewRef> all(ThaskStore store) => [
         const TodayView(),
+        if (store.overdueMode == 'separate') const OverdueView(),
         const ThisWeekView(),
         const ThisMonthView(),
         const ImportantView(),
@@ -42,6 +44,17 @@ class TodayView extends ViewRef {
   String title(ThaskStore store) => 'Heute';
   @override
   List<Task> tasks(ThaskStore store) => store.dueToday;
+}
+
+/// Nur mit der Option „Überfällige in einer eigenen Ansicht“.
+class OverdueView extends ViewRef {
+  const OverdueView();
+  @override
+  String get id => 'overdue';
+  @override
+  String title(ThaskStore store) => 'Überfällig';
+  @override
+  List<Task> tasks(ThaskStore store) => store.overdue;
 }
 
 class ThisWeekView extends ViewRef {

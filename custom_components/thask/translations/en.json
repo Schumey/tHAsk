@@ -15,6 +15,9 @@
       "my_day": {
         "name": "Today"
       },
+      "overdue": {
+        "name": "Overdue"
+      },
       "this_week": {
         "name": "This week"
       }
@@ -37,6 +40,13 @@
         "this_month": "By end of this month",
         "overdue": "Overdue",
         "all": "All"
+      }
+    },
+    "overdue_in_today": {
+      "options": {
+        "section": "At the top in a section “Overdue”",
+        "mixed": "Among today's tasks",
+        "separate": "Not in “Today” but in a view “Overdue” of their own"
       }
     }
   },
@@ -130,6 +140,19 @@
         "older_than_days": {
           "name": "Older than (days)",
           "description": "Only tasks completed more than this many days ago."
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "tHAsk options",
+        "data": {
+          "overdue_in_today": "Overdue tasks in “Today”"
+        },
+        "data_description": {
+          "overdue_in_today": "Applies to the web interface, the app, the widget and the “Today” list in Home Assistant."
         }
       }
     }

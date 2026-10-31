@@ -92,6 +92,7 @@ const TASK_SORTS = ["manual", "priority", "due", "title", "created"];
 // Period of the "Important" view: everything, or what is due by the end of this week, month …
 const IMPORTANT_RANGES = ["all", "week", "month", "quarter", "year"];
 const RANGE_STORAGE_KEY = "thask.importantRange";
+const OVERDUE_COLLAPSED_KEY = "thask.overdueCollapsed";
 // The integration appends its version to the module URL (cache busting), so the panel can show it.
 const VERSION = new URL(import.meta.url).searchParams.get("v") || "";
 
@@ -102,6 +103,8 @@ const STATE_DOMAINS = ["person", "device_tracker", "binary_sensor", "sensor", "i
 
 const SMART_VIEWS = [
   { key: "my_day", icon: "mdi:calendar-today" },
+  // Only with the option "overdue tasks in a view of their own".
+  { key: "overdue", icon: "mdi:calendar-alert" },
   { key: "important", icon: "mdi:flag-outline" },
   { key: "planned", icon: "mdi:calendar-month-outline" },
   { key: "this_week", icon: "mdi:calendar-week" },
@@ -242,6 +245,13 @@ class ThaskPanel extends HTMLElement {
     this._showCompleted = false;
     this._search = "";
     this._groupMenu = null; // null | "pick" | "new"
+    this._overdueMode = "section"; // option of the integration: section | mixed | separate
+    this._overdueCollapsed = false;
+    try {
+      this._overdueCollapsed = localStorage.getItem(OVERDUE_COLLAPSED_KEY) === "1";
+    } catch {
+      // storage blocked: expanded
+    }
     this._pane = "list";
     this._loaded = false;
     this._error = null;
@@ -312,6 +322,7 @@ class ThaskPanel extends HTMLElement {
       this._today = parseISO(event.today);
       this._lists = event.lists;
       this._tasks = new Map(event.tasks.map((task) => [task.id, task]));
+      this._setOptions(event.options || {});
       this._loaded = true;
       this._error = null;
       if (this._view.type === "list" && !this._lists.some((l) => l.id === this._view.id)) {
@@ -319,10 +330,23 @@ class ThaskPanel extends HTMLElement {
       }
     } else if (event.type === "day_changed") {
       this._today = parseISO(event.today);
+    } else if (event.type === "options") {
+      this._setOptions(event);
     } else if (event.type === "change") {
       this._applyChange(event);
     }
     this._render();
+  }
+
+  _setOptions(options) {
+    this._overdueMode = options.overdue_in_today || "section";
+    if (this._view.type === "smart" && this._view.key === "overdue" && this._overdueMode !== "separate") {
+      this._view = { type: "smart", key: "my_day" };
+    }
+  }
+
+  _isOverdue(task) {
+    return !task.completed && !!task.due && periodEndOf(task.due) < this._today;
   }
 
   _applyChange(change) {
@@ -391,9 +415,12 @@ class ThaskPanel extends HTMLElement {
   _matchesSmart(task, key) {
     switch (key) {
       case "my_day":
-        // Today: everything due by today (overdue included), and what was completed today.
+        // Today: everything due by today, and what was completed today. Overdue tasks may have a view of their own.
         if (!this._dueBy(task, this._today)) return false;
-        return !task.completed || this._completedSince(task, this._today);
+        if (task.completed) return this._completedSince(task, this._today);
+        return this._overdueMode !== "separate" || !this._isOverdue(task);
+      case "overdue":
+        return this._isOverdue(task);
       case "important":
         if (task.priority < 3) return false;
         if (this._importantRange === "all") return true;
@@ -570,7 +597,7 @@ class ThaskPanel extends HTMLElement {
         <span class="count">${count(view) || ""}</span>
       </button>`;
 
-    let html = `<div class="search"><ha-icon icon="mdi:magnify"></ha-icon><input class="search-input" type="search" placeholder="${esc(this.t("search"))}" autocomplete="off"></div><div class="nav-section">${SMART_VIEWS.map((v) => item({ type: "smart", key: v.key }, v.icon, this.t(v.key))).join("")}</div><div class="divider"></div><div class="nav-section lists">`;
+    let html = `<div class="search"><ha-icon icon="mdi:magnify"></ha-icon><input class="search-input" type="search" placeholder="${esc(this.t("search"))}" autocomplete="off"></div><div class="nav-section">${SMART_VIEWS.filter((v) => v.key !== "overdue" || this._overdueMode === "separate").map((v) => item({ type: "smart", key: v.key }, v.icon, this.t(v.key))).join("")}</div><div class="divider"></div><div class="nav-section lists">`;
     let group = null;
     for (const list of this._lists) {
       if ((list.group || null) !== group) {
@@ -683,6 +710,15 @@ class ThaskPanel extends HTMLElement {
       for (const [key, tasks] of Object.entries(groups)) {
         if (tasks.length) html += `<div class="section-title ${key}">${esc(this.t(key))} <span>${tasks.length}</span></div>${tasks.map((t) => this._taskRow(t, false)).join("")}`;
       }
+    } else if (!searching && this._view.type === "smart" && this._view.key === "my_day" && this._overdueMode === "section"
+      && open.some((t) => this._isOverdue(t))) {
+      // Overdue at the top under a heading that folds away; then today's tasks.
+      const overdue = open.filter((t) => this._isOverdue(t));
+      const rest = open.filter((t) => !this._isOverdue(t));
+      html += `<button class="section-title overdue" data-action="toggle-overdue">
+        <ha-icon icon="${this._overdueCollapsed ? "mdi:chevron-right" : "mdi:chevron-down"}"></ha-icon>${esc(this.t("overdue"))} <span>${overdue.length}</span></button>`;
+      if (!this._overdueCollapsed) html += overdue.map((t) => this._taskRow(t, false)).join("");
+      if (rest.length) html += `<div class="section-title">${esc(this.t("today"))} <span>${rest.length}</span></div>${rest.map((t) => this._taskRow(t, false)).join("")}`;
     } else {
       html += open.map((task) => this._taskRow(task, reorderable)).join("");
     }
@@ -1305,6 +1341,15 @@ class ThaskPanel extends HTMLElement {
         break;
       case "toggle-completed":
         this._showCompleted = !this._showCompleted;
+        this._render();
+        break;
+      case "toggle-overdue":
+        this._overdueCollapsed = !this._overdueCollapsed;
+        try {
+          localStorage.setItem(OVERDUE_COLLAPSED_KEY, this._overdueCollapsed ? "1" : "0");
+        } catch {
+          // not remembered
+        }
         this._render();
         break;
       case "disable-kind":

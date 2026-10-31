@@ -189,6 +189,8 @@ class Backend:
         self.source = FakeSource(self.today)
         self.last_check: str | None = None
         seed_triggers(self.triggers, self.collection)
+        # Options of the integration; "dev/options" changes them, e.g. {"overdue_in_today": "separate"}.
+        self.options: dict[str, Any] = {"overdue_in_today": "section"}
 
     def handle(self, msg: dict[str, Any]) -> Any:
         collection, today = self.collection, self.today
@@ -197,9 +199,13 @@ class Backend:
             case "thask/data" | "thask/subscribe":
                 return {
                     "today": today.isoformat(),
+                    "options": self.options,
                     "lists": [item.as_dict() for item in collection.sorted_lists()],
                     "tasks": [task.as_dict() for task in collection.tasks.values()],
                 }
+            case "dev/options":
+                self.options.update({key: value for key, value in msg.items() if key not in ("type", "id")})
+                return self.options
             case "thask/parse":
                 return parse(msg["text"], today, set(msg.get("disabled", []))).as_dict(LANGUAGE, today)
             case "thask/list/create":

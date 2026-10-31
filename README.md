@@ -30,7 +30,7 @@ Beim ersten Start wird die Liste „Aufgaben“ angelegt.
 
 Nach dem Einrichten erscheint **tHAsk** in der HA-Seitenleiste (auch in der Companion-App auf dem Handy):
 
-- Intelligente Listen **Heute** (alles, was bis heute fällig ist, inkl. Überfälligem und Zeiträumen, die heute enden), **Wichtig** (Priorität Hoch, Zeitraum oben rechts wählbar: alle oder fällig bis Ende der Woche / des Monats / des Quartals / des Jahres; jedes Gerät merkt sich die Wahl), **Geplant** (gruppiert nach Überfällig / Diese Woche / Diesen Monat / Später), **Diese Woche** und **Diesen Monat** (alles, was bis Monatsende fällig ist, inkl. Überfälligem), darunter die eigenen Listen (mit Gruppen).
+- Intelligente Listen **Heute** (alles, was bis heute fällig ist, inkl. Zeiträumen, die heute enden; Überfälliges je nach Option oben als zuklappbarer Abschnitt, gemischt oder in einer eigenen Ansicht **Überfällig**), **Wichtig** (Priorität Hoch, Zeitraum oben rechts wählbar: alle oder fällig bis Ende der Woche / des Monats / des Quartals / des Jahres; jedes Gerät merkt sich die Wahl), **Geplant** (gruppiert nach Überfällig / Diese Woche / Diesen Monat / Später), **Diese Woche** und **Diesen Monat** (alles, was bis Monatsende fällig ist, inkl. Überfälligem), darunter die eigenen Listen (mit Gruppen).
 - **Schnelleingabe** mit Erkennung, z. B. „Reifen wechseln nächsten Monat !“, „Steuer KW 47“, „Rechnungen ablegen jeden Monat“, „Blumen gießen jeden Mi und Sa“, „Training alle 2 Wochen Mo und Do“, „Zeitung werktags“, „Zahnarzt morgen um 9:30“. Erkanntes wird als Chip angezeigt; ein Klick auf den Chip nimmt die Erkennung zurück.
 - **Detailbereich**: Schritte, Priorität, Fälligkeit als Tag/Woche/Monat/Quartal/Jahr mit Vor-/Zurück-Pfeilen, Erinnerung, Wiederholung (wöchentlich auch an mehreren Wochentagen), Liste, Notizen.
 - Aufgaben per Drag & Drop sortieren oder auf eine andere Liste in der Seitenleiste ziehen.
@@ -50,7 +50,10 @@ Jede Aufgabe hat eine Priorität von 0 bis 3, im Panel als farbiger Balken an de
 |---|---|
 | `todo.thask_<liste>` | eine pro Liste |
 | `todo.thask_mein_tag` | „Heute“: alles, was bis heute fällig ist (der Name der Entity stammt noch von „Mein Tag“); neue Aufgaben dort werden heute fällig |
+| `todo.thask_uberfallig` | offene Aufgaben, deren Fälligkeit vor heute endete |
 | `todo.thask_diese_woche` | alles, was bis Sonntag erledigt sein muss (inkl. Überfälligem) |
+
+**Optionen** (Einstellungen → Geräte & Dienste → tHAsk → Konfigurieren): *Überfällige Aufgaben in „Heute“* – oben als eigener Abschnitt (Standard), zwischen den heutigen oder nicht in „Heute“, sondern in einer eigenen Ansicht „Überfällig“. Gilt für Weboberfläche, App, Widget und `todo.thask_mein_tag`; ändert sich ohne Neustart.
 
 Home Assistant kennt nur exakte Daten. Deshalb zeigt es bei einer Zeitraum-Fälligkeit das **letzte Datum** des Zeitraums an (KW 46 → 15.11.). Solange das Datum dort nicht geändert wird, bleibt der Zeitraum erhalten.
 
@@ -137,7 +140,7 @@ Alle Befehle laufen über die normale HA-WebSocket-Verbindung (Authentifizierung
 |---|---|
 | `thask/info` | – |
 | `thask/data` | – (alle Listen und Aufgaben) |
-| `thask/subscribe` | – (Snapshot, danach jede Änderung als Event) |
+| `thask/subscribe` | – (Snapshot mit `options`, danach jede Änderung als Event; `options` nach einer Änderung der Optionen) |
 | `thask/list/create`, `thask/list/update`, `thask/list/delete` | `name`, `group`, `color`, `icon`, `position`, `sort` (`manual`, `priority`, `due`, `title`, `created`) / `list_id` |
 | `thask/list/move` | `list_id`, `previous_id` |
 | `thask/list/clear_completed` | `list_id` (leer = alle), `older_than_days` |

@@ -40,6 +40,16 @@ void main() {
     expect(find.byType(TaskDetailScreen), findsNothing);
   });
 
+  testWidgets('„Heute“ zeigt Überfälliges oben in einem eigenen Abschnitt', (tester) async {
+    await pumpHome(tester, const Size(400, 800));
+    expect(find.text('Überfällig (1)'), findsOneWidget);
+    expect(find.text('Heute (1)'), findsOneWidget);
+    await tester.tap(find.text('Überfällig (1)'));
+    await tester.pumpAndSettle();
+    expect(find.text('Alt'), findsNothing);
+    expect(store.overdueCollapsed, isTrue);
+  });
+
   testWidgets('Schmales Fenster: Details als eigene Seite', (tester) async {
     await pumpHome(tester, const Size(400, 800));
     expect(find.text('Wichtig'), findsNothing);
@@ -70,6 +80,7 @@ class _Cache implements SnapshotCache {
         ],
         'tasks': [
           {'id': 't1', 'list_id': 'l1', 'title': 'Steuer', 'due': {'granularity': 'day', 'start': '2026-10-31'}},
+          {'id': 't2', 'list_id': 'l1', 'title': 'Alt', 'due': {'granularity': 'day', 'start': '2026-10-29'}},
         ],
       });
 

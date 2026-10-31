@@ -15,7 +15,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.util import dt as dt_util
 
-from .const import SIGNAL_DAY_CHANGED, SIGNAL_TRIGGERS_CHANGED
+from .const import SIGNAL_DAY_CHANGED, SIGNAL_OPTIONS_CHANGED, SIGNAL_TRIGGERS_CHANGED
 from .core.collection import Change, NotFoundError
 from .core.models import Task, TaskList
 from .core.parser import KIND_DUE, KIND_PRIORITY, KIND_RECURRENCE, KIND_TIME, parse
@@ -86,6 +86,7 @@ def _patch(msg: dict[str, Any], fields: tuple[str, ...]) -> dict[str, Any]:
 def _snapshot(data: ThaskData) -> dict[str, Any]:
     return {
         "today": data.today.isoformat(),
+        "options": data.options,
         "lists": [task_list.as_dict() for task_list in data.collection.sorted_lists()],
         "tasks": [task.as_dict() for task in data.collection.tasks.values()],
     }
@@ -121,9 +122,14 @@ def ws_subscribe(hass, connection, msg, data: ThaskData) -> None:
             websocket_api.event_message(msg["id"], {"type": "day_changed", "today": data.today.isoformat()})
         )
 
+    @callback
+    def forward_options() -> None:
+        connection.send_message(websocket_api.event_message(msg["id"], {"type": "options", **data.options}))
+
     unsubs = [
         data.collection.subscribe(forward_change),
         async_dispatcher_connect(hass, SIGNAL_DAY_CHANGED, forward_day_changed),
+        async_dispatcher_connect(hass, SIGNAL_OPTIONS_CHANGED, forward_options),
     ]
 
     @callback

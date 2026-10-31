@@ -1,4 +1,4 @@
-"""Todo entities: one per task list plus the smart lists "Today" and "This week"."""
+"""Todo entities: one per task list plus the smart lists "Today", "Overdue" and "This week"."""
 
 from __future__ import annotations
 
@@ -18,7 +18,7 @@ from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import DOMAIN, SIGNAL_DAY_CHANGED
+from .const import DOMAIN, SIGNAL_DAY_CHANGED, SIGNAL_OPTIONS_CHANGED
 from .core.collection import Change, NotFoundError
 from .core.models import Task
 from .core.period import Granularity, Period, PeriodStatus
@@ -35,6 +35,7 @@ MAX_COMPLETED_ITEMS = 100
 # "Today" keeps the key of the former "My Day", so its entity id stays the same.
 SMART_MY_DAY = "my_day"
 SMART_THIS_WEEK = "this_week"
+SMART_OVERDUE = "overdue"
 
 
 async def async_setup_entry(
@@ -46,6 +47,7 @@ async def async_setup_entry(
     async_add_entities(
         [
             ThaskSmartListEntity(entry, data, SMART_MY_DAY),
+            ThaskSmartListEntity(entry, data, SMART_OVERDUE),
             ThaskSmartListEntity(entry, data, SMART_THIS_WEEK),
             *(ThaskListEntity(entry, data, task_list.id) for task_list in data.collection.sorted_lists()),
         ]
@@ -105,6 +107,9 @@ class ThaskTodoEntity(TodoListEntity):
         self.async_on_remove(self._data.collection.subscribe(self._handle_change))
         self.async_on_remove(
             async_dispatcher_connect(self.hass, SIGNAL_DAY_CHANGED, self.async_write_ha_state)
+        )
+        self.async_on_remove(
+            async_dispatcher_connect(self.hass, SIGNAL_OPTIONS_CHANGED, self.async_write_ha_state)
         )
 
     @property
@@ -235,7 +240,9 @@ class ThaskSmartListEntity(ThaskTodoEntity):
 
     def _matches(self, task: Task, today: date) -> bool:
         if self._key == SMART_MY_DAY:
-            return task.in_today(today, self._data.tz)
+            return task.in_today(today, self._data.tz, overdue=self._data.overdue_mode != "separate")
+        if self._key == SMART_OVERDUE:
+            return task.overdue(today)
         week_end = Period(Granularity.WEEK, today).end
         if task.completed:
             return task.due_by(week_end) and task.completed_on_or_after(
@@ -246,7 +253,7 @@ class ThaskSmartListEntity(ThaskTodoEntity):
     def _tasks(self) -> list[Task]:
         today = self._data.today
         tasks = [task for task in self._data.collection.tasks.values() if self._matches(task, today)]
-        if self._key == SMART_THIS_WEEK:
+        if self._key in (SMART_THIS_WEEK, SMART_OVERDUE):
             tasks.sort(key=lambda task: (task.due.end, -task.priority, task.position))
         else:
             tasks.sort(key=lambda task: (-task.priority, task.position))
@@ -265,6 +272,6 @@ class ThaskSmartListEntity(ThaskTodoEntity):
             fields.update(due_from_ha(item.due, self._data.tz))
         elif self._key == SMART_THIS_WEEK:
             fields["due"] = Period(Granularity.WEEK, today).as_dict()
-        elif self._key == SMART_MY_DAY:
+        elif self._key in (SMART_MY_DAY, SMART_OVERDUE):
             fields["due"] = Period.day(today).as_dict()
         self._data.collection.create_task(default.id, item.summary or "", **fields)

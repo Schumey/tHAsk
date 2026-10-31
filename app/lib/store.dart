@@ -112,8 +112,28 @@ class ThaskStore extends ChangeNotifier {
     return sortTasks(_tasks.values.where((t) => t.listId == listId), list?.sort ?? 'manual');
   }
 
-  /// „Heute“: alles, was bis heute fällig ist (inkl. Überfälligem), und was heute erledigt wurde.
-  List<Task> get dueToday => sortTasks(_tasks.values.where((t) => t.inToday(today)), 'due');
+  /// Option der Integration, wie „Heute“ Überfälliges zeigt: 'section' (oben als eigener Abschnitt),
+  /// 'mixed' (zwischen den heutigen) oder 'separate' (nicht in „Heute“, sondern in einer eigenen Ansicht).
+  String overdueMode = 'section';
+
+  /// „Heute“: alles, was bis heute fällig ist, und was heute erledigt wurde.
+  /// Überfälliges nur, wenn es keine eigene Ansicht hat.
+  List<Task> get dueToday => sortTasks(
+        _tasks.values.where((t) => t.inToday(today) && (overdueMode != 'separate' || !t.isOverdue(today))),
+        'due',
+      );
+
+  /// Offene Aufgaben, deren Fälligkeit vor heute endete.
+  List<Task> get overdue => sortTasks(_tasks.values.where((t) => t.isOverdue(today)), 'due');
+
+  /// Ob der Abschnitt „Überfällig“ in „Heute“ zugeklappt ist (pro Gerät).
+  bool overdueCollapsed = false;
+
+  void setOverdueCollapsed(bool collapsed) {
+    overdueCollapsed = collapsed;
+    _cache?.saveSetting('overdue_collapsed', collapsed ? '1' : '0');
+    notifyListeners();
+  }
 
   /// Alles, was bis zum Ende der laufenden Woche fällig ist (inkl. Überfälligem), ohne Erledigtes.
   List<Task> get thisWeek {
@@ -174,6 +194,7 @@ class ThaskStore extends ChangeNotifier {
   Future<void> _loadCache() async {
     final range = await _cache?.loadSetting('important_range');
     if (range != null && importantRanges.contains(range)) importantRange = range;
+    overdueCollapsed = await _cache?.loadSetting('overdue_collapsed') == '1';
     final pending = await _cache?.loadOutbox();
     if (pending != null) {
       try {
@@ -200,6 +221,7 @@ class ThaskStore extends ChangeNotifier {
     _saveTimer = Timer(const Duration(seconds: 2), () {
       _cache.save(jsonEncode({
         'today': isoDate(today),
+        'options': {'overdue_in_today': overdueMode},
         'lists': _rawLists.values.toList(),
         'tasks': _rawTasks.values.toList(),
       }));
@@ -324,6 +346,11 @@ class ThaskStore extends ChangeNotifier {
     unawaited(_run());
   }
 
+  void _applyOptions(Map<String, dynamic> options) {
+    final mode = options['overdue_in_today'];
+    overdueMode = const ['section', 'mixed', 'separate'].contains(mode) ? mode as String : 'section';
+  }
+
   void _apply(Map<String, dynamic> event, {bool fromServer = true}) {
     switch (event['type']) {
       case 'snapshot':
@@ -344,12 +371,15 @@ class ThaskStore extends ChangeNotifier {
           ..clear()
           ..addEntries([for (final e in _rawTasks.entries) MapEntry(e.key, Task.fromJson(e.value))]);
         today = dateOnly(DateTime.parse(event['today'] as String));
+        _applyOptions((event['options'] as Map?)?.cast<String, dynamic>() ?? const {});
         // Noch nicht gesendete Änderungen bleiben sichtbar, bis der Server sie bestätigt.
         for (final op in _outbox) {
           _applyOptimistic(op);
         }
       case 'day_changed':
         today = dateOnly(DateTime.parse(event['today'] as String));
+      case 'options':
+        _applyOptions(event);
       case 'change':
         final id = event['id'] as String;
         final item = (event['item'] as Map?)?.cast<String, dynamic>();

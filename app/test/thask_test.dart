@@ -466,6 +466,29 @@ void main() {
       ]);
     });
 
+    test('Option der Integration: Überfälliges in „Heute“ oder als eigene Ansicht', () async {
+      await signIn();
+      connection.emit({
+        ..._snapshot,
+        'options': {'overdue_in_today': 'section'},
+        'tasks': [
+          {'id': 'a', 'list_id': 'l1', 'title': 'Alt', 'due': {'granularity': 'day', 'start': '2026-10-29'}},
+          {'id': 'b', 'list_id': 'l1', 'title': 'Heute', 'due': {'granularity': 'day', 'start': '2026-10-31'}},
+        ],
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect(store.overdueMode, 'section');
+      expect([for (final t in store.dueToday) t.id], ['a', 'b']);
+      expect(ViewRef.all(store).whereType<OverdueView>(), isEmpty);
+
+      connection.emit({'type': 'options', 'overdue_in_today': 'separate'});
+      await Future<void>.delayed(Duration.zero);
+      expect([for (final t in store.dueToday) t.id], ['b']);
+      expect([for (final t in store.overdue) t.id], ['a']);
+      expect(ViewRef.all(store)[1], isA<OverdueView>());
+      expect(ViewRef.fromId('overdue'), isA<OverdueView>());
+    });
+
     test('Abmelden löscht Zugangsdaten und Daten', () async {
       await signIn();
       await store.logout();

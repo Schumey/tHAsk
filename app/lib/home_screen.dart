@@ -99,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final listId = _targetList;
     if (text.isEmpty || listId == null || _sending) return;
     setState(() => _sending = true);
-    final added = await _guard(() => store.addQuick(listId, text, dueToday: _view is TodayView));
+    final added = await _guard(() => store.addQuick(listId, text, dueToday: _view is TodayView || _view is OverdueView));
     if (!mounted) return;
     setState(() => _sending = false);
     if (added) _entry.clear();
@@ -163,6 +163,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildScreen(BuildContext context, bool wide) {
+    // Die Ansicht „Überfällig“ gibt es nur mit der passenden Option.
+    if (_view is OverdueView && store.overdueMode != 'separate') _view = const TodayView();
     final tasks = _tasks;
     final open = tasks.where((t) => !t.completed).toList();
     final done = tasks.where((t) => t.completed).toList();
@@ -241,6 +243,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     children: [
                       if (_view is PlannedView)
                         ..._plannedSections(context, open, tile)
+                      else if (_view is TodayView && store.overdueMode == 'section' && open.any(_isOverdue))
+                        ..._todaySections(context, open, tile)
                       else
                         for (final task in open) tile(task),
                       if (done.isNotEmpty)
@@ -314,6 +318,33 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
   }
 
+  bool _isOverdue(Task task) => task.isOverdue(store.today);
+
+  /// „Heute“ mit Überfälligem oben in einem eigenen, zuklappbaren Abschnitt.
+  List<Widget> _todaySections(BuildContext context, List<Task> open, Widget Function(Task) tile) {
+    final theme = Theme.of(context);
+    final overdue = open.where(_isOverdue).toList();
+    final rest = open.where((t) => !_isOverdue(t)).toList();
+    return [
+      ExpansionTile(
+        key: const PageStorageKey('overdue'),
+        initiallyExpanded: !store.overdueCollapsed,
+        onExpansionChanged: (expanded) => store.setOverdueCollapsed(!expanded),
+        textColor: theme.colorScheme.error,
+        collapsedTextColor: theme.colorScheme.error,
+        title: Text('Überfällig (${overdue.length})'),
+        children: [for (final task in overdue) tile(task)],
+      ),
+      if (rest.isNotEmpty) ...[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+          child: Text('Heute (${rest.length})', style: theme.textTheme.labelLarge),
+        ),
+        for (final task in rest) tile(task),
+      ],
+    ];
+  }
+
   Widget _buildEntry(BuildContext context) {
     return SafeArea(
       top: false,
@@ -357,6 +388,14 @@ class _HomeScreenState extends State<HomeScreen> {
           trailing: _count(store.dueToday.where((t) => !t.completed).length),
           onTap: () => select(const TodayView()),
         ),
+        if (store.overdueMode == 'separate')
+          ListTile(
+            leading: const Icon(Icons.event_busy_outlined),
+            title: const Text('Überfällig'),
+            selected: _view is OverdueView,
+            trailing: _count(store.overdue.length),
+            onTap: () => select(const OverdueView()),
+          ),
         ListTile(
           leading: const Icon(Icons.date_range_outlined),
           title: const Text('Diese Woche'),

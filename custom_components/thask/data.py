@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from datetime import date, datetime, timedelta, tzinfo
 from functools import partial
 from typing import Any
@@ -19,13 +20,17 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_OVERDUE,
+    DEFAULT_OVERDUE,
     DOMAIN,
     EVENT_REMINDER,
     EVENT_TASK_DUE,
     EVENT_TASK_OVERDUE,
     EVENT_TRIGGER_FIRED,
+    OVERDUE_MODES,
     SAVE_DELAY,
     SIGNAL_DAY_CHANGED,
+    SIGNAL_OPTIONS_CHANGED,
     SIGNAL_TRIGGERS_CHANGED,
     STORAGE_KEY,
     STORAGE_KEY_TRIGGERS,
@@ -60,6 +65,18 @@ class ThaskData:
         self._checking = False
         self._reminders: dict[str, CALLBACK_TYPE] = {}
         self._unsubs: list[CALLBACK_TYPE] = []
+        self.overdue_mode = DEFAULT_OVERDUE
+
+    @callback
+    def set_options(self, options: Mapping[str, Any]) -> None:
+        mode = options.get(CONF_OVERDUE, DEFAULT_OVERDUE)
+        self.overdue_mode = mode if mode in OVERDUE_MODES else DEFAULT_OVERDUE
+        async_dispatcher_send(self.hass, SIGNAL_OPTIONS_CHANGED)
+
+    @property
+    def options(self) -> dict[str, Any]:
+        """The options the apps need, sent with the snapshot."""
+        return {CONF_OVERDUE: self.overdue_mode}
 
     @property
     def tz(self) -> tzinfo:
