@@ -78,16 +78,6 @@ const STRINGS = {
   },
 };
 
-const MONTHS = {
-  de: ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"],
-  en: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
-};
-const MONTHS_SHORT = {
-  de: ["Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sep.", "Okt.", "Nov.", "Dez."],
-  en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-};
-const WEEKDAYS_SHORT = { de: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"], en: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] };
-const GRANULARITIES = ["day", "week", "month", "quarter", "year"];
 const TASK_SORTS = ["manual", "priority", "due", "title", "created"];
 // Period of the "Important" view: everything, or what is due by the end of this week, month …
 const IMPORTANT_RANGES = ["all", "week", "month", "quarter", "year"];
@@ -95,6 +85,13 @@ const RANGE_STORAGE_KEY = "thask.importantRange";
 const OVERDUE_COLLAPSED_KEY = "thask.overdueCollapsed";
 // The integration appends its version to the module URL (cache busting), so the panel can show it.
 const VERSION = new URL(import.meta.url).searchParams.get("v") || "";
+// The version in the URL keeps the browser from mixing an old helper module with a new panel.
+const {
+  MONTHS, MONTHS_SHORT, WEEKDAYS_SHORT, GRANULARITIES, pad, toISO, parseISO, addDays,
+  addMonths, weekdayIndex, periodStart, periodEnd, isoWeek, makePeriod, shiftPeriod, periodEndOf,
+  periodStatus, periodLabel, periodRange, sortTasks, esc, dueBy, completedSince, isOverdue,
+  matchesSmart, sortByDue, splitDone,
+} = await import(`./thask-common.js?v=${VERSION}`);
 
 const CONDITION_KINDS = ["state", "calendar", "time"];
 const TRIGGER_DUE = ["none", "today", "day_before", "day", "week", "month"];
@@ -110,126 +107,6 @@ const SMART_VIEWS = [
   { key: "this_week", icon: "mdi:calendar-week" },
   { key: "this_month", icon: "mdi:calendar-month" },
 ];
-
-// ---- Dates and periods (same rules as core/period.py) ------------------------------------
-
-const pad = (n) => String(n).padStart(2, "0");
-const toISO = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-const parseISO = (s) => {
-  const [y, m, d] = s.split("-").map(Number);
-  return new Date(y, m - 1, d);
-};
-const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
-const addMonths = (d, n) => {
-  const first = new Date(d.getFullYear(), d.getMonth() + n, 1);
-  const last = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
-  return new Date(first.getFullYear(), first.getMonth(), Math.min(d.getDate(), last));
-};
-const weekdayIndex = (d) => (d.getDay() + 6) % 7;
-
-function periodStart(granularity, d) {
-  switch (granularity) {
-    case "week": return addDays(d, -weekdayIndex(d));
-    case "month": return new Date(d.getFullYear(), d.getMonth(), 1);
-    case "quarter": return new Date(d.getFullYear(), Math.floor(d.getMonth() / 3) * 3, 1);
-    case "year": return new Date(d.getFullYear(), 0, 1);
-    default: return new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  }
-}
-
-function periodEnd(granularity, start) {
-  switch (granularity) {
-    case "week": return addDays(start, 6);
-    case "month": return addDays(addMonths(start, 1), -1);
-    case "quarter": return addDays(addMonths(start, 3), -1);
-    case "year": return new Date(start.getFullYear(), 11, 31);
-    default: return start;
-  }
-}
-
-function isoWeek(d) {
-  const thursday = addDays(d, 3 - weekdayIndex(d));
-  const year = thursday.getFullYear();
-  const dayOfYear = Math.round((thursday - new Date(year, 0, 1)) / 864e5);
-  return [year, Math.floor(dayOfYear / 7) + 1];
-}
-
-function makePeriod(granularity, d) {
-  return { granularity, start: toISO(periodStart(granularity, d)) };
-}
-
-function shiftPeriod(period, count) {
-  const start = parseISO(period.start);
-  const shifted = {
-    day: () => addDays(start, count),
-    week: () => addDays(start, 7 * count),
-    month: () => addMonths(start, count),
-    quarter: () => addMonths(start, 3 * count),
-    year: () => addMonths(start, 12 * count),
-  }[period.granularity]();
-  return makePeriod(period.granularity, shifted);
-}
-
-const periodEndOf = (period) => periodEnd(period.granularity, parseISO(period.start));
-
-function periodStatus(period, today) {
-  if (periodEndOf(period) < today) return "overdue";
-  if (parseISO(period.start) <= today) return "current";
-  return "upcoming";
-}
-
-function periodLabel(period, lang, today) {
-  const start = parseISO(period.start);
-  let text;
-  let year = start.getFullYear();
-  switch (period.granularity) {
-    case "day": {
-      const weekday = WEEKDAYS_SHORT[lang][weekdayIndex(start)];
-      const month = MONTHS_SHORT[lang][start.getMonth()];
-      text = lang === "de" ? `${weekday}, ${start.getDate()}. ${month}` : `${weekday}, ${month} ${start.getDate()}`;
-      break;
-    }
-    case "week": {
-      const [weekYear, week] = isoWeek(start);
-      year = weekYear;
-      text = lang === "de" ? `KW ${week}` : `Week ${week}`;
-      break;
-    }
-    case "month":
-      text = MONTHS[lang][start.getMonth()];
-      break;
-    case "quarter":
-      text = `Q${Math.floor(start.getMonth() / 3) + 1}`;
-      break;
-    default:
-      return String(year);
-  }
-  return year === today.getFullYear() ? text : `${text} ${year}`;
-}
-
-function periodRange(period, lang) {
-  if (period.granularity === "day") return "";
-  const start = parseISO(period.start);
-  const end = periodEndOf(period);
-  const fmt = (d) => d.toLocaleDateString(lang === "de" ? "de-DE" : "en-GB", { day: "numeric", month: "short" });
-  return `${fmt(start)} – ${fmt(end)}`;
-}
-
-// Same rules as sort_tasks in core/models.py; ties keep the manual order.
-function sortTasks(tasks, mode) {
-  const manual = [...tasks].sort((a, b) => a.position - b.position || a.created.localeCompare(b.created));
-  const dueKey = (task) => (task.due ? toISO(periodEndOf(task.due)) : "9999-12-31");
-  const keyed = {
-    priority: (a, b) => b.priority - a.priority,
-    due: (a, b) => dueKey(a).localeCompare(dueKey(b)),
-    title: (a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" }),
-    created: (a, b) => b.created.localeCompare(a.created),
-  }[mode];
-  return keyed ? manual.sort(keyed) : manual;
-}
-
-const esc = (value) =>
-  String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
 // ---- Panel --------------------------------------------------------------------------------
 
@@ -346,7 +223,7 @@ class ThaskPanel extends HTMLElement {
   }
 
   _isOverdue(task) {
-    return !task.completed && !!task.due && periodEndOf(task.due) < this._today;
+    return isOverdue(task, this._today);
   }
 
   _applyChange(change) {
@@ -405,36 +282,15 @@ class ThaskPanel extends HTMLElement {
   }
 
   _dueBy(task, day) {
-    return task.due && periodEndOf(task.due) <= day;
+    return dueBy(task, day);
   }
 
   _completedSince(task, day) {
-    return task.completed_at && new Date(task.completed_at) >= day;
+    return completedSince(task, day);
   }
 
   _matchesSmart(task, key) {
-    switch (key) {
-      case "my_day":
-        // Today: everything due by today, and what was completed today. Overdue tasks may have a view of their own.
-        if (!this._dueBy(task, this._today)) return false;
-        if (task.completed) return this._completedSince(task, this._today);
-        return this._overdueMode !== "separate" || !this._isOverdue(task);
-      case "overdue":
-        return this._isOverdue(task);
-      case "important":
-        if (task.priority < 3) return false;
-        if (this._importantRange === "all") return true;
-        return this._dueBy(task, periodEnd(this._importantRange, periodStart(this._importantRange, this._today)));
-      case "planned":
-        return !!task.due;
-      case "this_week":
-        if (!this._dueBy(task, this._weekEnd())) return false;
-        return !task.completed || this._completedSince(task, periodStart("week", this._today));
-      case "this_month":
-        if (!this._dueBy(task, this._monthEnd())) return false;
-        return !task.completed || this._completedSince(task, periodStart("month", this._today));
-    }
-    return false;
+    return matchesSmart(task, key, { today: this._today, overdueMode: this._overdueMode, importantRange: this._importantRange });
   }
 
   _matchesSearch(task) {
@@ -451,17 +307,7 @@ class ThaskPanel extends HTMLElement {
       searching ? this._matchesSearch(task)
         : view.type === "list" ? task.list_id === view.id : this._matchesSmart(task, view.key)
     );
-    const dueKey = (task) => (task.due ? toISO(periodEndOf(task.due)) : "9999");
-    let sorted;
-    if (view.type === "list" && !searching) {
-      sorted = sortTasks(tasks, this._listSort(view.id));
-    } else {
-      sorted = tasks.sort((a, b) => dueKey(a).localeCompare(dueKey(b)) || b.priority - a.priority || a.position - b.position);
-    }
-    return {
-      open: sorted.filter((task) => !task.completed),
-      done: sorted.filter((task) => task.completed).sort((a, b) => (b.completed_at || "").localeCompare(a.completed_at || "")),
-    };
+    return splitDone(view.type === "list" && !searching ? sortTasks(tasks, this._listSort(view.id)) : sortByDue(tasks));
   }
 
   _listSort(listId) {

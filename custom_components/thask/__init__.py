@@ -43,6 +43,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ThaskConfigEntry) -> boo
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     integration = await async_get_integration(hass, DOMAIN)
+    # The dashboard card is loaded on every page, so `custom:thask-card` works without adding a resource.
+    card_url = f"{PANEL_STATIC_URL}/thask-card.js?v={integration.version}"
+    frontend.add_extra_js_url(hass, card_url)
+    entry.async_on_unload(lambda: frontend.remove_extra_js_url(hass, card_url))
     await panel_custom.async_register_panel(
         hass,
         frontend_url_path=PANEL_URL_PATH,

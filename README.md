@@ -44,6 +44,24 @@ Nach dem Einrichten erscheint **tHAsk** in der HA-Seitenleiste (auch in der Comp
 
 Jede Aufgabe hat eine Priorität von 0 bis 3, im Panel als farbiger Balken an der Zeile (Niedrig grün, Mittel gelb, Hoch rot; je höher, desto breiter der Balken). In der Schnelleingabe setzen `!`, `!!` und `!!!` Niedrig, Mittel und Hoch. Die alte Markierung „Wichtig“ wurde zu Priorität Hoch; ältere Clients können weiter `important` senden bzw. lesen (Hoch = wichtig) und `sort: important` verwenden.
 
+## Dashboard-Karte
+
+Die Integration bringt die Karte `custom:thask-card` mit; eine Ressource muss nicht angelegt werden. Im Dashboard unter „Karte hinzufügen“ → „tHAsk“ auswählen und im Editor einstellen, oder in YAML:
+
+```yaml
+type: custom:thask-card
+view: my_day            # my_day, overdue, important, planned, this_week, this_month oder list:<Listen-ID>
+title: Heute            # optional, sonst der Name der Ansicht
+show_entry: true        # Schnelleingabe mit Erkennung („Steuer KW 47 !“)
+show_completed: false   # Erledigte zuklappbar darunter
+show_list: true         # bei intelligenten Ansichten die Liste jeder Aufgabe zeigen
+min_priority: 0         # 1–3: nur Aufgaben ab dieser Priorität
+max_items: 0            # höchstens so viele offene Aufgaben, 0 = alle
+compact: false          # nur Titel, ohne Fälligkeit und Liste
+```
+
+Zeiträume erscheinen als Chips (KW 46, November, Q4), Überfälliges rot; „Heute“ folgt der Option für Überfälliges, „Geplant“ ist gruppiert. Ein Klick auf eine Aufgabe klappt Schritte und Notizen auf (Schritte abhaken und hinzufügen), der Kreis hakt sie ab, die Überschrift öffnet die tHAsk-Seite.
+
 ## Was in Home Assistant entsteht
 
 | Entity | Inhalt |

@@ -105,6 +105,7 @@ PAGE = """<!doctype html>
   };
 </script>
 <script type="module" src="/thask_static/thask-panel.js?v=__VERSION__"></script>
+<script type="module" src="/thask_static/thask-card.js?v=__VERSION__"></script>
 </head>
 <body>
 <thask-panel></thask-panel>
@@ -265,6 +266,28 @@ class Backend:
 
 BACKEND = Backend()
 
+# The dashboard card in a few configurations, with the same fake hass as the panel page.
+CARD_PAGE = PAGE.replace("<thask-panel></thask-panel>", """<div class="cards">
+  <thask-card data-config='{"view": "my_day"}'></thask-card>
+  <thask-card data-config='{"view": "planned", "show_completed": true, "max_items": 4}'></thask-card>
+  <thask-card data-config='{"view": "this_week", "compact": true, "show_entry": false, "title": "Woche kompakt"}'></thask-card>
+</div>
+<style>.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; padding: 12px; }
+  ha-card { display: block; background: var(--card-background-color, #fff); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.2); }</style>""").replace(
+    """  await customElements.whenDefined("thask-panel");
+  const panel = document.querySelector("thask-panel");
+  const narrow = () => (panel.narrow = window.innerWidth < 870);
+  narrow();
+  window.addEventListener("resize", narrow);
+  panel.hass = window.fakeHass;""",
+    """  await customElements.whenDefined("thask-card");
+  if (!customElements.get("ha-card")) customElements.define("ha-card", class extends HTMLElement {});
+  for (const card of document.querySelectorAll("thask-card")) {
+    card.setConfig(JSON.parse(card.dataset.config));
+    card.hass = window.fakeHass;
+  }""",
+)
+
 
 class Handler(BaseHTTPRequestHandler):
     def _send(self, status: int, body: bytes, content_type: str) -> None:
@@ -277,8 +300,12 @@ class Handler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         if self.path in ("/", "/index.html"):
             self._send(200, PAGE.replace("__VERSION__", VERSION).encode(), "text/html; charset=utf-8")
-        elif self.path.split("?")[0] == "/thask_static/thask-panel.js":
-            self._send(200, (INTEGRATION / "www" / "thask-panel.js").read_bytes(), "text/javascript")
+        elif self.path in ("/card", "/card.html"):
+            self._send(200, CARD_PAGE.replace("__VERSION__", VERSION).encode(), "text/html; charset=utf-8")
+        elif self.path.startswith("/thask_static/") and (
+            file := INTEGRATION / "www" / self.path.split("?")[0].removeprefix("/thask_static/")
+        ).is_file():
+            self._send(200, file.read_bytes(), "text/javascript")
         else:
             self._send(404, b"not found", "text/plain")
 
