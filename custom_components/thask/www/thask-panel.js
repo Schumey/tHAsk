@@ -67,6 +67,7 @@ const SMART_VIEWS = [
   { key: "important", icon: "mdi:star-outline" },
   { key: "planned", icon: "mdi:calendar-month-outline" },
   { key: "this_week", icon: "mdi:calendar-week" },
+  { key: "this_month", icon: "mdi:calendar-month" },
 ];
 
 // ---- Dates and periods (same rules as core/period.py) ------------------------------------
@@ -318,6 +319,10 @@ class ThaskPanel extends HTMLElement {
     return toISO(this._today);
   }
 
+  _monthEnd() {
+    return periodEnd("month", periodStart("month", this._today));
+  }
+
   _weekEnd() {
     return periodEnd("week", periodStart("week", this._today));
   }
@@ -341,6 +346,9 @@ class ThaskPanel extends HTMLElement {
       case "this_week":
         if (!this._dueBy(task, this._weekEnd())) return false;
         return !task.completed || this._completedSince(task, periodStart("week", this._today));
+      case "this_month":
+        if (!this._dueBy(task, this._monthEnd())) return false;
+        return !task.completed || this._completedSince(task, periodStart("month", this._today));
     }
     return false;
   }
@@ -547,7 +555,7 @@ class ThaskPanel extends HTMLElement {
     let html = "";
     if (!searching && this._view.type === "smart" && this._view.key === "planned") {
       const weekEnd = this._weekEnd();
-      const monthEnd = periodEnd("month", periodStart("month", this._today));
+      const monthEnd = this._monthEnd();
       const groups = { overdue: [], this_week: [], this_month: [], later: [] };
       for (const task of open) {
         const end = periodEndOf(task.due);
@@ -803,6 +811,7 @@ class ThaskPanel extends HTMLElement {
       if (this._view.key === "my_day") data.my_day = this._todayISO;
       if (this._view.key === "important") data.important = true;
       if (this._view.key === "this_week" && !data.due) data.due = makePeriod("week", this._today);
+      if (this._view.key === "this_month" && !data.due) data.due = makePeriod("month", this._today);
     }
     await this._call("thask/task/create", data);
     this._resetQuickAdd();

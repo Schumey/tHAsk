@@ -18,7 +18,7 @@ Beim ersten Start wird die Liste „Aufgaben“ angelegt.
 
 Nach dem Einrichten erscheint **tHAsk** in der HA-Seitenleiste (auch in der Companion-App auf dem Handy):
 
-- Intelligente Listen **Mein Tag**, **Wichtig**, **Geplant** (gruppiert nach Überfällig / Diese Woche / Diesen Monat / Später) und **Diese Woche**, darunter die eigenen Listen (mit Gruppen).
+- Intelligente Listen **Mein Tag**, **Wichtig**, **Geplant** (gruppiert nach Überfällig / Diese Woche / Diesen Monat / Später), **Diese Woche** und **Diesen Monat** (alles, was bis Monatsende fällig ist, inkl. Überfälligem), darunter die eigenen Listen (mit Gruppen).
 - **Schnelleingabe** mit Erkennung, z. B. „Reifen wechseln nächsten Monat !“, „Steuer KW 47“, „Rechnungen ablegen jeden Monat“, „Zahnarzt morgen um 9:30“. Erkanntes wird als Chip angezeigt; ein Klick auf den Chip nimmt die Erkennung zurück.
 - **Detailbereich**: Schritte, „Mein Tag“, Fälligkeit als Tag/Woche/Monat/Quartal/Jahr mit Vor-/Zurück-Pfeilen, Erinnerung, Wiederholung, Liste, Notizen.
 - Aufgaben per Drag & Drop sortieren oder auf eine andere Liste in der Seitenleiste ziehen.
