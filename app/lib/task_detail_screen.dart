@@ -46,10 +46,13 @@ int _weekdayOf(DateTime d) => d.weekday - 1;
 
 /// Alle Eigenschaften einer Aufgabe bearbeiten. Jede Änderung wird sofort an Home Assistant geschickt.
 class TaskDetailScreen extends StatefulWidget {
-  const TaskDetailScreen({super.key, required this.store, required this.taskId});
+  const TaskDetailScreen({super.key, required this.store, required this.taskId, this.onClose});
 
   final ThaskStore store;
   final String taskId;
+
+  /// Gesetzt, wenn die Details neben der Liste stehen (breites Fenster) statt als eigene Seite.
+  final VoidCallback? onClose;
 
   @override
   State<TaskDetailScreen> createState() => _TaskDetailScreenState();
@@ -98,7 +101,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   void _onStoreChanged() {
     final task = store.task(widget.taskId);
     if (task == null) {
-      if (mounted && Navigator.of(context).canPop()) Navigator.of(context).pop();
+      // Neben der Liste blendet die Startseite die Details selbst aus.
+      if (widget.onClose == null && mounted && Navigator.of(context).canPop()) Navigator.of(context).pop();
       return;
     }
     if (!_titleFocus.hasFocus && task.title != _title.text) _title.text = task.title;
@@ -266,6 +270,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         final due = task.due;
         return Scaffold(
           appBar: AppBar(
+            automaticallyImplyLeading: widget.onClose == null,
+            leading: widget.onClose == null
+                ? null
+                : IconButton(tooltip: 'Schließen', icon: const Icon(Icons.close), onPressed: widget.onClose),
             actions: [
               IconButton(
                 tooltip: 'Löschen',

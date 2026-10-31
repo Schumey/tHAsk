@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'list_dialogs.dart';
 import 'models.dart';
@@ -15,6 +16,9 @@ const _rangeNames = {
   'year': 'Bis Ende des Jahres',
 };
 
+/// Ab dieser Breite stehen Navigation, Liste und Details nebeneinander (Windows, Tablet quer).
+const wideLayoutWidth = 900.0;
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.store, this.launch});
 
@@ -29,6 +33,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   ViewRef _view = const TodayView();
+
+  /// Im breiten Layout die Aufgabe, deren Details rechts stehen.
+  String? _selected;
   final _entry = TextEditingController();
   bool _sending = false;
 
@@ -129,100 +136,151 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _openTask(Task task, bool wide) {
+    if (wide) {
+      setState(() => _selected = task.id);
+    } else {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => TaskDetailScreen(store: store, taskId: task.id)),
+      );
+    }
+  }
+
+  void _selectView(ViewRef view) => setState(() => _view = view);
+
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: store,
-      builder: (context, _) {
-        final tasks = _tasks;
-        final open = tasks.where((t) => !t.completed).toList();
-        final done = tasks.where((t) => t.completed).toList();
-        final listView = _view is ListRef;
-        final list = listView ? store.list((_view as ListRef).listId) : null;
-        return Scaffold(
-          appBar: AppBar(
-            title: Text(_title),
-            actions: [
-              if (_view is ImportantView)
-                PopupMenuButton<String>(
-                  tooltip: 'Zeitraum',
-                  icon: const Icon(Icons.date_range_outlined),
-                  initialValue: store.importantRange,
-                  onSelected: store.setImportantRange,
-                  itemBuilder: (_) => [
-                    for (final MapEntry(:key, :value) in _rangeNames.entries)
-                      CheckedPopupMenuItem(value: key, checked: key == store.importantRange, child: Text(value)),
-                  ],
-                ),
-              if (listView)
-                IconButton(
-                  tooltip: 'Erledigte löschen',
-                  icon: const Icon(Icons.cleaning_services_outlined),
-                  onPressed: done.isEmpty
-                      ? null
-                      : () => _guard(() => store.clearCompleted((_view as ListRef).listId)),
-                ),
-              PopupMenuButton<String>(
-                onSelected: (value) {
-                  if (value == 'logout') {
-                    store.logout();
-                  } else if (list != null) {
-                    _listMenu(value, list);
-                  }
-                },
-                itemBuilder: (_) => [
-                  if (list != null) ...[
-                    const PopupMenuItem(value: 'rename', child: Text('Umbenennen')),
-                    const PopupMenuItem(value: 'group', child: Text('Gruppe …')),
-                    const PopupMenuItem(value: 'sort', child: Text('Sortieren …')),
-                    PopupMenuItem(
-                      value: 'delete',
-                      enabled: store.lists.length > 1,
-                      child: const Text('Liste löschen'),
-                    ),
-                    const PopupMenuDivider(),
-                  ],
-                  const PopupMenuItem(value: 'logout', child: Text('Abmelden')),
-                ],
-              ),
-            ],
-          ),
-          drawer: _buildDrawer(context),
-          body: Column(
-            children: [
-              if (store.connection != LinkState.connected || store.pendingCount > 0) _ConnectionBanner(store: store),
-              Expanded(
-                child: tasks.isEmpty
-                    ? Center(
-                        child: Text(
-                          store.connection == LinkState.connected ? 'Keine Aufgaben' : '',
-                          style: Theme.of(context).textTheme.bodyLarge,
-                        ),
-                      )
-                    : ListView(
-                        children: [
-                          if (_view is PlannedView)
-                            ..._plannedSections(context, open)
-                          else
-                            for (final task in open) _TaskTile(task: task, store: store, guard: _guard),
-                          if (done.isNotEmpty)
-                            ExpansionTile(
-                              title: Text('Erledigt (${done.length})'),
-                              children: [for (final task in done) _TaskTile(task: task, store: store, guard: _guard)],
-                            ),
-                        ],
-                      ),
-              ),
-              if (_targetList != null) _buildEntry(context),
-            ],
-          ),
-        );
+    final wide = MediaQuery.sizeOf(context).width >= wideLayoutWidth;
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.keyN, control: true): _entryFocus.requestFocus,
+        const SingleActivator(LogicalKeyboardKey.escape): () {
+          if (_selected != null) setState(() => _selected = null);
+        },
       },
+      child: ListenableBuilder(listenable: store, builder: (context, _) => _buildScreen(context, wide)),
+    );
+  }
+
+  Widget _buildScreen(BuildContext context, bool wide) {
+    final tasks = _tasks;
+    final open = tasks.where((t) => !t.completed).toList();
+    final done = tasks.where((t) => t.completed).toList();
+    final listView = _view is ListRef;
+    final list = listView ? store.list((_view as ListRef).listId) : null;
+    Widget tile(Task task) => _TaskTile(
+          task: task,
+          store: store,
+          guard: _guard,
+          selected: wide && task.id == _selected,
+          onOpen: () => _openTask(task, wide),
+        );
+    final selected = wide && _selected != null ? store.task(_selected!) : null;
+    final page = Scaffold(
+      appBar: AppBar(
+        automaticallyImplyLeading: !wide,
+        title: Text(_title),
+        actions: [
+          if (_view is ImportantView)
+            PopupMenuButton<String>(
+              tooltip: 'Zeitraum',
+              icon: const Icon(Icons.date_range_outlined),
+              initialValue: store.importantRange,
+              onSelected: store.setImportantRange,
+              itemBuilder: (_) => [
+                for (final MapEntry(:key, :value) in _rangeNames.entries)
+                  CheckedPopupMenuItem(value: key, checked: key == store.importantRange, child: Text(value)),
+              ],
+            ),
+          if (listView)
+            IconButton(
+              tooltip: 'Erledigte löschen',
+              icon: const Icon(Icons.cleaning_services_outlined),
+              onPressed: done.isEmpty
+                  ? null
+                  : () => _guard(() => store.clearCompleted((_view as ListRef).listId)),
+            ),
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'logout') {
+                store.logout();
+              } else if (list != null) {
+                _listMenu(value, list);
+              }
+            },
+            itemBuilder: (_) => [
+              if (list != null) ...[
+                const PopupMenuItem(value: 'rename', child: Text('Umbenennen')),
+                const PopupMenuItem(value: 'group', child: Text('Gruppe …')),
+                const PopupMenuItem(value: 'sort', child: Text('Sortieren …')),
+                PopupMenuItem(
+                  value: 'delete',
+                  enabled: store.lists.length > 1,
+                  child: const Text('Liste löschen'),
+                ),
+                const PopupMenuDivider(),
+              ],
+              const PopupMenuItem(value: 'logout', child: Text('Abmelden')),
+            ],
+          ),
+        ],
+      ),
+      drawer: wide ? null : Drawer(child: SafeArea(child: _buildNav(context, inDrawer: true))),
+      body: Column(
+        children: [
+          if (store.connection != LinkState.connected || store.pendingCount > 0) _ConnectionBanner(store: store),
+          Expanded(
+            child: tasks.isEmpty
+                ? Center(
+                    child: Text(
+                      store.connection == LinkState.connected ? 'Keine Aufgaben' : '',
+                      style: Theme.of(context).textTheme.bodyLarge,
+                    ),
+                  )
+                : ListView(
+                    children: [
+                      if (_view is PlannedView)
+                        ..._plannedSections(context, open, tile)
+                      else
+                        for (final task in open) tile(task),
+                      if (done.isNotEmpty)
+                        ExpansionTile(
+                          title: Text('Erledigt (${done.length})'),
+                          children: [for (final task in done) tile(task)],
+                        ),
+                    ],
+                  ),
+          ),
+          if (_targetList != null) _buildEntry(context),
+        ],
+      ),
+    );
+    if (!wide) return page;
+    return Scaffold(
+      body: Row(
+        children: [
+          SizedBox(width: 280, child: SafeArea(child: Material(child: _buildNav(context, inDrawer: false)))),
+          const VerticalDivider(width: 1),
+          Expanded(child: page),
+          if (selected != null) ...[
+            const VerticalDivider(width: 1),
+            SizedBox(
+              width: 420,
+              child: TaskDetailScreen(
+                key: ValueKey(selected.id),
+                store: store,
+                taskId: selected.id,
+                onClose: () => setState(() => _selected = null),
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 
   /// „Geplant“ nach Überfällig / Diese Woche / Diesen Monat / Später gruppieren.
-  List<Widget> _plannedSections(BuildContext context, List<Task> open) {
+  List<Widget> _plannedSections(BuildContext context, List<Task> open, Widget Function(Task) tile) {
     final today = store.today;
     final weekEnd = Period.containing(Granularity.week, today).end;
     final monthEnd = Period.containing(Granularity.month, today).end;
@@ -251,7 +309,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          for (final task in entry.value) _TaskTile(task: task, store: store, guard: _guard),
+          for (final task in entry.value) tile(task),
         ],
     ];
   }
@@ -278,10 +336,11 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildDrawer(BuildContext context) {
+  /// Ansichten und Listen: im schmalen Layout als Drawer, im breiten fest am linken Rand.
+  Widget _buildNav(BuildContext context, {required bool inDrawer}) {
     void select(ViewRef view) {
-      setState(() => _view = view);
-      Navigator.pop(context);
+      _selectView(view);
+      if (inDrawer) Navigator.pop(context);
     }
 
     final lists = store.lists;
@@ -289,73 +348,69 @@ class _HomeScreenState extends State<HomeScreen> {
     for (final list in lists) {
       if (!groups.contains(list.group)) groups.add(list.group);
     }
-    return Drawer(
-      child: SafeArea(
-        child: ListView(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.today_outlined),
-              title: const Text('Heute'),
-              selected: _view is TodayView,
-              trailing: _count(store.dueToday.where((t) => !t.completed).length),
-              onTap: () => select(const TodayView()),
-            ),
-            ListTile(
-              leading: const Icon(Icons.date_range_outlined),
-              title: const Text('Diese Woche'),
-              selected: _view is ThisWeekView,
-              trailing: _count(store.thisWeek.length),
-              onTap: () => select(const ThisWeekView()),
-            ),
-            ListTile(
-              leading: const Icon(Icons.calendar_today_outlined),
-              title: const Text('Diesen Monat'),
-              selected: _view is ThisMonthView,
-              trailing: _count(store.thisMonth.length),
-              onTap: () => select(const ThisMonthView()),
-            ),
-            ListTile(
-              leading: const Icon(Icons.flag_outlined),
-              title: const Text('Wichtig'),
-              selected: _view is ImportantView,
-              trailing: _count(store.important.where((t) => !t.completed).length),
-              onTap: () => select(const ImportantView()),
-            ),
-            ListTile(
-              leading: const Icon(Icons.calendar_month_outlined),
-              title: const Text('Geplant'),
-              selected: _view is PlannedView,
-              trailing: _count(store.planned.where((t) => !t.completed).length),
-              onTap: () => select(const PlannedView()),
-            ),
-            const Divider(),
-            for (final group in groups) ...[
-              if (group != null)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                  child: Text(group, style: Theme.of(context).textTheme.labelLarge),
-                ),
-              for (final list in lists.where((l) => l.group == group))
-                ListTile(
-                  leading: const Icon(Icons.list),
-                  title: Text(list.name),
-                  selected: _view is ListRef && (_view as ListRef).listId == list.id,
-                  trailing: _count(store.openCount(list.id)),
-                  onTap: () => select(ListRef(list.id)),
-                ),
-            ],
-            ListTile(
-              leading: const Icon(Icons.add),
-              title: const Text('Neue Liste'),
-              enabled: store.connection == LinkState.connected,
-              onTap: () {
-                Navigator.pop(context);
-                _newList();
-              },
-            ),
-          ],
+    return ListView(
+      children: [
+        ListTile(
+          leading: const Icon(Icons.today_outlined),
+          title: const Text('Heute'),
+          selected: _view is TodayView,
+          trailing: _count(store.dueToday.where((t) => !t.completed).length),
+          onTap: () => select(const TodayView()),
         ),
-      ),
+        ListTile(
+          leading: const Icon(Icons.date_range_outlined),
+          title: const Text('Diese Woche'),
+          selected: _view is ThisWeekView,
+          trailing: _count(store.thisWeek.length),
+          onTap: () => select(const ThisWeekView()),
+        ),
+        ListTile(
+          leading: const Icon(Icons.calendar_today_outlined),
+          title: const Text('Diesen Monat'),
+          selected: _view is ThisMonthView,
+          trailing: _count(store.thisMonth.length),
+          onTap: () => select(const ThisMonthView()),
+        ),
+        ListTile(
+          leading: const Icon(Icons.flag_outlined),
+          title: const Text('Wichtig'),
+          selected: _view is ImportantView,
+          trailing: _count(store.important.where((t) => !t.completed).length),
+          onTap: () => select(const ImportantView()),
+        ),
+        ListTile(
+          leading: const Icon(Icons.calendar_month_outlined),
+          title: const Text('Geplant'),
+          selected: _view is PlannedView,
+          trailing: _count(store.planned.where((t) => !t.completed).length),
+          onTap: () => select(const PlannedView()),
+        ),
+        const Divider(),
+        for (final group in groups) ...[
+          if (group != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+              child: Text(group, style: Theme.of(context).textTheme.labelLarge),
+            ),
+          for (final list in lists.where((l) => l.group == group))
+            ListTile(
+              leading: const Icon(Icons.list),
+              title: Text(list.name),
+              selected: _view is ListRef && (_view as ListRef).listId == list.id,
+              trailing: _count(store.openCount(list.id)),
+              onTap: () => select(ListRef(list.id)),
+            ),
+        ],
+        ListTile(
+          leading: const Icon(Icons.add),
+          title: const Text('Neue Liste'),
+          enabled: store.connection == LinkState.connected,
+          onTap: () {
+            if (inDrawer) Navigator.pop(context);
+            _newList();
+          },
+        ),
+      ],
     );
   }
 
@@ -402,11 +457,19 @@ class _ConnectionBanner extends StatelessWidget {
 }
 
 class _TaskTile extends StatelessWidget {
-  const _TaskTile({required this.task, required this.store, required this.guard});
+  const _TaskTile({
+    required this.task,
+    required this.store,
+    required this.guard,
+    required this.onOpen,
+    this.selected = false,
+  });
 
   final Task task;
   final ThaskStore store;
   final Future<void> Function(Future<void> Function()) guard;
+  final VoidCallback onOpen;
+  final bool selected;
 
   @override
   Widget build(BuildContext context) {
@@ -428,9 +491,8 @@ class _TaskTile extends StatelessWidget {
       child: _PriorityBar(
         priority: task.priority,
         child: ListTile(
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute<void>(builder: (_) => TaskDetailScreen(store: store, taskId: task.id)),
-        ),
+        selected: selected,
+        onTap: onOpen,
         leading: Checkbox(
           value: task.completed,
           shape: const CircleBorder(),
