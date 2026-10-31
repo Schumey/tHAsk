@@ -1,0 +1,101 @@
+# tHAsk
+
+Lokale Aufgabenverwaltung für Home Assistant – mit **unscharfen Fälligkeiten**: Eine Aufgabe ist nicht nur an einem Tag fällig, sondern auch „in KW 46“, „im November“, „in Q1“ oder „2027“.
+
+## Status
+
+Version 0.1 – die Integration (Backend). Android-App und Widget folgen.
+
+## Installation
+
+1. Ordner `custom_components/thask` nach `/config/custom_components/thask` kopieren (oder per HACS als benutzerdefiniertes Repository).
+2. Home Assistant neu starten.
+3. **Einstellungen → Geräte & Dienste → Integration hinzufügen → tHAsk**.
+
+Beim ersten Start wird die Liste „Aufgaben“ angelegt.
+
+## Was in Home Assistant entsteht
+
+| Entity | Inhalt |
+|---|---|
+| `todo.thask_<liste>` | eine pro Liste |
+| `todo.thask_mein_tag` | Aufgaben, die heute zu „Mein Tag“ hinzugefügt wurden |
+| `todo.thask_diese_woche` | alles, was bis Sonntag erledigt sein muss (inkl. Überfälligem) |
+
+Home Assistant kennt nur exakte Daten. Deshalb zeigt es bei einer Zeitraum-Fälligkeit das **letzte Datum** des Zeitraums an (KW 46 → 15.11.). Solange das Datum dort nicht geändert wird, bleibt der Zeitraum erhalten.
+
+Jede Liste hat die Attribute `overdue` und `due_today` (Anzahl).
+
+### Services
+
+- `thask.add_task` – Aufgabe mit Zeitraum anlegen, z. B. `due_granularity: week` (ohne Datum = aktuelle Woche).
+- `thask.get_tasks` – Aufgaben abfragen (`due: today | this_week | this_month | overdue | all`), liefert eine Antwort für Automationen/Skripte.
+- `thask.import_ms_todo` – Import aus Microsoft To Do (siehe unten).
+
+### Events
+
+| Event | Wann |
+|---|---|
+| `thask_task_due` | um Mitternacht, wenn der Zeitraum einer Aufgabe beginnt |
+| `thask_task_overdue` | um Mitternacht nach dem letzten Tag des Zeitraums |
+| `thask_reminder` | zum Erinnerungszeitpunkt einer Aufgabe |
+
+Beispiel: Erinnerung als Push aufs Handy – Automation mit Trigger *Event* `thask_reminder` und Aktion `notify.mobile_app_<handy>` mit `{{ trigger.event.data.title }}`.
+
+## Import aus MS To-Do
+
+Übernommen werden Listen, Aufgaben, Notizen, Schritte, Fälligkeit, Erinnerung, Wiederholung, Wichtig-Markierung, Kategorien und erledigte Aufgaben. Nicht übernommen werden „Mein Tag“ (gibt die Microsoft-API nicht her), Listengruppen und Anhänge.
+
+### 1. App bei Microsoft registrieren (einmalig, ca. 5 Minuten)
+
+1. Auf [entra.microsoft.com](https://entra.microsoft.com) mit deinem Microsoft-Konto anmelden → **App-Registrierungen** → **Neue Registrierung**.
+   Falls dort keine App-Registrierung möglich ist (kein Verzeichnis vorhanden), braucht es ein kostenloses Azure-Konto.
+2. Name: `tHAsk Export`, Kontotyp: **Nur persönliche Microsoft-Konten**, Umleitungs-URI leer lassen → **Registrieren**.
+3. Die **Anwendungs-ID (Client)** kopieren.
+4. **Authentifizierung** → **Öffentliche Clientflows zulassen** auf **Ja** → **Speichern**.
+   In der neuen Vorschau-Ansicht „Authentication (Preview)“ erst über den Link im blauen Hinweis zur alten Ansicht wechseln; der Schalter steht dort unten unter „Erweiterte Einstellungen“. Alternativ im **Manifest** `"isFallbackPublicClient": true` setzen.
+
+Die Berechtigung „Tasks.Read“ (nur lesen) wird beim Anmelden abgefragt.
+
+### 2. Exportieren (auf dem PC)
+
+```bash
+python tools/ms_todo_export.py --client-id <Anwendungs-ID>
+```
+
+Das Skript zeigt einen Code; im Browser auf der angezeigten Seite eingeben und anmelden. Ergebnis: `thask_ms_todo.json`. Mit einem Arbeits-/Schulkonto `--tenant organizations` angeben (und bei der Registrierung den passenden Kontotyp wählen).
+
+### 3. Importieren (in Home Assistant)
+
+1. `thask_ms_todo.json` in den HA-Konfigurationsordner kopieren (z. B. mit dem File-Editor oder per Samba), also neben `configuration.yaml`.
+2. **Werkzeuge → Aktionen** → `thask.import_ms_todo` mit `dry_run: true` ausführen und **Antwort anzeigen**. Das ändert nichts, sondern zeigt, was passieren würde – inklusive wie viele Aufgaben am Monatsende (`month_end_candidates`) oder an einem Sonntag (`sunday_candidates`) fällig sind.
+3. Mit `dry_run: false` wirklich importieren. Optional:
+   - `convert_month_ends: true` – fällig am Monatsletzten → „fällig im Monat“
+   - `convert_sundays: true` – fällig am Sonntag → „fällig in der Woche“
+
+Listen mit gleichem Namen werden zusammengeführt (z. B. „Aufgaben“). Ein erneuter Import überspringt bereits importierte Aufgaben. Danach kann die JSON-Datei gelöscht werden.
+
+## WebSocket-API (für die Apps)
+
+Alle Befehle laufen über die normale HA-WebSocket-Verbindung (Authentifizierung über HA):
+
+| Befehl | Parameter |
+|---|---|
+| `thask/info` | – |
+| `thask/data` | – (alle Listen und Aufgaben) |
+| `thask/subscribe` | – (Snapshot, danach jede Änderung als Event) |
+| `thask/list/create`, `thask/list/update`, `thask/list/delete` | `name`, `group`, `color`, `icon`, `position` / `list_id` |
+| `thask/task/create`, `thask/task/update`, `thask/task/delete` | siehe unten / `task_id` |
+| `thask/task/move` | `task_id`, `previous_id` |
+
+Aufgabenfelder: `list_id`, `title`, `notes`, `completed`, `important`, `due` (`{"granularity": "day|week|month|quarter|year", "start": "2026-11-09"}`), `due_time` (`"HH:MM"`, nur bei Tagen), `reminder` (ISO-Datum mit Uhrzeit), `recurrence` (`{"unit": "month", "interval": 1}`), `my_day` (ISO-Datum), `steps`, `categories`.
+
+Wird eine wiederkehrende Aufgabe erledigt, entsteht eine neue Aufgabe für den nächsten Zeitraum, der noch nicht vorbei ist.
+
+## Entwicklung
+
+Die Datums- und Datenlogik in `custom_components/thask/core` hängt nicht von Home Assistant ab:
+
+```bash
+python -m pytest
+```

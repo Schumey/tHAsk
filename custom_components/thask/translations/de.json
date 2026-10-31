@@ -1,0 +1,127 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "tHAsk",
+        "description": "tHAsk einrichten? Es wird eine erste Liste angelegt."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "tHAsk ist bereits eingerichtet."
+    }
+  },
+  "entity": {
+    "todo": {
+      "my_day": {
+        "name": "Mein Tag"
+      },
+      "this_week": {
+        "name": "Diese Woche"
+      }
+    }
+  },
+  "selector": {
+    "granularity": {
+      "options": {
+        "day": "Tag",
+        "week": "Woche",
+        "month": "Monat",
+        "quarter": "Quartal",
+        "year": "Jahr"
+      }
+    },
+    "due_filter": {
+      "options": {
+        "today": "Bis heute",
+        "this_week": "Bis Ende dieser Woche",
+        "this_month": "Bis Ende dieses Monats",
+        "overdue": "Überfällig",
+        "all": "Alle"
+      }
+    }
+  },
+  "services": {
+    "add_task": {
+      "name": "Aufgabe hinzufügen",
+      "description": "Fügt eine Aufgabe hinzu, optional fällig an einem Tag, in einer Woche, einem Monat, Quartal oder Jahr.",
+      "fields": {
+        "entity_id": {
+          "name": "Liste",
+          "description": "Liste (leer = erste Liste)"
+        },
+        "title": {
+          "name": "Titel",
+          "description": "Titel der Aufgabe."
+        },
+        "notes": {
+          "name": "Notizen",
+          "description": "Notizen zur Aufgabe."
+        },
+        "due_granularity": {
+          "name": "Fällig in",
+          "description": "Genauigkeit der Fälligkeit. Ohne Datum gilt der aktuelle Zeitraum (z. B. diese Woche)."
+        },
+        "due_date": {
+          "name": "Fälligkeitsdatum",
+          "description": "Ein beliebiger Tag innerhalb des Zeitraums."
+        },
+        "important": {
+          "name": "Wichtig",
+          "description": "Aufgabe als wichtig markieren."
+        },
+        "my_day": {
+          "name": "Zu „Mein Tag“ hinzufügen",
+          "description": "Aufgabe heute in „Mein Tag“ anzeigen."
+        }
+      }
+    },
+    "get_tasks": {
+      "name": "Aufgaben abfragen",
+      "description": "Liefert Aufgaben, z. B. alle bis Ende dieser Woche fälligen.",
+      "fields": {
+        "entity_id": {
+          "name": "Liste",
+          "description": "Nur Aufgaben dieser Liste (leer = alle)."
+        },
+        "due": {
+          "name": "Fälligkeit",
+          "description": "Welche Aufgaben geliefert werden."
+        },
+        "include_completed": {
+          "name": "Erledigte einschließen",
+          "description": "Auch erledigte Aufgaben liefern."
+        }
+      }
+    },
+    "import_ms_todo": {
+      "name": "Aus MS To-Do importieren",
+      "description": "Importiert eine mit tools/ms_todo_export.py erstellte Datei. Bereits importierte Aufgaben werden übersprungen. Nur für Administratoren.",
+      "fields": {
+        "file": {
+          "name": "Datei",
+          "description": "Pfad relativ zum Konfigurationsordner."
+        },
+        "dry_run": {
+          "name": "Nur testen",
+          "description": "Nur zusammenfassen, nichts ändern."
+        },
+        "include_completed": {
+          "name": "Erledigte importieren",
+          "description": "Auch erledigte Aufgaben übernehmen."
+        },
+        "skip_flagged_emails": {
+          "name": "„Gekennzeichnete E-Mails“ überspringen",
+          "description": "Die automatische Liste der gekennzeichneten E-Mails nicht importieren."
+        },
+        "convert_month_ends": {
+          "name": "Monatsende → ganzer Monat",
+          "description": "Aufgaben, die am letzten Tag eines Monats fällig sind, werden „fällig in diesem Monat“."
+        },
+        "convert_sundays": {
+          "name": "Sonntag → ganze Woche",
+          "description": "Aufgaben, die an einem Sonntag fällig sind, werden „fällig in dieser Woche“."
+        }
+      }
+    }
+  }
+}

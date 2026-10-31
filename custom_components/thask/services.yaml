@@ -1,0 +1,88 @@
+add_task:
+  fields:
+    entity_id:
+      selector:
+        entity:
+          integration: thask
+          domain: todo
+    title:
+      required: true
+      example: "Reifen wechseln"
+      selector:
+        text:
+    notes:
+      selector:
+        text:
+          multiline: true
+    due_granularity:
+      selector:
+        select:
+          translation_key: granularity
+          options:
+            - day
+            - week
+            - month
+            - quarter
+            - year
+    due_date:
+      selector:
+        date:
+    important:
+      default: false
+      selector:
+        boolean:
+    my_day:
+      default: false
+      selector:
+        boolean:
+
+get_tasks:
+  fields:
+    entity_id:
+      selector:
+        entity:
+          integration: thask
+          domain: todo
+    due:
+      default: all
+      selector:
+        select:
+          translation_key: due_filter
+          options:
+            - today
+            - this_week
+            - this_month
+            - overdue
+            - all
+    include_completed:
+      default: false
+      selector:
+        boolean:
+
+import_ms_todo:
+  fields:
+    file:
+      default: thask_ms_todo.json
+      example: thask_ms_todo.json
+      selector:
+        text:
+    dry_run:
+      default: true
+      selector:
+        boolean:
+    include_completed:
+      default: true
+      selector:
+        boolean:
+    skip_flagged_emails:
+      default: true
+      selector:
+        boolean:
+    convert_month_ends:
+      default: false
+      selector:
+        boolean:
+    convert_sundays:
+      default: false
+      selector:
+        boolean:

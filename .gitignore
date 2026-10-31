@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+
+# Exports may contain personal data
+thask_ms_todo.json

@@ -1,0 +1,127 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "tHAsk",
+        "description": "Set up tHAsk? A first list will be created."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "tHAsk is already set up."
+    }
+  },
+  "entity": {
+    "todo": {
+      "my_day": {
+        "name": "My Day"
+      },
+      "this_week": {
+        "name": "This week"
+      }
+    }
+  },
+  "selector": {
+    "granularity": {
+      "options": {
+        "day": "Day",
+        "week": "Week",
+        "month": "Month",
+        "quarter": "Quarter",
+        "year": "Year"
+      }
+    },
+    "due_filter": {
+      "options": {
+        "today": "By today",
+        "this_week": "By end of this week",
+        "this_month": "By end of this month",
+        "overdue": "Overdue",
+        "all": "All"
+      }
+    }
+  },
+  "services": {
+    "add_task": {
+      "name": "Add task",
+      "description": "Adds a task, optionally due on a day or within a week, month, quarter or year.",
+      "fields": {
+        "entity_id": {
+          "name": "List",
+          "description": "List (empty = first list)"
+        },
+        "title": {
+          "name": "Title",
+          "description": "Title of the task."
+        },
+        "notes": {
+          "name": "Notes",
+          "description": "Notes for the task."
+        },
+        "due_granularity": {
+          "name": "Due within",
+          "description": "Precision of the due date. Without a date the current period is used (e.g. this week)."
+        },
+        "due_date": {
+          "name": "Due date",
+          "description": "Any day within the period."
+        },
+        "important": {
+          "name": "Important",
+          "description": "Mark the task as important."
+        },
+        "my_day": {
+          "name": "Add to My Day",
+          "description": "Show the task in My Day today."
+        }
+      }
+    },
+    "get_tasks": {
+      "name": "Get tasks",
+      "description": "Returns tasks, e.g. everything due by the end of this week.",
+      "fields": {
+        "entity_id": {
+          "name": "List",
+          "description": "Only tasks of this list (empty = all)."
+        },
+        "due": {
+          "name": "Due",
+          "description": "Which tasks to return."
+        },
+        "include_completed": {
+          "name": "Include completed",
+          "description": "Also return completed tasks."
+        }
+      }
+    },
+    "import_ms_todo": {
+      "name": "Import from MS To Do",
+      "description": "Imports a file created with tools/ms_todo_export.py. Tasks imported before are skipped. Admins only.",
+      "fields": {
+        "file": {
+          "name": "File",
+          "description": "Path relative to the config folder."
+        },
+        "dry_run": {
+          "name": "Dry run",
+          "description": "Only summarize, change nothing."
+        },
+        "include_completed": {
+          "name": "Import completed",
+          "description": "Also import completed tasks."
+        },
+        "skip_flagged_emails": {
+          "name": "Skip flagged emails",
+          "description": "Do not import the automatic flagged emails list."
+        },
+        "convert_month_ends": {
+          "name": "Month end → whole month",
+          "description": "Tasks due on the last day of a month become due within that month."
+        },
+        "convert_sundays": {
+          "name": "Sunday → whole week",
+          "description": "Tasks due on a Sunday become due within that week."
+        }
+      }
+    }
+  }
+}
