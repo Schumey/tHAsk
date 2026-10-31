@@ -59,6 +59,22 @@ get_tasks:
       selector:
         boolean:
 
+clear_completed:
+  fields:
+    entity_id:
+      selector:
+        entity:
+          integration: thask
+          domain: todo
+    older_than_days:
+      example: 30
+      selector:
+        number:
+          min: 0
+          max: 3650
+          unit_of_measurement: d
+          mode: box
+
 import_ms_todo:
   fields:
     file:

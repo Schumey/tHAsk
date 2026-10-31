@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 import json
 from pathlib import Path
 from typing import Any
@@ -14,6 +14,7 @@ from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, Supp
 from homeassistant.exceptions import ServiceValidationError, Unauthorized
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
+from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
 from .core.models import Task
@@ -25,6 +26,7 @@ from .schema import GRANULARITIES
 SERVICE_ADD_TASK = "add_task"
 SERVICE_GET_TASKS = "get_tasks"
 SERVICE_IMPORT_MS_TODO = "import_ms_todo"
+SERVICE_CLEAR_COMPLETED = "clear_completed"
 
 DUE_FILTERS = ["today", "this_week", "this_month", "overdue", "all"]
 
@@ -48,6 +50,13 @@ GET_TASKS_SCHEMA = vol.Schema(
     }
 )
 
+
+CLEAR_COMPLETED_SCHEMA = vol.Schema(
+    {
+        vol.Optional(ATTR_ENTITY_ID): cv.entity_id,
+        vol.Optional("older_than_days"): vol.All(vol.Coerce(int), vol.Range(min=0)),
+    }
+)
 
 IMPORT_MS_TODO_SCHEMA = vol.Schema(
     {
@@ -132,6 +141,18 @@ def async_setup_services(hass: HomeAssistant) -> None:
         tasks.sort(key=lambda task: (task.due.end if task.due else date.max, not task.important, task.position))
         return {"tasks": [data.task_info(task) for task in tasks]}
 
+    async def clear_completed(call: ServiceCall) -> ServiceResponse:
+        data = async_get_data(hass)
+        list_id = _list_id_for(hass, data, call.data.get(ATTR_ENTITY_ID))
+        if list_id is None and ATTR_ENTITY_ID in call.data:
+            # A smart list would otherwise mean "all lists".
+            raise ServiceValidationError("Bitte eine echte Liste wählen, keine intelligente Liste")
+        before = None
+        if "older_than_days" in call.data:
+            before = dt_util.utcnow() - timedelta(days=call.data["older_than_days"])
+        removed = data.collection.clear_completed(list_id, before)
+        return {"removed": removed} if call.return_response else None
+
     async def import_ms_todo(call: ServiceCall) -> ServiceResponse:
         if call.context.user_id:
             user = await hass.auth.async_get_user(call.context.user_id)
@@ -163,4 +184,11 @@ def async_setup_services(hass: HomeAssistant) -> None:
         import_ms_todo,
         schema=IMPORT_MS_TODO_SCHEMA,
         supports_response=SupportsResponse.ONLY,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_CLEAR_COMPLETED,
+        clear_completed,
+        schema=CLEAR_COMPLETED_SCHEMA,
+        supports_response=SupportsResponse.OPTIONAL,
     )

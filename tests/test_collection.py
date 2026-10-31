@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, timezone
 
 import pytest
 
@@ -109,3 +109,43 @@ def test_delete_list_removes_tasks(collection, list_id):
     collection.create_task(list_id, "x")
     collection.delete_list(list_id)
     assert not collection.tasks and not collection.lists
+
+
+def test_move_list(collection):
+    first = collection.default_list()
+    second = collection.create_list("Zwei")
+    third = collection.create_list("Drei")
+    collection.move_list(third.id, None)
+    assert [item.name for item in collection.sorted_lists()] == ["Drei", "Aufgaben", "Zwei"]
+    collection.move_list(third.id, second.id)
+    assert [item.id for item in collection.sorted_lists()] == [first.id, second.id, third.id]
+
+
+def test_clear_completed(collection, list_id):
+    other = collection.create_list("Andere")
+    old = collection.create_task(list_id, "alt")
+    collection.update_task(old.id, {"completed": True}, TODAY)
+    old.completed_at = "2026-01-01T00:00:00+00:00"
+    new = collection.create_task(list_id, "neu")
+    collection.update_task(new.id, {"completed": True}, TODAY)
+    elsewhere = collection.create_task(other.id, "woanders")
+    collection.update_task(elsewhere.id, {"completed": True}, TODAY)
+    collection.create_task(list_id, "offen")
+
+    assert collection.clear_completed(list_id, datetime(2026, 6, 1, tzinfo=timezone.utc)) == 1
+    assert collection.clear_completed(list_id) == 1
+    assert {task.title for task in collection.tasks.values()} == {"offen", "woanders"}
+    assert collection.clear_completed() == 1
+
+
+def test_sort_modes(collection, list_id):
+    a = collection.create_task(list_id, "beta", due=Period.month(2026, 12).as_dict())
+    b = collection.create_task(list_id, "Alpha", important=True)
+    c = collection.create_task(list_id, "gamma", due=Period.day(TODAY).as_dict())
+    titles = lambda mode: [task.title for task in collection.tasks_in(list_id, sort=mode)]  # noqa: E731
+    assert titles("manual") == ["gamma", "Alpha", "beta"]
+    assert titles("important") == ["Alpha", "gamma", "beta"]
+    assert titles("due") == ["gamma", "beta", "Alpha"]
+    assert titles("title") == ["Alpha", "beta", "gamma"]
+    a.created, b.created, c.created = "2026-01-01", "2026-03-01", "2026-02-01"
+    assert titles("created") == ["Alpha", "gamma", "beta"]

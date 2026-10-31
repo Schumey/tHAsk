@@ -9,6 +9,7 @@ import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
 from homeassistant.util import dt as dt_util
 
+from .core.models import TASK_SORTS
 from .core.period import Granularity
 
 GRANULARITIES = [granularity.value for granularity in Granularity]
@@ -68,4 +69,5 @@ LIST_FIELDS = {
     vol.Optional("color"): vol.Any(None, str),
     vol.Optional("icon"): vol.Any(None, str),
     vol.Optional("position"): vol.Coerce(float),
+    vol.Optional("sort"): vol.In(TASK_SORTS),
 }

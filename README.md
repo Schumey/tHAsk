@@ -4,7 +4,7 @@ Lokale Aufgabenverwaltung für Home Assistant – mit **unscharfen Fälligkeiten
 
 ## Status
 
-Version 0.2 – Integration mit Weboberfläche in der HA-Seitenleiste. Android-App und Widget folgen.
+Version 0.3 – Integration mit Weboberfläche in der HA-Seitenleiste. Android-App und Widget folgen.
 
 ## Installation
 
@@ -22,7 +22,9 @@ Nach dem Einrichten erscheint **tHAsk** in der HA-Seitenleiste (auch in der Comp
 - **Schnelleingabe** mit Erkennung, z. B. „Reifen wechseln nächsten Monat !“, „Steuer KW 47“, „Rechnungen ablegen jeden Monat“, „Zahnarzt morgen um 9:30“. Erkanntes wird als Chip angezeigt; ein Klick auf den Chip nimmt die Erkennung zurück.
 - **Detailbereich**: Schritte, „Mein Tag“, Fälligkeit als Tag/Woche/Monat/Quartal/Jahr mit Vor-/Zurück-Pfeilen, Erinnerung, Wiederholung, Liste, Notizen.
 - Aufgaben per Drag & Drop sortieren oder auf eine andere Liste in der Seitenleiste ziehen.
-- Listen anlegen (unten in der Seitenleiste), umbenennen (auf den Titel klicken), Gruppe setzen, löschen.
+- Listen anlegen (unten in der Seitenleiste), umbenennen (auf den Titel klicken), Gruppe setzen, löschen und per Drag & Drop in der Seitenleiste anordnen.
+- Aufgaben pro Liste sortieren: manuell, nach Wichtigkeit, Fälligkeit, alphabetisch oder Erstellungsdatum (gilt auch für die HA-Entity). Bei automatischer Sortierung ist Drag & Drop innerhalb der Liste aus.
+- **Erledigte löschen** (Besen-Symbol im Listenkopf).
 
 ## Was in Home Assistant entsteht
 
@@ -40,6 +42,7 @@ Jede Liste hat die Attribute `overdue` und `due_today` (Anzahl).
 
 - `thask.add_task` – Aufgabe mit Zeitraum anlegen, z. B. `due_granularity: week` (ohne Datum = aktuelle Woche).
 - `thask.get_tasks` – Aufgaben abfragen (`due: today | this_week | this_month | overdue | all`), liefert eine Antwort für Automationen/Skripte.
+- `thask.clear_completed` – erledigte Aufgaben einer Liste (oder aller Listen) löschen, optional nur ältere als `older_than_days`. Gut für eine nächtliche Aufräum-Automation.
 - `thask.import_ms_todo` – Import aus Microsoft To Do (siehe unten).
 
 ### Events
@@ -94,7 +97,9 @@ Alle Befehle laufen über die normale HA-WebSocket-Verbindung (Authentifizierung
 | `thask/info` | – |
 | `thask/data` | – (alle Listen und Aufgaben) |
 | `thask/subscribe` | – (Snapshot, danach jede Änderung als Event) |
-| `thask/list/create`, `thask/list/update`, `thask/list/delete` | `name`, `group`, `color`, `icon`, `position` / `list_id` |
+| `thask/list/create`, `thask/list/update`, `thask/list/delete` | `name`, `group`, `color`, `icon`, `position`, `sort` (`manual`, `important`, `due`, `title`, `created`) / `list_id` |
+| `thask/list/move` | `list_id`, `previous_id` |
+| `thask/list/clear_completed` | `list_id` (leer = alle), `older_than_days` |
 | `thask/task/create`, `thask/task/update`, `thask/task/delete` | siehe unten / `task_id` |
 | `thask/task/move` | `task_id`, `previous_id` |
 | `thask/parse` | `text`, `disabled` (Liste aus `due`, `time`, `recurrence`, `important`) – Schnelleingabe |

@@ -122,6 +122,20 @@
           "description": "Tasks due on a Sunday become due within that week."
         }
       }
+    },
+    "clear_completed": {
+      "name": "Clear completed",
+      "description": "Deletes completed tasks of one list or all lists, optionally only older ones.",
+      "fields": {
+        "entity_id": {
+          "name": "List",
+          "description": "Only this list (empty = all lists)."
+        },
+        "older_than_days": {
+          "name": "Older than (days)",
+          "description": "Only tasks completed more than this many days ago."
+        }
+      }
     }
   }
 }

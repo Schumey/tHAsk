@@ -153,6 +153,10 @@ class Backend:
             case "thask/list/delete":
                 collection.delete_list(msg["list_id"])
                 return None
+            case "thask/list/move":
+                return collection.move_list(msg["list_id"], msg.get("previous_id")).as_dict()
+            case "thask/list/clear_completed":
+                return {"removed": collection.clear_completed(msg.get("list_id"))}
             case "thask/task/create":
                 fields = pick(Task.EDITABLE)
                 return collection.create_task(fields.pop("list_id"), fields.pop("title"), **fields).as_dict()

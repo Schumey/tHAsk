@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from typing import Any, Literal
 
-from .models import Task, TaskList, new_id, utc_now_iso
+from .models import Task, TaskList, new_id, sort_tasks, utc_now_iso
 
 DATA_VERSION = 1
 
@@ -98,6 +98,40 @@ class TaskCollection:
         del self.lists[list_id]
         self._notify(Change("removed", "list", list_id, None, list_id))
 
+    def move_list(self, list_id: str, previous_id: str | None) -> TaskList:
+        """Place a list directly after `previous_id`, or first when None."""
+        task_list = self.get_list(list_id)
+        order = [item for item in self.sorted_lists() if item.id != list_id]
+        index = 0
+        if previous_id is not None:
+            index = next((i + 1 for i, item in enumerate(order) if item.id == previous_id), None)
+            if index is None:
+                raise NotFoundError(previous_id)
+        order.insert(index, task_list)
+        for position, item in enumerate(order):
+            if item.position != position:
+                item.apply({"position": position})
+                self._notify(Change("updated", "list", item.id, item.as_dict(), item.id))
+        return task_list
+
+    def clear_completed(self, list_id: str | None = None, completed_before: datetime | None = None) -> int:
+        """Delete completed tasks (of one list, or all), optionally only those completed before a time."""
+        if list_id is not None:
+            self.get_list(list_id)
+        doomed = [
+            task.id
+            for task in self.tasks.values()
+            if task.completed
+            and (list_id is None or task.list_id == list_id)
+            and (
+                completed_before is None
+                or (task.completed_at is not None and datetime.fromisoformat(task.completed_at) < completed_before)
+            )
+        ]
+        for task_id in doomed:
+            self.delete_task(task_id)
+        return len(doomed)
+
     # -- tasks ---------------------------------------------------------------
 
     def get_task(self, task_id: str) -> Task:
@@ -106,12 +140,12 @@ class TaskCollection:
         except KeyError:
             raise NotFoundError(task_id) from None
 
-    def tasks_in(self, list_id: str, include_completed: bool = True) -> list[Task]:
+    def tasks_in(self, list_id: str, include_completed: bool = True, sort: str = "manual") -> list[Task]:
         tasks = [
             task for task in self.tasks.values()
             if task.list_id == list_id and (include_completed or not task.completed)
         ]
-        return sorted(tasks, key=lambda task: (task.position, task.created))
+        return sort_tasks(tasks, sort)
 
     def find_external_list(self, external_id: str) -> TaskList | None:
         return next((item for item in self.lists.values() if item.external_id == external_id), None)

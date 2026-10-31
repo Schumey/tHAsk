@@ -122,6 +122,20 @@
           "description": "Aufgaben, die an einem Sonntag fällig sind, werden „fällig in dieser Woche“."
         }
       }
+    },
+    "clear_completed": {
+      "name": "Erledigte löschen",
+      "description": "Löscht erledigte Aufgaben einer Liste oder aller Listen, optional nur ältere.",
+      "fields": {
+        "entity_id": {
+          "name": "Liste",
+          "description": "Nur diese Liste (leer = alle Listen)."
+        },
+        "older_than_days": {
+          "name": "Älter als (Tage)",
+          "description": "Nur Aufgaben, die vor mehr als so vielen Tagen erledigt wurden."
+        }
+      }
     }
   }
 }

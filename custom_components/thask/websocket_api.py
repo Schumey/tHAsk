@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from datetime import timedelta
 from functools import wraps
 from typing import Any
 
@@ -12,6 +13,7 @@ from homeassistant.components import websocket_api
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.util import dt as dt_util
 
 from .const import SIGNAL_DAY_CHANGED
 from .core.collection import Change, NotFoundError
@@ -35,6 +37,8 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
         ws_list_create,
         ws_list_update,
         ws_list_delete,
+        ws_list_move,
+        ws_list_clear_completed,
         ws_task_create,
         ws_task_update,
         ws_task_delete,
@@ -142,6 +146,36 @@ def ws_list_delete(hass, connection, msg, data: ThaskData) -> None:
         raise HomeAssistantError("The last list cannot be deleted")
     data.collection.delete_list(msg["list_id"])
     connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "thask/list/move",
+        vol.Required("list_id"): str,
+        vol.Optional("previous_id"): vol.Any(None, str),
+    }
+)
+@_with_data
+def ws_list_move(hass, connection, msg, data: ThaskData) -> None:
+    task_list = data.collection.move_list(msg["list_id"], msg.get("previous_id"))
+    connection.send_result(msg["id"], task_list.as_dict())
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "thask/list/clear_completed",
+        vol.Optional("list_id"): vol.Any(None, str),
+        vol.Optional("older_than_days"): vol.All(vol.Coerce(int), vol.Range(min=0)),
+    }
+)
+@_with_data
+def ws_list_clear_completed(hass, connection, msg, data: ThaskData) -> None:
+    """Delete completed tasks of one list (or all lists)."""
+    before = None
+    if "older_than_days" in msg:
+        before = dt_util.utcnow() - timedelta(days=msg["older_than_days"])
+    removed = data.collection.clear_completed(msg.get("list_id"), before)
+    connection.send_result(msg["id"], {"removed": removed})
 
 
 @websocket_api.websocket_command(

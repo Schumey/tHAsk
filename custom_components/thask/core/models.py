@@ -54,6 +54,24 @@ class Step:
         return cls(data.get("id") or new_id(), data["title"], bool(data.get("completed", False)))
 
 
+TASK_SORTS = ("manual", "important", "due", "title", "created")
+
+
+def sort_tasks(tasks: list[Task], mode: str) -> list[Task]:
+    """Order tasks by a list's sort mode; ties keep the manual order."""
+    manual = sorted(tasks, key=lambda task: (task.position, task.created))
+    match mode:
+        case "important":
+            return sorted(manual, key=lambda task: not task.important)
+        case "due":
+            return sorted(manual, key=lambda task: task.due.end if task.due else date.max)
+        case "title":
+            return sorted(manual, key=lambda task: task.title.casefold())
+        case "created":
+            return sorted(manual, key=lambda task: task.created, reverse=True)
+    return manual
+
+
 @dataclass(slots=True)
 class TaskList:
     id: str
@@ -62,12 +80,14 @@ class TaskList:
     color: str | None = None
     icon: str | None = None
     position: float = 0
+    # How the list's tasks are ordered: manual (by position) or one of TASK_SORTS.
+    sort: str = "manual"
     # Id in the system the list was imported from.
     external_id: str | None = None
     created: str = field(default_factory=utc_now_iso)
     modified: str = field(default_factory=utc_now_iso)
 
-    EDITABLE = ("name", "group", "color", "icon", "position")
+    EDITABLE = ("name", "group", "color", "icon", "position", "sort")
 
     def apply(self, patch: dict[str, Any]) -> None:
         for key in self.EDITABLE:
@@ -83,6 +103,7 @@ class TaskList:
             "color": self.color,
             "icon": self.icon,
             "position": self.position,
+            "sort": self.sort,
             "external_id": self.external_id,
             "created": self.created,
             "modified": self.modified,

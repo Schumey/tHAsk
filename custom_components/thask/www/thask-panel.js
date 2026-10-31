@@ -20,6 +20,9 @@ const STRINGS = {
     back: "Zurück", loading: "Lade …", not_loaded: "tHAsk ist nicht geladen. Ist die Integration eingerichtet?",
     kind_due: "Fällig", kind_time: "Uhrzeit", kind_recurrence: "Wiederholung", kind_important: "Wichtig",
     ignore: "Nicht erkennen", mark_important: "Wichtig", complete: "Erledigt", week_short: "KW",
+    sort: "Sortieren", sort_manual: "Manuell", sort_important: "Wichtigkeit", sort_due: "Fälligkeit",
+    sort_title: "Alphabetisch", sort_created: "Erstellungsdatum", clear_completed: "Erledigte löschen",
+    clear_confirm: "{0} erledigte Aufgabe(n) aus „{1}“ endgültig löschen?", cleared: "{0} erledigte Aufgabe(n) gelöscht",
   },
   en: {
     my_day: "My Day", important: "Important", planned: "Planned", this_week: "This week",
@@ -39,6 +42,9 @@ const STRINGS = {
     not_loaded: "tHAsk is not loaded. Is the integration set up?",
     kind_due: "Due", kind_time: "Time", kind_recurrence: "Repeat", kind_important: "Important",
     ignore: "Don't detect", mark_important: "Important", complete: "Completed", week_short: "Week",
+    sort: "Sort", sort_manual: "Manual", sort_important: "Importance", sort_due: "Due date",
+    sort_title: "Alphabetical", sort_created: "Creation date", clear_completed: "Clear completed",
+    clear_confirm: "Permanently delete {0} completed task(s) from “{1}”?", cleared: "{0} completed task(s) deleted",
   },
 };
 
@@ -52,6 +58,7 @@ const MONTHS_SHORT = {
 };
 const WEEKDAYS_SHORT = { de: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"], en: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] };
 const GRANULARITIES = ["day", "week", "month", "quarter", "year"];
+const TASK_SORTS = ["manual", "important", "due", "title", "created"];
 const SMART_VIEWS = [
   { key: "my_day", icon: "mdi:white-balance-sunny" },
   { key: "important", icon: "mdi:star-outline" },
@@ -161,6 +168,19 @@ function periodRange(period, lang) {
   const end = periodEndOf(period);
   const fmt = (d) => d.toLocaleDateString(lang === "de" ? "de-DE" : "en-GB", { day: "numeric", month: "short" });
   return `${fmt(start)} – ${fmt(end)}`;
+}
+
+// Same rules as sort_tasks in core/models.py; ties keep the manual order.
+function sortTasks(tasks, mode) {
+  const manual = [...tasks].sort((a, b) => a.position - b.position || a.created.localeCompare(b.created));
+  const dueKey = (task) => (task.due ? toISO(periodEndOf(task.due)) : "9999-12-31");
+  const keyed = {
+    important: (a, b) => b.important - a.important,
+    due: (a, b) => dueKey(a).localeCompare(dueKey(b)),
+    title: (a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: "base" }),
+    created: (a, b) => b.created.localeCompare(a.created),
+  }[mode];
+  return keyed ? manual.sort(keyed) : manual;
 }
 
 const esc = (value) =>
@@ -326,15 +346,22 @@ class ThaskPanel extends HTMLElement {
       view.type === "list" ? task.list_id === view.id : this._matchesSmart(task, view.key)
     );
     const dueKey = (task) => (task.due ? toISO(periodEndOf(task.due)) : "9999");
-    if (view.type === "list" || view.key === "my_day") {
-      tasks.sort((a, b) => a.position - b.position || a.created.localeCompare(b.created));
+    let sorted;
+    if (view.type === "list") {
+      sorted = sortTasks(tasks, this._listSort(view.id));
+    } else if (view.key === "my_day") {
+      sorted = sortTasks(tasks, "manual");
     } else {
-      tasks.sort((a, b) => dueKey(a).localeCompare(dueKey(b)) || b.important - a.important || a.position - b.position);
+      sorted = tasks.sort((a, b) => dueKey(a).localeCompare(dueKey(b)) || b.important - a.important || a.position - b.position);
     }
     return {
-      open: tasks.filter((task) => !task.completed),
-      done: tasks.filter((task) => task.completed).sort((a, b) => (b.completed_at || "").localeCompare(a.completed_at || "")),
+      open: sorted.filter((task) => !task.completed),
+      done: sorted.filter((task) => task.completed).sort((a, b) => (b.completed_at || "").localeCompare(a.completed_at || "")),
     };
+  }
+
+  _listSort(listId) {
+    return this._lists.find((l) => l.id === listId)?.sort || "manual";
   }
 
   _viewTitle() {
@@ -398,6 +425,7 @@ class ThaskPanel extends HTMLElement {
     root.addEventListener("drop", (ev) => this._onDrop(ev));
     root.addEventListener("dragend", () => {
       this._dragTask = null;
+      this._dragList = null;
       root.querySelectorAll(".drop-target, .dragging").forEach((el) => el.classList.remove("drop-target", "dragging"));
     });
     this._render();
@@ -437,7 +465,7 @@ class ThaskPanel extends HTMLElement {
       view.type === this._view.type && (view.type === "list" ? view.id === this._view.id : view.key === this._view.key);
     const item = (view, icon, label) => `
       <button class="nav-item ${isActive(view) ? "active" : ""}" data-action="view" data-view-type="${view.type}"
-        data-view="${esc(view.type === "list" ? view.id : view.key)}" ${view.type === "list" ? `data-drop="list" data-list-id="${esc(view.id)}"` : ""}>
+        data-view="${esc(view.type === "list" ? view.id : view.key)}" ${view.type === "list" ? `data-drop="list" data-list-id="${esc(view.id)}" draggable="true"` : ""}>
         <ha-icon icon="${icon}"></ha-icon><span class="nav-label">${esc(label)}</span>
         <span class="count">${count(view) || ""}</span>
       </button>`;
@@ -446,12 +474,13 @@ class ThaskPanel extends HTMLElement {
     let group = null;
     for (const list of this._lists) {
       if ((list.group || null) !== group) {
+        // Ungrouped lists after a group get a divider so they don't look like part of it.
+        html += list.group ? `<div class="group">${esc(list.group)}</div>` : `<div class="divider"></div>`;
         group = list.group || null;
-        if (group) html += `<div class="group">${esc(group)}</div>`;
       }
       html += item({ type: "list", id: list.id }, list.icon || "mdi:format-list-bulleted", list.name);
     }
-    html += `</div><div class="new-list"><ha-icon icon="mdi:plus"></ha-icon><input class="new-list-input" placeholder="${esc(this.t("new_list"))}"></div>`;
+    html += `<div class="drop-end" data-drop="list-end"></div></div><div class="new-list"><ha-icon icon="mdi:plus"></ha-icon><input class="new-list-input" placeholder="${esc(this.t("new_list"))}"></div>`;
     const sidebar = this.shadowRoot.querySelector(".sidebar");
     const focused = this.shadowRoot.activeElement?.classList.contains("new-list-input");
     const pending = sidebar.querySelector(".new-list-input")?.value || "";
@@ -468,7 +497,12 @@ class ThaskPanel extends HTMLElement {
       if (!title.querySelector("input") || root.activeElement !== title.querySelector("input")) {
         title.innerHTML = `<input class="list-name" value="${esc(this._viewTitle())}" title="${esc(this.t("rename"))}">`;
       }
+      const sort = this._listSort(this._view.id);
+      const doneCount = this._viewTasks().done.length;
       root.querySelector(".view-actions").innerHTML = `
+        <label class="sort" title="${esc(this.t("sort"))}"><ha-icon icon="mdi:sort"></ha-icon>
+          <select data-field="list-sort">${TASK_SORTS.map((mode) => `<option value="${mode}" ${mode === sort ? "selected" : ""}>${esc(this.t(`sort_${mode}`))}</option>`).join("")}</select></label>
+        <button class="icon-button" data-action="list-clear-completed" title="${esc(this.t("clear_completed"))}" ${doneCount ? "" : "disabled"}><ha-icon icon="mdi:broom"></ha-icon></button>
         <button class="icon-button" data-action="list-group" title="${esc(this.t("group"))}"><ha-icon icon="mdi:folder-outline"></ha-icon></button>
         <button class="icon-button" data-action="list-delete" title="${esc(this.t("delete"))}"><ha-icon icon="mdi:delete-outline"></ha-icon></button>`;
     } else {
@@ -482,7 +516,7 @@ class ThaskPanel extends HTMLElement {
 
   _renderTasks() {
     const { open, done } = this._viewTasks();
-    const reorderable = this._view.type === "list";
+    const reorderable = this._view.type === "list" && this._listSort(this._view.id) === "manual";
     let html = "";
     if (this._view.type === "smart" && this._view.key === "planned") {
       const weekEnd = this._weekEnd();
@@ -841,6 +875,14 @@ class ThaskPanel extends HTMLElement {
         if (list && confirm(this.t("delete_list_confirm", list.name))) this._call("thask/list/delete", { list_id: list.id });
         break;
       }
+      case "list-clear-completed": {
+        const list = this._lists.find((l) => l.id === this._view.id);
+        const count = this._viewTasks().done.length;
+        if (list && count && confirm(this.t("clear_confirm", count, list.name))) {
+          this._call("thask/list/clear_completed", { list_id: list.id }).then((result) => this._toast(this.t("cleared", result.removed)));
+        }
+        break;
+      }
       case "list-group": {
         const list = this._lists.find((l) => l.id === this._view.id);
         const group = list && prompt(this.t("group_prompt"), list.group || "");
@@ -852,6 +894,13 @@ class ThaskPanel extends HTMLElement {
 
   _onChange(ev) {
     const field = ev.target.dataset?.field;
+    if (field === "list-sort" && this._view.type === "list") {
+      const listId = this._view.id;
+      this._lists = this._lists.map((l) => (l.id === listId ? { ...l, sort: ev.target.value } : l));
+      this._render();
+      this._call("thask/list/update", { list_id: listId, sort: ev.target.value });
+      return;
+    }
     const task = this._tasks.get(this._selectedTask);
     if (!field || !task) return;
     const value = ev.target.value;
@@ -942,6 +991,14 @@ class ThaskPanel extends HTMLElement {
   // ---- Drag and drop: reorder within a list, or drop onto another list -------------------
 
   _onDragStart(ev) {
+    const listItem = ev.target.closest?.(".nav-item[draggable]");
+    if (listItem) {
+      this._dragList = listItem.dataset.listId;
+      listItem.classList.add("dragging");
+      ev.dataTransfer.effectAllowed = "move";
+      ev.dataTransfer.setData("text/plain", this._dragList);
+      return;
+    }
     const row = ev.target.closest?.(".task[draggable]");
     if (!row) return;
     this._dragTask = row.dataset.taskId;
@@ -952,7 +1009,10 @@ class ThaskPanel extends HTMLElement {
 
   _onDragOver(ev) {
     const target = ev.target.closest?.("[data-drop]");
-    if (!this._dragTask || !target) return;
+    if (!target) return;
+    const listDrop = ["list", "list-end"].includes(target.dataset.drop);
+    // Lists can only be dropped among lists; tasks onto lists or tasks, not the list end.
+    if (this._dragList ? !listDrop : !this._dragTask || target.dataset.drop === "list-end") return;
     ev.preventDefault();
     this.shadowRoot.querySelectorAll(".drop-target").forEach((el) => el !== target && el.classList.remove("drop-target"));
     target.classList.add("drop-target");
@@ -960,6 +1020,15 @@ class ThaskPanel extends HTMLElement {
 
   _onDrop(ev) {
     const target = ev.target.closest?.("[data-drop]");
+    if (this._dragList && target) {
+      ev.preventDefault();
+      // Dropping onto a list places the dragged one before it.
+      const listId = this._dragList;
+      const order = this._lists.map((l) => l.id).filter((id) => id !== listId);
+      const index = target.dataset.drop === "list-end" ? order.length : order.indexOf(target.dataset.listId);
+      if (index >= 0) this._call("thask/list/move", { list_id: listId, previous_id: index === 0 ? null : order[index - 1] });
+      return;
+    }
     const taskId = this._dragTask;
     if (!taskId || !target) return;
     ev.preventDefault();
@@ -1020,7 +1089,13 @@ const STYLE = `
   .view-title .subtitle { font-size: 13px; font-weight: 400; color: var(--thask-muted); }
   .list-name { font-size: 24px; font-weight: 500; color: var(--thask-accent); border: none; background: none; outline: none; padding: 0; width: 100%; border-bottom: 1px solid transparent; }
   .list-name:focus { border-bottom-color: var(--thask-accent); }
-  .view-actions { display: flex; gap: 4px; }
+  .view-actions { display: flex; gap: 4px; align-items: center; }
+  .sort { display: inline-flex; align-items: center; gap: 4px; color: var(--thask-muted); padding: 0 4px; }
+  .sort select { border: none; background: none; color: var(--thask-text); font-size: 13px; cursor: pointer; max-width: 130px; }
+  .sort select option { background: var(--thask-surface); }
+  .icon-button:disabled { opacity: 0.35; cursor: default; background: none; }
+  .nav-item.dragging { opacity: 0.4; }
+  .lists .drop-end { min-height: 12px; }
   .icon-button { width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; color: var(--thask-muted); flex: none; }
   .icon-button:hover { background: rgba(127, 127, 127, 0.14); }
   .icon-button.small { width: 28px; height: 28px; }

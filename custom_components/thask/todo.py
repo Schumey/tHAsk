@@ -184,7 +184,9 @@ class ThaskListEntity(ThaskTodoEntity):
         return {**super().extra_state_attributes, "list_id": self._list_id}
 
     def _tasks(self) -> list[Task]:
-        return self._sorted(self._data.collection.tasks_in(self._list_id))
+        task_list = self._data.collection.lists.get(self._list_id)
+        sort = task_list.sort if task_list else "manual"
+        return self._sorted(self._data.collection.tasks_in(self._list_id, sort=sort))
 
     def _is_relevant(self, change: Change) -> bool:
         return change.list_id == self._list_id
