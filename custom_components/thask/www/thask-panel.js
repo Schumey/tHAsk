@@ -23,6 +23,20 @@ const STRINGS = {
     sort: "Sortieren", sort_manual: "Manuell", sort_priority: "Priorität", sort_due: "Fälligkeit",
     sort_title: "Alphabetisch", sort_created: "Erstellungsdatum", clear_completed: "Erledigte löschen",
     clear_confirm: "{0} erledigte Aufgabe(n) aus „{1}“ endgültig löschen?", cleared: "{0} erledigte Aufgabe(n) gelöscht",
+    triggers: "Trigger", new_trigger: "Neuer Trigger", check_now: "Jetzt prüfen", name: "Name", when: "Wenn", then: "Dann",
+    cond_state: "Zustand einer Entität", cond_calendar: "Kalendereintrag", cond_time: "Uhrzeit", entity: "Entität",
+    state_is: "Zustand", state_hint: "leer = an / zuhause; >20 oder <5 für Zahlen", title_contains: "Titel enthält (leer = jeder Termin)",
+    from_time: "ab", negate: "umkehren (NICHT)", hold_minutes: "seit Minuten", part_any: "jeder Tag des Termins",
+    part_start: "nur Starttag", part_end: "nur Endtag", add_condition: "Weitere Bedingung", combine_and: "alle (UND)",
+    combine_or: "mindestens eine (ODER)", window: "Nur zwischen", days_ahead: "Tage im Voraus", task_title: "Titel der Aufgabe",
+    placeholders: "Platzhalter: {termin}, {datum}, {wochentag}, {zustand}", due_today: "Heute", due_day: "Tag (des Termins)",
+    due_week: "Woche (des Termins)", due_month: "Monat (des Termins)", save: "Speichern", test: "Testen", run_now: "Jetzt ausführen",
+    paused_until: "Pausiert bis", paused_until_x: "pausiert bis {0}", history: "Verlauf", undo: "Rückgängig", undone: "rückgängig gemacht",
+    no_triggers: "Noch keine Trigger. Ein Trigger legt einmal pro Tag eine Aufgabe an, wenn in Home Assistant etwas zutrifft, z. B. ein Kalendertermin morgen.",
+    last_check: "Zuletzt geprüft {0}", test_met: "Trifft jetzt zu", test_not_met: "Trifft jetzt nicht zu", enabled: "Aktiv",
+    delete_trigger_confirm: "Trigger „{0}“ löschen?", for_day: "für {0}", task_created: "Aufgabe „{0}“ angelegt",
+    fired_none: "Kein Trigger hat ausgelöst", fired_n: "{0} Aufgabe(n) angelegt", missing_fields: "Name, Titel und für jede Bedingung die Entität bzw. Uhrzeit angeben",
+    is_on: "an", by_hand: "von Hand",
   },
   en: {
     my_day: "My Day", important: "Important", planned: "Planned", this_week: "This week",
@@ -45,6 +59,20 @@ const STRINGS = {
     sort: "Sort", sort_manual: "Manual", sort_priority: "Priority", sort_due: "Due date",
     sort_title: "Alphabetical", sort_created: "Creation date", clear_completed: "Clear completed",
     clear_confirm: "Permanently delete {0} completed task(s) from “{1}”?", cleared: "{0} completed task(s) deleted",
+    triggers: "Triggers", new_trigger: "New trigger", check_now: "Check now", name: "Name", when: "When", then: "Then",
+    cond_state: "Entity state", cond_calendar: "Calendar event", cond_time: "Time of day", entity: "Entity",
+    state_is: "State", state_hint: "empty = on / home; >20 or <5 for numbers", title_contains: "Title contains (empty = any event)",
+    from_time: "from", negate: "invert (NOT)", hold_minutes: "for minutes", part_any: "every day of the event",
+    part_start: "first day only", part_end: "last day only", add_condition: "Another condition", combine_and: "all (AND)",
+    combine_or: "at least one (OR)", window: "Only between", days_ahead: "Days ahead", task_title: "Task title",
+    placeholders: "Placeholders: {event}, {date}, {weekday}, {state}", due_today: "Today", due_day: "Day (of the event)",
+    due_week: "Week (of the event)", due_month: "Month (of the event)", save: "Save", test: "Test", run_now: "Run now",
+    paused_until: "Paused until", paused_until_x: "paused until {0}", history: "History", undo: "Undo", undone: "undone",
+    no_triggers: "No triggers yet. A trigger adds a task once a day when something applies in Home Assistant, e.g. a calendar event tomorrow.",
+    last_check: "Last checked {0}", test_met: "Applies now", test_not_met: "Does not apply now", enabled: "Enabled",
+    delete_trigger_confirm: "Delete trigger “{0}”?", for_day: "for {0}", task_created: "Task “{0}” added",
+    fired_none: "No trigger fired", fired_n: "{0} task(s) added", missing_fields: "Enter a name, a title and the entity or time of each condition",
+    is_on: "on", by_hand: "by hand",
   },
 };
 
@@ -61,6 +89,11 @@ const GRANULARITIES = ["day", "week", "month", "quarter", "year"];
 const TASK_SORTS = ["manual", "priority", "due", "title", "created"];
 // The integration appends its version to the module URL (cache busting), so the panel can show it.
 const VERSION = new URL(import.meta.url).searchParams.get("v") || "";
+
+const CONDITION_KINDS = ["state", "calendar", "time"];
+const TRIGGER_DUE = ["none", "today", "day", "week", "month"];
+// Domains offered for state conditions.
+const STATE_DOMAINS = ["person", "device_tracker", "binary_sensor", "sensor", "input_boolean", "input_select", "switch", "light", "zone", "sun", "alarm_control_panel", "climate", "cover", "lock", "media_player", "vacuum"];
 
 const SMART_VIEWS = [
   { key: "my_day", icon: "mdi:white-balance-sunny" },
@@ -211,6 +244,11 @@ class ThaskPanel extends HTMLElement {
     this._disabledKinds = new Set();
     this._parseSeq = 0;
     this._dragTask = null;
+    this._triggers = null; // null until the trigger subscription answered
+    this._triggerRuns = [];
+    this._triggerStatus = {};
+    this._triggerDraft = null;
+    this._triggerTests = {};
   }
 
   set hass(hass) {
@@ -239,6 +277,8 @@ class ThaskPanel extends HTMLElement {
   disconnectedCallback() {
     this._unsubscribe?.then((unsub) => unsub()).catch(() => {});
     this._unsubscribe = null;
+    this._triggersUnsub?.then((unsub) => unsub()).catch(() => {});
+    this._triggersUnsub = null;
   }
 
   connectedCallback() {
@@ -388,6 +428,7 @@ class ThaskPanel extends HTMLElement {
   }
 
   _viewTitle() {
+    if (this._view.type === "triggers") return this.t("triggers");
     if (this._search.trim()) return this.t("search_results");
     if (this._view.type === "smart") return this.t(this._view.key);
     return this._lists.find((l) => l.id === this._view.id)?.name ?? "";
@@ -443,9 +484,13 @@ class ThaskPanel extends HTMLElement {
     root.addEventListener("input", (ev) => {
       if (!ev.target.classList?.contains("search-input")) return;
       this._search = ev.target.value;
+      if (this._view.type === "triggers") this._view = { type: "smart", key: "my_day" };
       this._selectedTask = null;
       this._pane = "list";
       this._render();
+    });
+    root.addEventListener("input", (ev) => {
+      if (ev.target.dataset?.tfield) this._onTriggerField(ev.target, false);
     });
     root.addEventListener("click", (ev) => this._onClick(ev));
     root.addEventListener("change", (ev) => this._onChange(ev));
@@ -466,8 +511,10 @@ class ThaskPanel extends HTMLElement {
   _render() {
     const root = this.shadowRoot;
     if (!root.querySelector(".app")) return;
+    const triggersView = this._view.type === "triggers";
     root.querySelector(".app").dataset.pane = this._pane;
-    root.querySelector(".app").classList.toggle("has-detail", !!this._selectedTask);
+    root.querySelector(".app").classList.toggle("has-detail", triggersView ? !!this._triggerDraft : !!this._selectedTask);
+    root.querySelector(".app").classList.toggle("triggers-view", triggersView);
     if (this._error) {
       root.querySelector(".tasks").innerHTML = `<div class="empty">${esc(this._error)}</div>`;
       return;
@@ -479,6 +526,12 @@ class ThaskPanel extends HTMLElement {
     this._renderSidebar();
     this._renderHeader();
     this._renderGroupMenu();
+    if (triggersView) {
+      this._renderTriggers();
+      if (this._editorDraft !== this._triggerDraft) this._renderTriggerEditor();
+      return;
+    }
+    this._editorDraft = undefined;
     this._renderTasks();
     this._renderChips();
     if (!this._isEditingDetail() || this._detailFor !== this._selectedTask) this._renderDetail();
@@ -513,7 +566,13 @@ class ThaskPanel extends HTMLElement {
       }
       html += item({ type: "list", id: list.id }, list.icon || "mdi:format-list-bulleted", list.name);
     }
-    html += `<div class="drop-end" data-drop="list-end"></div></div><div class="new-list"><ha-icon icon="mdi:plus"></ha-icon><input class="new-list-input" placeholder="${esc(this.t("new_list"))}"></div>${VERSION ? `<div class="version">tHAsk v${esc(VERSION)}</div>` : ""}`;
+    html += `<div class="drop-end" data-drop="list-end"></div></div>`;
+    if (this._hass.user?.is_admin) {
+      html += `<div class="divider"></div><button class="nav-item ${this._view.type === "triggers" ? "active" : ""}" data-action="view" data-view-type="triggers" data-view="triggers">
+        <ha-icon icon="mdi:lightning-bolt-outline"></ha-icon><span class="nav-label">${esc(this.t("triggers"))}</span>
+        <span class="count">${this._triggers?.length || ""}</span></button>`;
+    }
+    html += `<div class="new-list"><ha-icon icon="mdi:plus"></ha-icon><input class="new-list-input" placeholder="${esc(this.t("new_list"))}"></div>${VERSION ? `<div class="version">tHAsk v${esc(VERSION)}</div>` : ""}`;
     const sidebar = this.shadowRoot.querySelector(".sidebar");
     const focused = this.shadowRoot.activeElement?.classList.contains("new-list-input");
     const pending = sidebar.querySelector(".new-list-input")?.value || "";
@@ -530,7 +589,12 @@ class ThaskPanel extends HTMLElement {
   _renderHeader() {
     const root = this.shadowRoot;
     const title = root.querySelector(".view-title");
-    if (this._view.type === "list" && !this._search.trim()) {
+    if (this._view.type === "triggers") {
+      title.textContent = this.t("triggers");
+      root.querySelector(".view-actions").innerHTML = `
+        <button class="icon-button" data-action="trigger-check" title="${esc(this.t("check_now"))}"><ha-icon icon="mdi:refresh"></ha-icon></button>
+        <button class="icon-button" data-action="trigger-new" title="${esc(this.t("new_trigger"))}"><ha-icon icon="mdi:plus"></ha-icon></button>`;
+    } else if (this._view.type === "list" && !this._search.trim()) {
       if (!title.querySelector("input") || root.activeElement !== title.querySelector("input")) {
         title.innerHTML = `<input class="list-name" value="${esc(this._viewTitle())}" title="${esc(this.t("rename"))}">`;
       }
@@ -697,6 +761,7 @@ class ThaskPanel extends HTMLElement {
   }
 
   _renderDetail() {
+    if (this._view.type === "triggers") return; // the detail pane holds the trigger editor
     const detail = this.shadowRoot.querySelector(".detail");
     this._detailFor = this._selectedTask;
     const task = this._tasks.get(this._selectedTask);
@@ -877,6 +942,293 @@ class ThaskPanel extends HTMLElement {
     this._renderChips();
   }
 
+  // ---- Triggers -----------------------------------------------------------------------------
+
+  _subscribeTriggers() {
+    if (this._triggersUnsub) return;
+    this._triggersUnsub = this._hass.connection.subscribeMessage((event) => {
+      this._triggers = event.triggers;
+      this._triggerRuns = event.runs;
+      this._triggerStatus = event.status || {};
+      this._render();
+    }, { type: "thask/triggers/subscribe" });
+    this._triggersUnsub.catch((err) => {
+      this._triggersUnsub = null;
+      this._toast(err?.message || String(err));
+    });
+  }
+
+  _emptyCondition(kind = "calendar") {
+    return { kind, entity: "", match: "", negate: false, hold_minutes: 0, part: "any" };
+  }
+
+  _newTriggerDraft() {
+    return {
+      name: "", enabled: true, combine: "and", window_from: "", window_to: "", days_ahead: 0, paused_until: null,
+      conditions: [this._emptyCondition()],
+      task: { title: "", list_id: this._lists[0]?.id || null, due: "day", my_day: false, priority: 0, notes: "" },
+    };
+  }
+
+  _openTrigger(draft) {
+    this._triggerDraft = draft;
+    this._editorDraft = undefined;
+    if (this._narrow) this._pane = draft ? "detail" : "list";
+    this._render();
+  }
+
+  _conditionText(c) {
+    const not = c.negate ? `${this.t("negate").split(" ")[0]} ` : "";
+    switch (c.kind) {
+      case "time": return `${not}${this.t("from_time")} ${c.match}`;
+      case "calendar": return `${not}${c.entity}${c.match ? `: „${c.match}“` : ""}`;
+      default: return `${c.entity} ${c.negate ? "≠" : "="} ${c.match || this.t("is_on")}${c.hold_minutes ? ` (${c.hold_minutes} min)` : ""}`;
+    }
+  }
+
+  _dayLabel(iso) {
+    return periodLabel(makePeriod("day", parseISO(iso)), this._lang, this._today);
+  }
+
+  _renderTriggers() {
+    const box = this.shadowRoot.querySelector(".tasks");
+    if (this._triggers === null) {
+      box.innerHTML = `<div class="empty">${esc(this.t("loading"))}</div>`;
+      return;
+    }
+    const icons = { state: "mdi:toggle-switch-outline", calendar: "mdi:calendar-outline", time: "mdi:clock-outline" };
+    let html = this._triggers.map((t) => {
+      const test = this._triggerTests[t.id];
+      const meta = t.conditions.map((c) => `<span class="meta"><ha-icon icon="${icons[c.kind]}"></ha-icon>${esc(this._conditionText(c))}</span>`);
+      if (t.paused_until && t.paused_until >= this._todayISO) meta.push(`<span class="meta"><ha-icon icon="mdi:pause"></ha-icon>${esc(this.t("paused_until_x", this._dayLabel(t.paused_until)))}</span>`);
+      return `
+        <div class="task trigger ${t.enabled ? "" : "disabled"} ${t.id === this._triggerDraft?.id ? "selected" : ""}" data-action="trigger-edit" data-trigger-id="${esc(t.id)}">
+          <button class="check ${t.enabled ? "on" : ""}" data-action="trigger-toggle" data-trigger-id="${esc(t.id)}" title="${esc(this.t("enabled"))}"><ha-icon icon="mdi:check"></ha-icon></button>
+          <div class="task-body">
+            <div class="task-title">${esc(t.name)} <span class="muted">→ ${esc(t.task.title)}</span></div>
+            <div class="task-meta">${meta.join(`<span class="dot">${t.combine === "or" ? "|" : "·"}</span>`)}</div>
+            ${test ? `<div class="test-result ${test.met ? "ok" : ""}">${esc(this.t(test.met ? "test_met" : "test_not_met"))}${test.results.length > 1 ? ` (${test.results.map((r) => (r ? "✓" : "✗")).join(" ")})` : ""}${test.event ? `: ${esc(test.event)}` : ""}</div>` : ""}
+          </div>
+          <button class="icon-button" data-action="trigger-test" data-trigger-id="${esc(t.id)}" title="${esc(this.t("test"))}"><ha-icon icon="mdi:flask-outline"></ha-icon></button>
+          <button class="icon-button" data-action="trigger-run" data-trigger-id="${esc(t.id)}" title="${esc(this.t("run_now"))}"><ha-icon icon="mdi:play"></ha-icon></button>
+        </div>`;
+    }).join("");
+    if (!this._triggers.length) html += `<div class="empty">${esc(this.t("no_triggers"))}</div>`;
+    const status = this._triggerStatus;
+    if (status.last_check) {
+      const time = new Date(status.last_check).toLocaleTimeString(this._lang === "de" ? "de-DE" : "en-GB", { hour: "2-digit", minute: "2-digit" });
+      html += `<div class="muted status-line">${esc(this.t("last_check", time))}</div>`;
+    }
+    for (const error of status.errors || []) html += `<div class="error-line"><ha-icon icon="mdi:alert-outline"></ha-icon>${esc(error)}</div>`;
+    if (this._triggerRuns.length) {
+      const names = new Map(this._triggers.map((t) => [t.id, t.name]));
+      html += `<div class="section-title">${esc(this.t("history"))}</div>`;
+      html += this._triggerRuns.map((run) => `
+        <div class="run ${run.undone ? "undone" : ""}">
+          <div class="task-body">
+            <div class="task-title">${esc(run.title)}</div>
+            <div class="task-meta"><span class="meta">${esc(names.get(run.trigger_id) || "")}</span><span class="dot">·</span>
+              <span class="meta">${esc(this.t("for_day", this._dayLabel(run.day)))}</span>${run.manual ? `<span class="dot">·</span><span class="meta">${esc(this.t("by_hand"))}</span>` : ""}</div>
+          </div>
+          ${run.undone ? `<span class="muted">${esc(this.t("undone"))}</span>` : `<button class="chip" data-action="trigger-undo" data-run-id="${esc(run.id)}">${esc(this.t("undo"))}</button>`}
+        </div>`).join("");
+    }
+    box.innerHTML = html;
+  }
+
+  _renderTriggerEditor() {
+    const detail = this.shadowRoot.querySelector(".detail");
+    const draft = this._triggerDraft;
+    this._editorDraft = draft;
+    if (!draft) {
+      detail.innerHTML = "";
+      return;
+    }
+    const states = Object.values(this._hass.states || {});
+    const options = (pred) => states.filter((s) => pred(s.entity_id.split(".")[0]))
+      .map((s) => `<option value="${esc(s.entity_id)}">${esc(s.attributes?.friendly_name || "")}</option>`).join("");
+    const option = (value, label, current) => `<option value="${esc(value)}" ${value === current ? "selected" : ""}>${esc(label)}</option>`;
+    const hasCalendar = draft.conditions.some((c) => c.kind === "calendar");
+    const conditions = draft.conditions.map((c, i) => {
+      let fields;
+      if (c.kind === "time") {
+        fields = `<div class="row"><span class="muted">${esc(this.t("from_time"))}</span><input type="time" class="field" data-tfield="cond.match" data-index="${i}" value="${esc(c.match)}"></div>`;
+      } else if (c.kind === "calendar") {
+        fields = `
+          <input class="field" list="thask-calendars" data-tfield="cond.entity" data-index="${i}" value="${esc(c.entity)}" placeholder="calendar.…">
+          <input class="field" data-tfield="cond.match" data-index="${i}" value="${esc(c.match)}" placeholder="${esc(this.t("title_contains"))}">
+          <select class="field" data-tfield="cond.part" data-index="${i}">${["any", "start", "end"].map((p) => option(p, this.t(`part_${p}`), c.part)).join("")}</select>`;
+      } else {
+        fields = `
+          <input class="field" list="thask-entities" data-tfield="cond.entity" data-index="${i}" value="${esc(c.entity)}" placeholder="person.…">
+          <input class="field" data-tfield="cond.match" data-index="${i}" value="${esc(c.match)}" placeholder="${esc(this.t("state_is"))}" title="${esc(this.t("state_hint"))}">
+          <div class="row"><span class="muted">${esc(this.t("hold_minutes"))}</span><input type="number" min="0" class="field number" data-tfield="cond.hold_minutes" data-index="${i}" value="${c.hold_minutes || 0}"></div>`;
+      }
+      return `
+        <div class="condition">
+          <div class="row">
+            <select class="field" data-tfield="cond.kind" data-index="${i}">${CONDITION_KINDS.map((k) => option(k, this.t(`cond_${k}`), c.kind)).join("")}</select>
+            ${draft.conditions.length > 1 ? `<button class="icon-button small" data-action="trigger-remove-condition" data-index="${i}" title="${esc(this.t("delete"))}"><ha-icon icon="mdi:close"></ha-icon></button>` : ""}
+          </div>
+          ${fields}
+          <label class="row muted"><input type="checkbox" data-tfield="cond.negate" data-index="${i}" ${c.negate ? "checked" : ""}>${esc(this.t("negate"))}</label>
+        </div>`;
+    }).join("");
+    detail.innerHTML = `
+      <datalist id="thask-calendars">${options((d) => d === "calendar")}</datalist>
+      <datalist id="thask-entities">${options((d) => STATE_DOMAINS.includes(d))}</datalist>
+      <div class="detail-header">
+        <button class="icon-button" data-action="trigger-close" title="${esc(this.t("close"))}"><ha-icon icon="mdi:close"></ha-icon></button>
+      </div>
+      <div class="card">
+        <input class="title-input" data-tfield="name" value="${esc(draft.name)}" placeholder="${esc(this.t("name"))}">
+        <label class="row muted"><input type="checkbox" data-tfield="enabled" ${draft.enabled ? "checked" : ""}>${esc(this.t("enabled"))}</label>
+      </div>
+      <div class="card">
+        <div class="label"><ha-icon icon="mdi:lightning-bolt-outline"></ha-icon>${esc(this.t("when"))}</div>
+        ${draft.conditions.length > 1 ? `<select class="field" data-tfield="combine">${["and", "or"].map((v) => option(v, this.t(`combine_${v}`), draft.combine)).join("")}</select>` : ""}
+        ${conditions}
+        <button class="chip" data-action="trigger-add-condition"><ha-icon icon="mdi:plus"></ha-icon>${esc(this.t("add_condition"))}</button>
+        <div class="row"><span class="muted">${esc(this.t("window"))}</span>
+          <input type="time" class="field" data-tfield="window_from" value="${esc(draft.window_from)}">
+          <input type="time" class="field" data-tfield="window_to" value="${esc(draft.window_to)}"></div>
+        ${hasCalendar ? `<div class="row"><span class="muted">${esc(this.t("days_ahead"))}</span><input type="number" min="0" max="60" class="field number" data-tfield="days_ahead" value="${draft.days_ahead || 0}"></div>` : ""}
+      </div>
+      <div class="card">
+        <div class="label"><ha-icon icon="mdi:checkbox-marked-circle-outline"></ha-icon>${esc(this.t("then"))}</div>
+        <input class="field" data-tfield="task.title" value="${esc(draft.task.title)}" placeholder="${esc(this.t("task_title"))}">
+        <span class="muted">${esc(this.t("placeholders"))}</span>
+        <select class="field" data-tfield="task.list_id">${this._lists.map((l) => option(l.id, l.name, draft.task.list_id)).join("")}</select>
+        <div class="row"><span class="muted">${esc(this.t("due"))}</span>
+          <select class="field" data-tfield="task.due">${TRIGGER_DUE.map((d) => option(d, this.t(d === "none" ? "none" : `due_${d}`), draft.task.due)).join("")}</select></div>
+        <div class="segmented">
+          ${[0, 1, 2, 3].map((n) => `<button class="prio-btn prio-${n} ${n === draft.task.priority ? "on" : ""}" data-action="trigger-priority" data-priority="${n}">${esc(this.t(`priority_${n}`))}</button>`).join("")}
+        </div>
+        <label class="row muted"><input type="checkbox" data-tfield="task.my_day" ${draft.task.my_day ? "checked" : ""}>${esc(this.t("add_to_my_day"))}</label>
+      </div>
+      <div class="card">
+        <div class="row"><span class="muted">${esc(this.t("paused_until"))}</span>
+          <input type="date" class="field" data-tfield="paused_until" value="${esc(draft.paused_until || "")}"></div>
+      </div>
+      <div class="detail-footer">
+        <button class="button primary" data-action="trigger-save">${esc(this.t("save"))}</button>
+        ${draft.id ? `<button class="icon-button danger" data-action="trigger-delete" title="${esc(this.t("delete"))}"><ha-icon icon="mdi:delete-outline"></ha-icon></button>` : ""}
+      </div>`;
+  }
+
+  _onTriggerField(target, committed) {
+    const draft = this._triggerDraft;
+    if (!draft) return;
+    const field = target.dataset.tfield;
+    const value = target.type === "checkbox" ? target.checked : target.value;
+    let rerender = false;
+    if (field.startsWith("cond.")) {
+      const condition = draft.conditions[Number(target.dataset.index)];
+      const key = field.slice(5);
+      if (key === "kind") {
+        if (value !== condition.kind) draft.conditions[Number(target.dataset.index)] = this._emptyCondition(value);
+        rerender = true;
+      } else {
+        condition[key] = key === "hold_minutes" ? Number(value) || 0 : value;
+      }
+    } else if (field.startsWith("task.")) {
+      draft.task[field.slice(5)] = value;
+    } else if (field === "days_ahead") {
+      draft.days_ahead = Number(value) || 0;
+    } else if (field === "paused_until") {
+      draft.paused_until = value || null;
+    } else {
+      draft[field] = value;
+      rerender = field === "combine";
+    }
+    if (rerender && committed) this._renderTriggerEditor();
+  }
+
+  _triggerPayload(draft) {
+    const { id, created, modified, ...fields } = draft;
+    fields.conditions = fields.conditions.map((c) => {
+      const condition = { kind: c.kind, entity: c.kind === "time" ? "" : c.entity.trim(), match: c.match.trim(), negate: !!c.negate, part: c.part || "any", hold_minutes: c.kind === "state" ? c.hold_minutes || 0 : 0 };
+      return condition;
+    });
+    fields.task = { ...fields.task, title: fields.task.title.trim() };
+    fields.name = fields.name.trim();
+    return fields;
+  }
+
+  async _onTriggerAction(action, target) {
+    const triggerId = target.dataset.triggerId;
+    const trigger = this._triggers?.find((t) => t.id === triggerId);
+    switch (action) {
+      case "trigger-new":
+        this._openTrigger(this._newTriggerDraft());
+        break;
+      case "trigger-edit":
+        if (trigger) this._openTrigger(structuredClone(trigger));
+        break;
+      case "trigger-close":
+        this._openTrigger(null);
+        break;
+      case "trigger-add-condition":
+        this._triggerDraft.conditions.push(this._emptyCondition("state"));
+        this._renderTriggerEditor();
+        break;
+      case "trigger-remove-condition":
+        this._triggerDraft.conditions.splice(Number(target.dataset.index), 1);
+        this._renderTriggerEditor();
+        break;
+      case "trigger-priority":
+        this._triggerDraft.task.priority = Number(target.dataset.priority);
+        this._renderTriggerEditor();
+        break;
+      case "trigger-save": {
+        const draft = this._triggerDraft;
+        const payload = this._triggerPayload(draft);
+        const incomplete = !payload.name || !payload.task.title
+          || payload.conditions.some((c) => (c.kind === "time" ? !c.match : !c.entity));
+        if (incomplete) {
+          this._toast(this.t("missing_fields"));
+          break;
+        }
+        try {
+          if (draft.id) await this._call("thask/trigger/update", { trigger_id: draft.id, ...payload });
+          else await this._call("thask/trigger/create", payload);
+          this._openTrigger(null);
+        } catch {
+          // _call showed the error
+        }
+        break;
+      }
+      case "trigger-delete": {
+        const draft = this._triggerDraft;
+        if (draft?.id && confirm(this.t("delete_trigger_confirm", draft.name))) {
+          await this._call("thask/trigger/delete", { trigger_id: draft.id });
+          this._openTrigger(null);
+        }
+        break;
+      }
+      case "trigger-toggle":
+        if (trigger) this._call("thask/trigger/update", { trigger_id: trigger.id, enabled: !trigger.enabled });
+        break;
+      case "trigger-test":
+        this._triggerTests[triggerId] = await this._call("thask/trigger/test", { trigger_id: triggerId });
+        this._render();
+        break;
+      case "trigger-run": {
+        const run = await this._call("thask/trigger/run", { trigger_id: triggerId });
+        this._toast(this.t("task_created", run.title));
+        break;
+      }
+      case "trigger-check": {
+        const result = await this._call("thask/trigger/check");
+        this._toast(result.fired.length ? this.t("fired_n", result.fired.length) : this.t("fired_none"));
+        break;
+      }
+      case "trigger-undo":
+        this._call("thask/trigger/undo", { run_id: target.dataset.runId });
+        break;
+    }
+  }
+
   // ---- Events -------------------------------------------------------------------------------
 
   _selectTask(taskId) {
@@ -896,15 +1248,32 @@ class ThaskPanel extends HTMLElement {
     const task = this._tasks.get(target.dataset.taskId || this._selectedTask);
     switch (action) {
       case "view":
-        this._view = target.dataset.viewType === "list"
-          ? { type: "list", id: target.dataset.view }
+        this._view = target.dataset.viewType === "list" ? { type: "list", id: target.dataset.view }
+          : target.dataset.viewType === "triggers" ? { type: "triggers" }
           : { type: "smart", key: target.dataset.view };
+        if (this._view.type === "triggers") this._subscribeTriggers();
         this._selectedTask = null;
         this._showCompleted = false;
         this._search = "";
         this._groupMenu = null;
         this._pane = "list";
         this._render();
+        break;
+      case "trigger-new":
+      case "trigger-edit":
+      case "trigger-close":
+      case "trigger-save":
+      case "trigger-delete":
+      case "trigger-toggle":
+      case "trigger-test":
+      case "trigger-run":
+      case "trigger-check":
+      case "trigger-undo":
+      case "trigger-add-condition":
+      case "trigger-remove-condition":
+      case "trigger-priority":
+        ev.stopPropagation();
+        this._onTriggerAction(action, target);
         break;
       case "back-to-sidebar":
         this._pane = "sidebar";
@@ -1008,6 +1377,10 @@ class ThaskPanel extends HTMLElement {
   }
 
   _onChange(ev) {
+    if (ev.target.dataset?.tfield) {
+      this._onTriggerField(ev.target, true);
+      return;
+    }
     const field = ev.target.dataset?.field;
     if (field === "list-sort" && this._view.type === "list") {
       const listId = this._view.id;
@@ -1310,6 +1683,19 @@ const STYLE = `
   .muted { color: var(--thask-muted); font-size: 12px; }
   .notes { width: 100%; border: none; background: none; outline: none; resize: vertical; }
   .detail-footer { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 8px; }
+  .triggers-view .quick-add { display: none; }
+  .task.trigger.disabled .task-title { color: var(--thask-muted); }
+  .test-result { font-size: 12px; margin-top: 4px; color: var(--thask-danger); }
+  .test-result.ok { color: var(--thask-accent); }
+  .status-line { padding: 12px 4px 0; }
+  .error-line { display: flex; align-items: center; gap: 6px; padding: 4px; font-size: 12px; color: var(--thask-danger); }
+  .error-line ha-icon { --mdc-icon-size: 16px; }
+  .run { display: flex; align-items: center; gap: 12px; padding: 8px 12px; background: var(--thask-surface); border-radius: 6px; }
+  .run.undone .task-title { text-decoration: line-through; color: var(--thask-muted); }
+  .condition { display: flex; flex-direction: column; gap: 6px; padding: 8px; border: 1px solid var(--thask-divider); border-radius: 6px; }
+  .detail .title-input { width: 100%; }
+  .button { padding: 8px 16px; border-radius: 6px; }
+  .button.primary { background: var(--thask-accent); color: var(--text-primary-color, #fff); }
   .toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); background: #323232; color: #fff; padding: 10px 16px; border-radius: 6px; max-width: 90vw; z-index: 10; }
 
   :host([narrow]) .app, :host([narrow]) .app.has-detail { grid-template-columns: 1fr; }

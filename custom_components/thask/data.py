@@ -10,7 +10,11 @@ from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.dispatcher import async_dispatcher_send
-from homeassistant.helpers.event import async_track_point_in_utc_time, async_track_time_change
+from homeassistant.helpers.event import (
+    async_track_point_in_utc_time,
+    async_track_time_change,
+    async_track_time_interval,
+)
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
@@ -19,13 +23,19 @@ from .const import (
     EVENT_REMINDER,
     EVENT_TASK_DUE,
     EVENT_TASK_OVERDUE,
+    EVENT_TRIGGER_FIRED,
     SAVE_DELAY,
     SIGNAL_DAY_CHANGED,
+    SIGNAL_TRIGGERS_CHANGED,
     STORAGE_KEY,
+    STORAGE_KEY_TRIGGERS,
     STORAGE_VERSION,
+    TRIGGER_INTERVAL_SECONDS,
 )
 from .core.collection import Change, TaskCollection
 from .core.models import Task
+from .core.triggers import Evaluator, Match, TriggerBook, TriggerRun
+from .trigger_source import HassSource
 
 
 @callback
@@ -42,6 +52,11 @@ class ThaskData:
         self.hass = hass
         self.collection = TaskCollection()
         self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, STORAGE_KEY)
+        self.triggers = TriggerBook()
+        self._trigger_store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, STORAGE_KEY_TRIGGERS)
+        self._trigger_source = HassSource(hass)
+        self.last_trigger_check: datetime | None = None
+        self._checking = False
         self._reminders: dict[str, CALLBACK_TYPE] = {}
         self._unsubs: list[CALLBACK_TYPE] = []
 
@@ -70,12 +85,83 @@ class ThaskData:
         for task in self.collection.tasks.values():
             self._schedule_reminder(task)
 
+        if data := await self._trigger_store.async_load():
+            self.triggers.load(data)
+        self._unsubs.append(self.triggers.subscribe(self._on_triggers_change))
+        self._unsubs.append(
+            async_track_time_interval(
+                self.hass, self.async_check_triggers, timedelta(seconds=TRIGGER_INTERVAL_SECONDS)
+            )
+        )
+
     async def async_stop(self) -> None:
         for unsub in [*self._unsubs, *self._reminders.values()]:
             unsub()
         self._unsubs.clear()
         self._reminders.clear()
         await self._store.async_save(self.collection.dump())
+        await self._trigger_store.async_save(self.triggers.dump())
+
+    # -- triggers --------------------------------------------------------------------------
+
+    @callback
+    def _on_triggers_change(self) -> None:
+        self._trigger_store.async_delay_save(self.triggers.dump, SAVE_DELAY)
+        async_dispatcher_send(self.hass, SIGNAL_TRIGGERS_CHANGED)
+
+    def trigger_status(self) -> dict[str, Any]:
+        return {
+            "last_check": self.last_trigger_check.isoformat() if self.last_trigger_check else None,
+            "errors": self.triggers.errors,
+        }
+
+    async def async_check_triggers(self, _now: datetime | None = None) -> list[TriggerRun]:
+        """Fire the triggers that apply now (runs every minute)."""
+        if self._checking:
+            return []
+        self._checking = True
+        try:
+            now = dt_util.now()
+            fired = await self.triggers.check(self.collection, self._trigger_source, now, self.language)
+            self.last_trigger_check = now
+        finally:
+            self._checking = False
+        for run in fired:
+            self._announce_run(run)
+        async_dispatcher_send(self.hass, SIGNAL_TRIGGERS_CHANGED)
+        return fired
+
+    async def async_test_trigger(self, trigger_id: str) -> Match:
+        """Judge a trigger's conditions for today without creating anything."""
+        trigger = self.triggers.get(trigger_id)
+        days = trigger.target_days(self.today)
+        evaluator = Evaluator(self._trigger_source, dt_util.now())
+        for day in days:
+            match = await evaluator.evaluate(trigger, day, days[-1])
+            if match.met:
+                return match
+        return await evaluator.evaluate(trigger, days[0], days[-1])
+
+    def run_trigger_now(self, trigger_id: str) -> TriggerRun:
+        """Create the trigger's task for today, whether its conditions apply or not."""
+        trigger = self.triggers.get(trigger_id)
+        run = self.triggers.fire(trigger, self.collection, self.today, self.today, self.language, manual=True)
+        self._announce_run(run)
+        return run
+
+    @callback
+    def _announce_run(self, run: TriggerRun) -> None:
+        trigger = self.triggers.triggers.get(run.trigger_id)
+        task = self.collection.tasks.get(run.task_id or "")
+        self.hass.bus.async_fire(
+            EVENT_TRIGGER_FIRED,
+            {
+                "trigger_id": run.trigger_id,
+                "trigger_name": trigger.name if trigger else None,
+                "day": run.day,
+                "task": self.task_info(task) if task else None,
+            },
+        )
 
     def task_info(self, task: Task) -> dict[str, Any]:
         """Task data enriched with labels, for events, service responses and attributes."""

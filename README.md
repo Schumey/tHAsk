@@ -38,6 +38,7 @@ Nach dem Einrichten erscheint **tHAsk** in der HA-Seitenleiste (auch in der Comp
 - Listen anlegen (unten in der Seitenleiste), umbenennen (auf den Titel klicken), Gruppe per Auswahl setzen (vorhandene Gruppen, „Keine Gruppe“ oder „Neue Gruppe …“), löschen und per Drag & Drop in der Seitenleiste anordnen.
 - Aufgaben pro Liste sortieren: manuell, nach Priorität, Fälligkeit, alphabetisch oder Erstellungsdatum (gilt auch für die HA-Entity). Bei automatischer Sortierung ist Drag & Drop innerhalb der Liste aus.
 - **Erledigte löschen** (Besen-Symbol im Listenkopf).
+- **Trigger** (unten in der Seitenleiste, nur für Administratoren), siehe unten.
 
 ### Priorität
 
@@ -69,6 +70,7 @@ Jede Liste hat die Attribute `overdue` und `due_today` (Anzahl).
 | `thask_task_due` | um Mitternacht, wenn der Zeitraum einer Aufgabe beginnt |
 | `thask_task_overdue` | um Mitternacht nach dem letzten Tag des Zeitraums |
 | `thask_reminder` | zum Erinnerungszeitpunkt einer Aufgabe |
+| `thask_trigger_fired` | wenn ein Trigger eine Aufgabe angelegt hat (`trigger_id`, `trigger_name`, `day`, `task`) |
 
 Beispiel: Erinnerung als Push aufs Handy – Automation mit Trigger *Event* `thask_reminder` und Aktion `notify.mobile_app_<handy>` mit `{{ trigger.event.data.title }}`.
 
@@ -105,6 +107,28 @@ Das Skript zeigt einen Code; im Browser auf der angezeigten Seite eingeben und a
 
 Listen mit gleichem Namen werden zusammengeführt (z. B. „Aufgaben“). Ein erneuter Import überspringt bereits importierte Aufgaben. Danach kann die JSON-Datei gelöscht werden.
 
+## Trigger
+
+Ein Trigger legt **einmal pro Tag** automatisch eine Aufgabe an, wenn in Home Assistant etwas zutrifft. Beispiel: Steht morgen ein Termin „Frühschicht“ im Kalender, entsteht heute die Aufgabe „Frühschicht vorbereiten“. Die Integration prüft jede Minute.
+
+**Wenn** – eine oder mehrere Bedingungen, verknüpft mit *alle (UND)* oder *mindestens eine (ODER)*, jede einzeln umkehrbar (NICHT):
+
+| Bedingung | trifft zu, wenn … |
+|---|---|
+| Zustand einer Entität | die Entität den Zustand hat (leer = `on`/`home`/`true`/`open`; `>20`, `<=5` vergleichen Zahlen), optional schon seit N Minuten |
+| Kalendereintrag | der Kalender an dem Tag einen Termin hat, dessen Titel den Text enthält (leer = jeder Termin); zählt jeder Tag des Termins, nur der erste oder nur der letzte |
+| Uhrzeit | die Uhrzeit erreicht ist |
+
+- **Nur zwischen**: Zeitfenster, auch über Mitternacht (22:00 bis 06:00).
+- **Tage im Voraus** (bei Kalenderbedingungen): Termine bis zu N Tage voraus zählen; die Aufgabe entsteht, sobald der Termin im Fenster liegt. Zustand und Uhrzeit beziehen sich immer auf jetzt.
+- Pro Termin entsteht nur eine Aufgabe, auch wenn er mehrere Tage dauert.
+
+**Dann** – eine Aufgabe: Titel mit Platzhaltern `{termin}`, `{datum}`, `{wochentag}`, `{zustand}` (englisch `{event}`, `{date}`, `{weekday}`, `{state}`), Liste, Fälligkeit (*Heute*, *Tag*, *Woche* oder *Monat* des Termins bzw. des Auslösetags), Priorität und optional „Mein Tag“.
+
+Auf der Trigger-Seite: Haken = aktiv, Kolben = **Testen** (zeigt, ob die Bedingungen jetzt zutreffen, legt nichts an), Play = **Jetzt ausführen** (legt die Aufgabe sofort für heute an), Pfeil oben = **Jetzt prüfen** (alle Trigger). Im Editor lässt sich ein Trigger bis zu einem Datum **pausieren**. Der **Verlauf** zeigt die angelegten Aufgaben; **Rückgängig** löscht die Aufgabe wieder, und der Trigger legt für diesen Tag nichts mehr an.
+
+Bei jeder angelegten Aufgabe feuert das Event `thask_trigger_fired`. Gespeichert werden die Trigger in `.storage/thask.triggers`.
+
 ## WebSocket-API (für die Apps)
 
 Alle Befehle laufen über die normale HA-WebSocket-Verbindung (Authentifizierung über HA):
@@ -120,8 +144,13 @@ Alle Befehle laufen über die normale HA-WebSocket-Verbindung (Authentifizierung
 | `thask/task/create`, `thask/task/update`, `thask/task/delete` | siehe unten / `task_id` |
 | `thask/task/move` | `task_id`, `previous_id` |
 | `thask/parse` | `text`, `disabled` (Liste aus `due`, `time`, `recurrence`, `priority`) – Schnelleingabe |
+| `thask/triggers/subscribe` | – (Trigger, letzte Läufe und Prüfstatus, nach jeder Änderung erneut); nur Administratoren, wie alle `thask/trigger/*` |
+| `thask/trigger/create`, `thask/trigger/update`, `thask/trigger/delete` | `name`, `conditions`, `task`, `enabled`, `combine`, `window_from`, `window_to`, `days_ahead`, `paused_until` / `trigger_id` |
+| `thask/trigger/test`, `thask/trigger/run` | `trigger_id` |
+| `thask/trigger/check` | – (alle Trigger jetzt prüfen) |
+| `thask/trigger/undo` | `run_id` |
 
-Aufgabenfelder: `list_id`, `title`, `notes`, `completed`, `priority` (0 keine, 1 niedrig, 2 mittel, 3 hoch), `due` (`{"granularity": "day|week|month|quarter|year", "start": "2026-11-09"}`), `due_time` (`"HH:MM"`, nur bei Tagen), `reminder` (ISO-Datum mit Uhrzeit), `recurrence` (`{"unit": "month", "interval": 1}`), `my_day` (ISO-Datum), `steps`, `categories`.
+Aufgabenfelder: `list_id`, `title`, `notes`, `completed`, `priority` (0 keine, 1 niedrig, 2 mittel, 3 hoch), `due` (`{"granularity": "day|week|month|quarter|year", "start": "2026-11-09"}`), `due_time` (`"HH:MM"`, nur bei Tagen), `reminder` (ISO-Datum mit Uhrzeit), `recurrence` (`{"unit": "month", "interval": 1}`, wöchentlich an mehreren Tagen: `{"unit": "week", "interval": 1, "weekdays": [2, 5]}` mit 0 = Montag), `my_day` (ISO-Datum), `steps`, `categories`.
 
 Wird eine wiederkehrende Aufgabe erledigt, entsteht eine neue Aufgabe für den nächsten Zeitraum, der noch nicht vorbei ist.
 

@@ -11,6 +11,7 @@ from homeassistant.util import dt as dt_util
 
 from .core.models import PRIORITIES, TASK_SORTS
 from .core.period import Granularity
+from .core.triggers import CALENDAR_PARTS, CONDITION_KINDS, DUE_OPTIONS, MAX_DAYS_AHEAD
 
 GRANULARITIES = [granularity.value for granularity in Granularity]
 
@@ -74,4 +75,59 @@ LIST_FIELDS = {
     vol.Optional("icon"): vol.Any(None, str),
     vol.Optional("position"): vol.Coerce(float),
     vol.Optional("sort"): vol.In((*TASK_SORTS, "important")),
+}
+
+
+def _condition(value: dict) -> dict:
+    """Each condition kind needs its own fields."""
+    match value["kind"]:
+        case "time":
+            value["match"] = hh_mm(value.get("match", ""))
+        case "calendar":
+            if not value.get("entity", "").startswith("calendar."):
+                raise vol.Invalid("A calendar condition needs a calendar entity")
+        case _:
+            if not value.get("entity"):
+                raise vol.Invalid("A state condition needs an entity")
+    return value
+
+
+CONDITION_SCHEMA = vol.All(
+    vol.Schema(
+        {
+            vol.Required("kind"): vol.In(CONDITION_KINDS),
+            vol.Optional("entity", default=""): vol.All(str, vol.Strip),
+            vol.Optional("match", default=""): vol.All(str, vol.Strip),
+            vol.Optional("negate", default=False): bool,
+            vol.Optional("hold_minutes", default=0): vol.All(vol.Coerce(int), vol.Range(min=0)),
+            vol.Optional("part", default="any"): vol.In(CALENDAR_PARTS),
+        }
+    ),
+    _condition,
+)
+
+TASK_TEMPLATE_SCHEMA = vol.Schema(
+    {
+        vol.Required("title"): vol.All(str, vol.Strip, vol.Length(min=1)),
+        vol.Optional("list_id"): vol.Any(None, str),
+        vol.Optional("due", default="day"): vol.In(DUE_OPTIONS),
+        vol.Optional("my_day", default=False): bool,
+        vol.Optional("priority", default=0): vol.In(PRIORITIES),
+        vol.Optional("notes", default=""): str,
+    }
+)
+
+TRIGGER_NAME = vol.All(str, vol.Strip, vol.Length(min=1))
+TRIGGER_CONDITIONS = vol.All([CONDITION_SCHEMA], vol.Length(min=1))
+
+TRIGGER_FIELDS = {
+    vol.Optional("name"): TRIGGER_NAME,
+    vol.Optional("conditions"): TRIGGER_CONDITIONS,
+    vol.Optional("task"): TASK_TEMPLATE_SCHEMA,
+    vol.Optional("enabled"): bool,
+    vol.Optional("combine"): vol.In(("and", "or")),
+    vol.Optional("window_from"): vol.Any("", hh_mm),
+    vol.Optional("window_to"): vol.Any("", hh_mm),
+    vol.Optional("days_ahead"): vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_DAYS_AHEAD)),
+    vol.Optional("paused_until"): vol.Any(None, iso_date),
 }

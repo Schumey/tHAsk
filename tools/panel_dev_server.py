@@ -9,7 +9,8 @@ The page fakes the parts of the `hass` object the panel uses (callWS, subscribeM
 from __future__ import annotations
 
 import argparse
-from datetime import date, timedelta
+import asyncio
+from datetime import date, datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 from pathlib import Path
@@ -24,6 +25,7 @@ from core.collection import NotFoundError, TaskCollection  # noqa: E402
 from core.models import Task, TaskList  # noqa: E402
 from core.parser import parse  # noqa: E402
 from core.period import Granularity, Period  # noqa: E402
+from core.triggers import CalendarEvent, EntityState, Evaluator, Trigger, TriggerBook  # noqa: E402
 
 LANGUAGE = "de"
 VERSION = json.loads((INTEGRATION / "manifest.json").read_text(encoding="utf-8"))["version"]
@@ -60,6 +62,7 @@ PAGE = """<!doctype html>
   customElements.define("ha-menu-button", class extends HTMLElement {});
 
   const listeners = new Set();
+  const triggerListeners = new Set();
   async function call(message) {
     const response = await fetch("/api", { method: "POST", body: JSON.stringify(message) });
     const body = await response.json();
@@ -69,19 +72,34 @@ PAGE = """<!doctype html>
   async function broadcast() {
     const snapshot = await call({ type: "thask/data" });
     listeners.forEach((listener) => listener({ type: "snapshot", ...snapshot }));
+    if (triggerListeners.size) {
+      const triggers = await call({ type: "thask/triggers/data" });
+      triggerListeners.forEach((listener) => listener(triggers));
+    }
   }
+  // A few entities for the trigger form.
+  const state = (entity_id, value, friendly_name) => ({ entity_id, state: value, attributes: { friendly_name } });
   window.fakeHass = {
     language: "de",
+    user: { is_admin: true },
+    states: Object.fromEntries([
+      state("calendar.arbeit", "off", "Arbeit"),
+      state("calendar.familie", "off", "Familie"),
+      state("person.max", "home", "Max"),
+      state("binary_sensor.waschmaschine", "off", "Waschmaschine"),
+      state("sensor.aussentemperatur", "4.5", "Außentemperatur"),
+    ].map((s) => [s.entity_id, s])),
     callWS: async (message) => {
       const result = await call(message);
-      if (!["thask/data", "thask/parse", "thask/info"].includes(message.type)) broadcast();
+      if (!["thask/data", "thask/parse", "thask/info", "thask/trigger/test"].includes(message.type)) broadcast();
       return result;
     },
     connection: {
-      subscribeMessage: async (listener) => {
-        listeners.add(listener);
+      subscribeMessage: async (listener, message) => {
+        const set = message.type === "thask/triggers/subscribe" ? triggerListeners : listeners;
+        set.add(listener);
         broadcast();
-        return () => listeners.delete(listener);
+        return () => set.delete(listener);
       },
     },
   };
@@ -128,11 +146,50 @@ def seed(collection: TaskCollection, today: date) -> None:
     collection.create_task(house.id, "Dachrinne prüfen", due=Period(Granularity.YEAR, today).as_dict())
 
 
+class FakeSource:
+    """States and calendar events for the trigger checks: an early shift tomorrow, Max at home."""
+
+    def __init__(self, today: date) -> None:
+        tomorrow = datetime.combine(today + timedelta(days=1), datetime.min.time()).astimezone()
+        self.calendar = {
+            "calendar.arbeit": [CalendarEvent("Frühschicht", tomorrow.replace(hour=6), tomorrow.replace(hour=14))],
+            "calendar.familie": [CalendarEvent("Geburtstag Oma", today + timedelta(days=3), today + timedelta(days=4))],
+        }
+        self.states = {
+            "person.max": EntityState("home", datetime.now().astimezone() - timedelta(hours=2)),
+            "binary_sensor.waschmaschine": EntityState("off", datetime.now().astimezone()),
+            "sensor.aussentemperatur": EntityState("4.5", datetime.now().astimezone()),
+        }
+
+    def state(self, entity_id):
+        return self.states.get(entity_id)
+
+    async def events(self, entity_id, start, end):
+        if entity_id not in self.calendar:
+            raise ValueError(f"{entity_id} not found")
+        return self.calendar[entity_id]
+
+
+def seed_triggers(book: TriggerBook, collection: TaskCollection) -> None:
+    book.create(
+        {
+            "name": "Frühschicht",
+            "conditions": [{"kind": "calendar", "entity": "calendar.arbeit", "match": "Frühschicht", "part": "start"}],
+            "days_ahead": 1,
+            "task": {"title": "{termin} vorbereiten", "list_id": collection.default_list().id, "due": "today", "my_day": True},
+        }
+    )
+
+
 class Backend:
     def __init__(self) -> None:
         self.today = date.today()
         self.collection = TaskCollection()
         seed(self.collection, self.today)
+        self.triggers = TriggerBook()
+        self.source = FakeSource(self.today)
+        self.last_check: str | None = None
+        seed_triggers(self.triggers, self.collection)
 
     def handle(self, msg: dict[str, Any]) -> Any:
         collection, today = self.collection, self.today
@@ -168,6 +225,36 @@ class Backend:
                 return None
             case "thask/task/move":
                 return collection.move_task(msg["task_id"], msg.get("previous_id")).as_dict()
+            case "thask/triggers/data":
+                return {
+                    "triggers": [trigger.as_dict() for trigger in self.triggers.sorted_triggers()],
+                    "runs": [run.as_dict() for run in self.triggers.recent_runs()],
+                    "status": {"last_check": self.last_check, "errors": self.triggers.errors},
+                }
+            case "thask/trigger/create":
+                return self.triggers.create(pick(Trigger.EDITABLE)).as_dict()
+            case "thask/trigger/update":
+                return self.triggers.update(msg["trigger_id"], pick(Trigger.EDITABLE)).as_dict()
+            case "thask/trigger/delete":
+                self.triggers.delete(msg["trigger_id"])
+                return None
+            case "thask/trigger/test":
+                trigger = self.triggers.get(msg["trigger_id"])
+                days = trigger.target_days(today)
+                evaluator = Evaluator(self.source, datetime.now().astimezone())
+                matches = [asyncio.run(evaluator.evaluate(trigger, day, days[-1])) for day in days]
+                match = next((m for m in matches if m.met), matches[0])
+                return {"met": match.met, "results": match.results, "event": match.event.summary if match.event else None}
+            case "thask/trigger/run":
+                trigger = self.triggers.get(msg["trigger_id"])
+                return self.triggers.fire(trigger, collection, today, today, LANGUAGE, manual=True).as_dict()
+            case "thask/trigger/check":
+                now = datetime.now().astimezone()
+                fired = asyncio.run(self.triggers.check(collection, self.source, now, LANGUAGE))
+                self.last_check = now.isoformat()
+                return {"fired": [run.as_dict() for run in fired]}
+            case "thask/trigger/undo":
+                return self.triggers.undo(msg["run_id"], collection).as_dict()
         raise ValueError(f"Unknown command {msg['type']}")
 
 

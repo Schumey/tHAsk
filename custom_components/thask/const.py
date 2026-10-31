@@ -3,6 +3,7 @@
 DOMAIN = "thask"
 
 STORAGE_KEY = f"{DOMAIN}.data"
+STORAGE_KEY_TRIGGERS = f"{DOMAIN}.triggers"
 STORAGE_VERSION = 1
 SAVE_DELAY = 1
 
@@ -15,3 +16,10 @@ PANEL_STATIC_URL = f"/{DOMAIN}_static"
 EVENT_TASK_DUE = f"{DOMAIN}_task_due"
 EVENT_TASK_OVERDUE = f"{DOMAIN}_task_overdue"
 EVENT_REMINDER = f"{DOMAIN}_reminder"
+EVENT_TRIGGER_FIRED = f"{DOMAIN}_trigger_fired"
+
+# Triggers are checked this often.
+TRIGGER_INTERVAL_SECONDS = 60
+
+# Dispatched when triggers or their runs change, for the panel.
+SIGNAL_TRIGGERS_CHANGED = f"{DOMAIN}_triggers_changed"
