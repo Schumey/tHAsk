@@ -75,12 +75,16 @@ class Period {
         },
       );
 
-  /// Lesbare Bezeichnung, z. B. „KW 46“, „November“, „Q4 2026“. Das Jahr entfällt, wenn es das heutige ist.
+  /// Lesbare Bezeichnung, z. B. „KW 46“, „November“, „Q4 2026“, bei Tagen „Heute“ und „Morgen“.
+  /// Das Jahr entfällt, wenn es das heutige ist.
   String label(DateTime today) {
     final String text;
     final int year;
     switch (granularity) {
       case Granularity.day:
+        final days = start.difference(dateOnly(today)).inDays;
+        if (days == 0) return 'Heute';
+        if (days == 1) return 'Morgen';
         text = '${_weekdays[start.weekday - 1]}, ${start.day}. ${_monthsShort[start.month - 1]}';
         year = start.year;
       case Granularity.week:

@@ -31,6 +31,9 @@ void main() {
       expect(Period(Granularity.quarter, DateTime(2027, 1, 1)).label(today), 'Q1 2027');
       expect(Period(Granularity.year, DateTime(2027, 1, 1)).label(today), '2027');
       expect(Period(Granularity.day, DateTime(2026, 11, 9)).label(today), 'Mo, 9. Nov.');
+      expect(Period(Granularity.day, DateTime(2026, 10, 31)).label(today), 'Heute');
+      expect(Period(Granularity.day, DateTime(2026, 11, 1)).label(today), 'Morgen');
+      expect(Period(Granularity.day, DateTime(2026, 10, 30)).label(today), 'Fr, 30. Okt.');
     });
 
     test('ISO-Woche am Jahreswechsel', () {
@@ -128,6 +131,8 @@ void main() {
       expect(store.lists.map((l) => l.name), ['Aufgaben', 'Einkauf']);
       expect(store.tasksOf('l1').map((t) => t.title), ['Steuer']);
       expect(store.thisWeek.map((t) => t.title), ['Steuer']);
+      // KW 44 endet am 1. November und gehört deshalb nicht mehr in den Oktober.
+      expect(store.thisMonth, isEmpty);
       expect(store.myDay, isEmpty);
     });
 
@@ -170,6 +175,26 @@ void main() {
       await store.updateTask(store.task('t1')!, {'due': null, 'notes': 'x'});
       final update = connection.calls.singleWhere((c) => c.$1 == 'thask/task/update').$2;
       expect(update, {'task_id': 't1', 'due': null, 'notes': 'x'});
+    });
+
+    test('Diesen Monat enthält alles bis zum Monatsende, Überfälliges eingeschlossen', () async {
+      await signIn();
+      for (final (id, due) in [
+        ('a', {'granularity': 'month', 'start': '2026-10-01'}),
+        ('b', {'granularity': 'day', 'start': '2026-09-15'}),
+        ('c', {'granularity': 'month', 'start': '2026-11-01'}),
+      ]) {
+        connection.emit({
+          'type': 'change',
+          'action': 'created',
+          'kind': 'task',
+          'id': id,
+          'list_id': 'l1',
+          'item': {'id': id, 'list_id': 'l1', 'title': id, 'due': due},
+        });
+      }
+      await Future<void>.delayed(Duration.zero);
+      expect(store.thisMonth.map((t) => t.title), ['b', 'a']);
     });
 
     test('Wichtig und Geplant', () async {

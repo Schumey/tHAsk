@@ -17,6 +17,10 @@ class ThisWeekView extends ViewRef {
   const ThisWeekView();
 }
 
+class ThisMonthView extends ViewRef {
+  const ThisMonthView();
+}
+
 class ImportantView extends ViewRef {
   const ImportantView();
 }
@@ -55,6 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String get _title => switch (_view) {
         MyDayView() => 'Mein Tag',
         ThisWeekView() => 'Diese Woche',
+        ThisMonthView() => 'Diesen Monat',
         ImportantView() => 'Wichtig',
         PlannedView() => 'Geplant',
         ListRef(:final listId) => store.list(listId)?.name ?? 'Liste',
@@ -63,6 +68,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<Task> get _tasks => switch (_view) {
         MyDayView() => store.myDay,
         ThisWeekView() => store.thisWeek,
+        ThisMonthView() => store.thisMonth,
         ImportantView() => store.important,
         PlannedView() => store.planned,
         ListRef(:final listId) => store.tasksOf(listId),
@@ -243,6 +249,13 @@ class _HomeScreenState extends State<HomeScreen> {
               selected: _view is ThisWeekView,
               trailing: _count(store.thisWeek.length),
               onTap: () => select(const ThisWeekView()),
+            ),
+            ListTile(
+              leading: const Icon(Icons.calendar_today_outlined),
+              title: const Text('Diesen Monat'),
+              selected: _view is ThisMonthView,
+              trailing: _count(store.thisMonth.length),
+              onTap: () => select(const ThisMonthView()),
             ),
             ListTile(
               leading: const Icon(Icons.star_border),

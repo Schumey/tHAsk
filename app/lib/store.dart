@@ -76,6 +76,12 @@ class ThaskStore extends ChangeNotifier {
     return sortTasks(_tasks.values.where((t) => !t.completed && t.due != null && !t.due!.end.isAfter(weekEnd)), 'due');
   }
 
+  /// Alles, was bis zum Ende des laufenden Monats fällig ist (inkl. Überfälligem), ohne Erledigtes.
+  List<Task> get thisMonth {
+    final monthEnd = Period.containing(Granularity.month, today).end;
+    return sortTasks(_tasks.values.where((t) => !t.completed && t.due != null && !t.due!.end.isAfter(monthEnd)), 'due');
+  }
+
   /// Alle als wichtig markierten Aufgaben, nach Fälligkeit.
   List<Task> get important => sortTasks(_tasks.values.where((t) => t.important), 'due');
 
