@@ -596,7 +596,7 @@ class _TaskTile extends StatelessWidget {
           task.title,
           style: task.completed ? const TextStyle(decoration: TextDecoration.lineThrough) : null,
         ),
-        subtitle: (dueText ?? listName ?? steps) == null
+        subtitle: (dueText ?? listName ?? steps) == null && task.attachments.isEmpty
             ? null
             : Wrap(
                 spacing: 12,
@@ -607,6 +607,11 @@ class _TaskTile extends StatelessWidget {
                   if (listName != null) _ListOrigin(listName),
                   if (task.recurrence != null) const Icon(Icons.repeat, size: 14),
                   if (steps != null) Text(steps),
+                  if (task.attachments.isNotEmpty)
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [const Icon(Icons.attach_file, size: 14), Text('${task.attachments.length}')],
+                    ),
                 ],
               ),
         ),

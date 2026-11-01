@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 
 import 'ha_client.dart';
 import 'l10n.dart';
@@ -776,6 +777,43 @@ class ThaskStore extends ChangeNotifier {
   Future<void> setPriority(Task task, int priority) => updateTask(task, {'priority': priority});
 
   Future<void> deleteTask(Task task) => _mutate('thask/task/delete', {'task_id': task.id});
+
+  // -- Anhänge (nur mit Verbindung) --------------------------------------------
+
+  /// Größte Datei, die Home Assistant annimmt (wie `MAX_SIZE` in `attachments.py`).
+  static const maxAttachmentSize = 15 * 1024 * 1024;
+
+  /// Lädt eine Datei zur Aufgabe hoch; die Aufgabe mit dem Anhang kommt danach über das Abo.
+  Future<void> uploadAttachment(Task task, String name, List<int> bytes) async {
+    if (connection != LinkState.connected || _address == null) throw HaException(tr('err_offline'));
+    if (_isTemp(task.id)) throw HaException(tr('err_not_synced'));
+    if (bytes.length > maxAttachmentSize) throw HaException(tr('err_file_too_large', [name]));
+    final request = http.MultipartRequest('POST', httpUri(_address!, '/api/thask/attachments/${task.id}'))
+      ..headers['Authorization'] = 'Bearer $_token'
+      ..files.add(http.MultipartFile.fromBytes('file', bytes, filename: name));
+    final response = await http.Response.fromStream(await request.send());
+    if (response.statusCode != 200) {
+      String message = response.reasonPhrase ?? '${response.statusCode}';
+      try {
+        message = (jsonDecode(response.body) as Map)['message'] as String? ?? message;
+      } catch (_) {}
+      throw HaException('$name: $message');
+    }
+  }
+
+  /// Lädt einen Anhang herunter.
+  Future<List<int>> downloadAttachment(Task task, TaskAttachment attachment) async {
+    if (connection != LinkState.connected || _address == null) throw HaException(tr('err_offline'));
+    final response = await http.get(
+      httpUri(_address!, '/api/thask/attachments/${task.id}/${attachment.id}'),
+      headers: {'Authorization': 'Bearer $_token'},
+    );
+    if (response.statusCode != 200) throw HaException('${attachment.name}: ${response.statusCode}');
+    return response.bodyBytes;
+  }
+
+  Future<void> deleteAttachment(Task task, TaskAttachment attachment) =>
+      _call('thask/attachment/delete', {'task_id': task.id, 'attachment_id': attachment.id});
 
   /// Aufgabe in ihrer Liste direkt hinter [previousId] einordnen, ohne [previousId] ganz nach oben
   /// (wie `move_task` in `core/collection.py`). Geht auch ohne Verbindung.

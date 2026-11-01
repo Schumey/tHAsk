@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Any, Literal
 
-from .models import Task, TaskList, new_id, sort_tasks, utc_now_iso
+from .models import Attachment, Task, TaskList, new_id, sort_tasks, utc_now_iso
 
 DATA_VERSION = 1
 
@@ -189,6 +189,28 @@ class TaskCollection:
         if task.completed and not was_completed and (following := task.next_occurrence(today)):
             self.add_task(following)
         return task
+
+    def add_attachment(self, task_id: str, attachment: Attachment) -> Task:
+        task = self.get_task(task_id)
+        task.attachments.append(attachment)
+        task.modified = utc_now_iso()
+        self._task_changed("updated", task)
+        return task
+
+    def remove_attachment(self, task_id: str, attachment_id: str) -> Attachment:
+        task = self.get_task(task_id)
+        attachment = self.get_attachment(task_id, attachment_id)
+        task.attachments.remove(attachment)
+        task.modified = utc_now_iso()
+        self._task_changed("updated", task)
+        return attachment
+
+    def get_attachment(self, task_id: str, attachment_id: str) -> Attachment:
+        task = self.get_task(task_id)
+        attachment = next((item for item in task.attachments if item.id == attachment_id), None)
+        if attachment is None:
+            raise NotFoundError(attachment_id)
+        return attachment
 
     def delete_task(self, task_id: str) -> None:
         task = self.get_task(task_id)

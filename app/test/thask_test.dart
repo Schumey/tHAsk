@@ -81,6 +81,24 @@ void main() {
     test('lehnt Leeres ab', () {
       expect(() => websocketUri('  '), throwsA(isA<HaException>()));
     });
+
+    test('HTTP-Adresse für Anhänge', () {
+      expect(httpUri('192.168.1.5:8123', '/api/thask/attachments/t1').toString(),
+          'http://192.168.1.5:8123/api/thask/attachments/t1');
+      expect(httpUri('https://ha.example.com/sub/', '/api/x').toString(), 'https://ha.example.com/sub/api/x');
+    });
+  });
+
+  test('Anhänge einer Aufgabe', () {
+    final task = Task.fromJson({
+      'id': 't', 'list_id': 'l', 'title': 'Steuer',
+      'attachments': [
+        {'id': 'a1', 'name': 'Bescheid.pdf', 'size': 3500000, 'content_type': 'application/pdf'},
+        {'id': 'a2', 'name': 'x.txt', 'size': 830},
+      ],
+    });
+    expect([for (final a in task.attachments) a.sizeLabel], ['3.3 MB', '830 B']);
+    expect(Task.fromJson({'id': 't', 'list_id': 'l', 'title': 'Alt'}).attachments, isEmpty);
   });
 
   group('Zwischenspeicher', () {

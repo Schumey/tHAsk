@@ -3,6 +3,7 @@
 
 const STRINGS = {
   de: {
+    attachments: "Anhänge", add_file: "Datei hinzufügen", uploading: "Wird hochgeladen …", delete_attachment_confirm: "Anhang „{0}“ löschen?", drop_files: "Dateien hierher ziehen",
     members: "Für wen", members_all: "Alle", show_other_lists: "Listen anderer zeigen ({0})", only_my_lists: "Nur meine Listen",
     my_day: "Heute", important: "Wichtig", planned: "Geplant", this_week: "Diese Woche",
     lists: "Listen", add_task: "Aufgabe hinzufügen", quick_hint: "z. B. „Reifen wechseln nächsten Monat !“",
@@ -45,6 +46,7 @@ const STRINGS = {
     settings: "Einstellungen", saved: "Gespeichert", opt_overdue_in_today: "Überfällige Aufgaben in „Heute“", overdue_in_today_section: "Oben in einem eigenen Abschnitt „Überfällig“", overdue_in_today_mixed: "Zwischen den heutigen Aufgaben", overdue_in_today_separate: "Nicht in „Heute“, sondern in einer eigenen Ansicht „Überfällig“", opt_week_mode: "„Diese Woche“", week_mode_calendar: "Kalenderwoche (Montag bis Sonntag)", week_mode_rolling: "Heute und die nächsten 7 Tage", opt_views_apart: "Ansichten trennen", opt_separate_week: "„Heute“ und „Diese Woche“ trennen", opt_separate_week_hint: "„Heute“ zeigt nur Aufgaben mit einem festen Tag (und Überfälliges); Zeiträume wie „KW 44“ stehen in „Diese Woche“, das nichts zeigt, was schon in „Heute“ steht.", opt_separate_month: "„Diesen Monat“ trennen", opt_separate_month_hint: "„Diesen Monat“ zeigt nur, was nach dieser Woche bis Monatsende fällig ist.", opt_reminder_targets: "Erinnerungen senden an", opt_reminder_targets_hint: "Push über die Companion-App (mit Knopf „Erledigt“) oder persistent_notification für die Glocke in Home Assistant. Die Windows-App zeigt Erinnerungen selbst, solange sie läuft.", no_notify: "Keine Benachrichtigungsdienste gefunden.",
   },
   en: {
+    attachments: "Attachments", add_file: "Add file", uploading: "Uploading …", delete_attachment_confirm: "Delete attachment “{0}”?", drop_files: "Drop files here",
     members: "Who is it for", members_all: "Everyone", show_other_lists: "Show others' lists ({0})", only_my_lists: "Only my lists",
     my_day: "Today", important: "Important", planned: "Planned", this_week: "This week",
     lists: "Lists", add_task: "Add a task", quick_hint: "e.g. “Change tyres next month !”",
@@ -87,6 +89,7 @@ const STRINGS = {
     settings: "Settings", saved: "Saved", opt_overdue_in_today: "Overdue tasks in “Today”", overdue_in_today_section: "At the top in a section “Overdue”", overdue_in_today_mixed: "Among today's tasks", overdue_in_today_separate: "Not in “Today” but in a view “Overdue” of their own", opt_week_mode: "“This week”", week_mode_calendar: "Calendar week (Monday to Sunday)", week_mode_rolling: "Today and the next 7 days", opt_views_apart: "Keep views apart", opt_separate_week: "Keep “Today” and “This week” apart", opt_separate_week_hint: "“Today” only shows tasks due on a specific day (and overdue ones); periods such as “week 44” are in “This week”, which leaves out what “Today” shows.", opt_separate_month: "Keep “This month” apart", opt_separate_month_hint: "“This month” only shows what is due after this week until the end of the month.", opt_reminder_targets: "Send reminders to", opt_reminder_targets_hint: "Push via the companion app (with a “Done” button) or persistent_notification for the bell in Home Assistant. The Windows app shows reminders on its own while it is running.", no_notify: "No notify services found.",
   },
   nl: {
+    attachments: "Bijlagen", add_file: "Bestand toevoegen", uploading: "Bezig met uploaden …", delete_attachment_confirm: "Bijlage „{0}” verwijderen?", drop_files: "Sleep bestanden hierheen",
     members: "Voor wie", members_all: "Iedereen", show_other_lists: "Lijsten van anderen tonen ({0})", only_my_lists: "Alleen mijn lijsten",
     my_day: "Vandaag", important: "Belangrijk", planned: "Gepland", this_week: "Deze week",
     lists: "Lijsten", add_task: "Taak toevoegen", quick_hint: "bijv. „Banden wisselen volgende maand !”",
@@ -129,6 +132,7 @@ const STRINGS = {
     settings: "Instellingen", saved: "Opgeslagen", opt_overdue_in_today: "Te late taken in „Vandaag”", overdue_in_today_section: "Bovenaan in een sectie „Te laat”", overdue_in_today_mixed: "Tussen de taken van vandaag", overdue_in_today_separate: "Niet in „Vandaag”, maar in een eigen weergave „Te laat”", opt_week_mode: "„Deze week”", week_mode_calendar: "Kalenderweek (maandag tot zondag)", week_mode_rolling: "Vandaag en de komende 7 dagen", opt_views_apart: "Weergaven scheiden", opt_separate_week: "„Vandaag” en „Deze week” scheiden", opt_separate_week_hint: "„Vandaag” toont alleen taken op een vaste dag (en te late); periodes zoals „week 44” staan in „Deze week”, die niets toont wat al in „Vandaag” staat.", opt_separate_month: "„Deze maand” scheiden", opt_separate_month_hint: "„Deze maand” toont alleen wat na deze week tot het einde van de maand moet.", opt_reminder_targets: "Herinneringen sturen naar", opt_reminder_targets_hint: "Push via de Companion-app (met een knop „Klaar”) of persistent_notification voor de bel in Home Assistant. De Windows-app toont herinneringen zelf zolang hij draait.", no_notify: "Geen meldingsdiensten gevonden.",
   },
   fr: {
+    attachments: "Pièces jointes", add_file: "Ajouter un fichier", uploading: "Envoi …", delete_attachment_confirm: "Supprimer la pièce jointe « {0} » ?", drop_files: "Déposez des fichiers ici",
     members: "Pour qui", members_all: "Tout le monde", show_other_lists: "Afficher les listes des autres ({0})", only_my_lists: "Seulement mes listes",
     my_day: "Aujourd'hui", important: "Important", planned: "Planifié", this_week: "Cette semaine",
     lists: "Listes", add_task: "Ajouter une tâche", quick_hint: "p. ex. « Changer les pneus le mois prochain ! »",
@@ -171,6 +175,7 @@ const STRINGS = {
     settings: "Paramètres", saved: "Enregistré", opt_overdue_in_today: "Tâches en retard dans « Aujourd'hui »", overdue_in_today_section: "En haut, dans une section « En retard »", overdue_in_today_mixed: "Parmi les tâches du jour", overdue_in_today_separate: "Pas dans « Aujourd'hui », mais dans une vue « En retard » à part", opt_week_mode: "« Cette semaine »", week_mode_calendar: "Semaine calendaire (lundi à dimanche)", week_mode_rolling: "Aujourd'hui et les 7 prochains jours", opt_views_apart: "Séparer les vues", opt_separate_week: "Séparer « Aujourd'hui » et « Cette semaine »", opt_separate_week_hint: "« Aujourd'hui » n'affiche que les tâches d'un jour précis (et celles en retard) ; les périodes comme « semaine 44 » sont dans « Cette semaine », qui n'affiche pas ce qui est déjà dans « Aujourd'hui ».", opt_separate_month: "Séparer « Ce mois-ci »", opt_separate_month_hint: "« Ce mois-ci » n'affiche que ce qui est à faire après cette semaine jusqu'à la fin du mois.", opt_reminder_targets: "Envoyer les rappels à", opt_reminder_targets_hint: "Push via l'application Companion (avec un bouton « Terminé ») ou persistent_notification pour la cloche de Home Assistant. L'application Windows affiche elle-même les rappels tant qu'elle est ouverte.", no_notify: "Aucun service de notification trouvé.",
   },
   es: {
+    attachments: "Adjuntos", add_file: "Añadir archivo", uploading: "Subiendo …", delete_attachment_confirm: "¿Eliminar el adjunto «{0}»?", drop_files: "Suelta archivos aquí",
     members: "Para quién", members_all: "Todos", show_other_lists: "Mostrar listas de otros ({0})", only_my_lists: "Solo mis listas",
     my_day: "Hoy", important: "Importante", planned: "Planificado", this_week: "Esta semana",
     lists: "Listas", add_task: "Añadir una tarea", quick_hint: "p. ej. «Cambiar neumáticos el próximo mes !»",
@@ -218,6 +223,22 @@ const TASK_SORTS = ["manual", "priority", "due", "title", "created"];
 // Period of the "Important" view: everything, or what is due by the end of this week, month …
 const IMPORTANT_RANGES = ["all", "week", "month", "quarter", "year"];
 const RANGE_STORAGE_KEY = "thask.importantRange";
+
+/** File size for people: "830 B", "12 KB", "3,4 MB". */
+function formatSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / (1024 * 1024)).toLocaleString(undefined, { maximumFractionDigits: 1 })} MB`;
+}
+
+function attachmentIcon(type = "") {
+  if (type.startsWith("image/")) return "mdi:file-image-outline";
+  if (type === "application/pdf") return "mdi:file-pdf-box";
+  if (type.startsWith("audio/")) return "mdi:file-music-outline";
+  if (type.startsWith("video/")) return "mdi:file-video-outline";
+  if (type.startsWith("text/")) return "mdi:file-document-outline";
+  return "mdi:file-outline";
+}
 const ALL_LISTS_KEY = "thask.showAllLists";
 const OVERDUE_COLLAPSED_KEY = "thask.overdueCollapsed";
 // The integration appends its version to the module URL (cache busting), so the panel can show it.
@@ -822,6 +843,7 @@ class ThaskPanel extends HTMLElement {
     if (task.recurrence) meta.push(`<span class="meta" title="${esc(this._recurrenceLabel(task.recurrence))}"><ha-icon icon="mdi:repeat"></ha-icon></span>`);
     if (task.reminder && !task.completed) meta.push(`<span class="meta"><ha-icon icon="mdi:bell-outline"></ha-icon></span>`);
     if (task.notes) meta.push(`<span class="meta"><ha-icon icon="mdi:note-text-outline"></ha-icon></span>`);
+    if (task.attachments?.length) meta.push(`<span class="meta"><ha-icon icon="mdi:paperclip"></ha-icon>${task.attachments.length}</span>`);
     return `
       <div class="task prio-${task.priority || 0} ${task.completed ? "completed" : ""} ${task.id === this._selectedTask ? "selected" : ""}"
         ${task.priority ? `title="${esc(this.t("priority"))}: ${esc(this.t(`priority_${task.priority}`))}"` : ""}
@@ -972,6 +994,19 @@ class ThaskPanel extends HTMLElement {
       <div class="card">
         <textarea class="notes" data-field="notes" rows="5" placeholder="${esc(this.t("notes_hint"))}">${esc(task.notes)}</textarea>
       </div>
+      <div class="card attachments">
+        <div class="label"><ha-icon icon="mdi:paperclip"></ha-icon>${esc(this.t("attachments"))}</div>
+        ${(task.attachments || []).map((a) => `
+          <div class="attachment">
+            <ha-icon icon="${attachmentIcon(a.content_type)}"></ha-icon>
+            <button class="link" data-action="attachment-open" data-attachment-id="${esc(a.id)}" title="${esc(a.name)}">${esc(a.name)}</button>
+            <span class="muted">${esc(formatSize(a.size))}</span>
+            <button class="icon-button small" data-action="attachment-delete" data-attachment-id="${esc(a.id)}" title="${esc(this.t("delete"))}"><ha-icon icon="mdi:close"></ha-icon></button>
+          </div>`).join("")}
+        ${this._uploading ? `<div class="muted">${esc(this.t("uploading"))}</div>` : ""}
+        <label class="add-file"><ha-icon icon="mdi:plus"></ha-icon><span>${esc(this.t("add_file"))}</span>
+          <input type="file" multiple hidden data-field="attachment-file"></label>
+      </div>
       <div class="detail-footer">
         <span class="muted">${esc(this.t("created"))} ${esc(new Date(task.created).toLocaleDateString(this._locale))}</span>
         <button class="icon-button danger" data-action="delete-task" title="${esc(this.t("delete"))}"><ha-icon icon="mdi:delete-outline"></ha-icon></button>
@@ -984,6 +1019,50 @@ class ThaskPanel extends HTMLElement {
     if (!textarea) return;
     textarea.style.height = "auto";
     textarea.style.height = `${textarea.scrollHeight}px`;
+  }
+
+  async _upload(task, files) {
+    if (!files.length) return;
+    this._uploading = true;
+    this._renderDetail();
+    try {
+      for (const file of files) {
+        const body = new FormData();
+        body.append("file", file, file.name);
+        const response = await this._fetchWithAuth(`/api/thask/attachments/${task.id}`, { method: "POST", body });
+        if (!response.ok) {
+          const message = await response.json().then((r) => r.message).catch(() => response.statusText);
+          throw new Error(`${file.name}: ${message}`);
+        }
+      }
+    } catch (err) {
+      this._toast(err?.message || String(err));
+    } finally {
+      this._uploading = false;
+      // The task with its new attachments arrives as a change; render anyway to drop the hint.
+      this._renderDetail();
+    }
+  }
+
+  _fetchWithAuth(path, init) {
+    if (this._hass.fetchWithAuth) return this._hass.fetchWithAuth(path, init);
+    return fetch(path, { ...init, headers: { ...(init.headers || {}), Authorization: `Bearer ${this._hass.auth.data.access_token}` } });
+  }
+
+  async _openAttachment(task, attachmentId) {
+    if (!task) return;
+    // Open the window right away (in the click), otherwise the browser blocks it as a popup.
+    const win = window.open("", "_blank");
+    try {
+      const { path } = await this._hass.callWS({
+        type: "auth/sign_path", path: `/api/thask/attachments/${task.id}/${attachmentId}`, expires: 300,
+      });
+      if (win) win.location.href = path;
+      else window.location.href = path;
+    } catch (err) {
+      win?.close();
+      this._toast(err?.message || String(err));
+    }
   }
 
   _toast(message) {
@@ -1534,6 +1613,16 @@ class ThaskPanel extends HTMLElement {
         this._updateTask(task, patch);
         break;
       }
+      case "attachment-open":
+        this._openAttachment(task, target.dataset.attachmentId);
+        break;
+      case "attachment-delete": {
+        const attachment = task?.attachments?.find((a) => a.id === target.dataset.attachmentId);
+        if (attachment && confirm(this.t("delete_attachment_confirm", attachment.name))) {
+          this._call("thask/attachment/delete", { task_id: task.id, attachment_id: attachment.id });
+        }
+        break;
+      }
       case "delete-task":
         if (confirm(this.t("delete_task_confirm", task.title))) this._call("thask/task/delete", { task_id: task.id });
         break;
@@ -1596,6 +1685,12 @@ class ThaskPanel extends HTMLElement {
   }
 
   _onChange(ev) {
+    if (ev.target.dataset?.field === "attachment-file") {
+      const task = this._tasks.get(this._selectedTask);
+      if (task) this._upload(task, [...ev.target.files]);
+      ev.target.value = "";
+      return;
+    }
     if (ev.target.dataset?.tfield) {
       this._onTriggerField(ev.target, true);
       return;
@@ -1737,6 +1832,14 @@ class ThaskPanel extends HTMLElement {
   }
 
   _onDragOver(ev) {
+    if (this._isFileDrag(ev)) {
+      const zone = ev.target.closest?.(".detail");
+      if (!zone || !this._selectedTask) return;
+      ev.preventDefault();
+      ev.dataTransfer.dropEffect = "copy";
+      zone.querySelector(".attachments")?.classList.add("drop-target");
+      return;
+    }
     const target = ev.target.closest?.("[data-drop]");
     if (!target) return;
     const listDrop = ["list", "list-end"].includes(target.dataset.drop);
@@ -1747,7 +1850,19 @@ class ThaskPanel extends HTMLElement {
     target.classList.add("drop-target");
   }
 
+  _isFileDrag(ev) {
+    return !this._dragTask && !this._dragList && [...(ev.dataTransfer?.types || [])].includes("Files");
+  }
+
   _onDrop(ev) {
+    if (this._isFileDrag(ev)) {
+      this.shadowRoot.querySelectorAll(".drop-target").forEach((el) => el.classList.remove("drop-target"));
+      const task = ev.target.closest?.(".detail") && this._tasks.get(this._selectedTask);
+      if (!task) return;
+      ev.preventDefault();
+      this._upload(task, [...ev.dataTransfer.files]);
+      return;
+    }
     const target = ev.target.closest?.("[data-drop]");
     if (this._dragList && target) {
       ev.preventDefault();
@@ -1922,6 +2037,17 @@ const STYLE = `
   .field.number { flex: 0 0 64px; }
   .muted { color: var(--thask-muted); font-size: 12px; }
   .notes { width: 100%; border: none; background: none; outline: none; resize: vertical; }
+  .attachment { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .attachment ha-icon { --mdc-icon-size: 18px; color: var(--thask-muted); flex: none; }
+  .attachment .link { flex: 1; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--thask-accent); }
+  .attachment .link:hover { text-decoration: underline; }
+  .attachment .muted { flex: none; font-size: 12px; }
+  .icon-button.small { width: 28px; height: 28px; }
+  .icon-button.small ha-icon { --mdc-icon-size: 16px; }
+  .add-file { display: inline-flex; align-items: center; gap: 8px; cursor: pointer; color: var(--thask-muted); width: fit-content; }
+  .add-file:hover { color: var(--thask-accent); }
+  .add-file ha-icon { --mdc-icon-size: 18px; }
+  .card.attachments.drop-target { outline: 2px dashed var(--thask-accent); outline-offset: -2px; }
   .detail-footer { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 8px; }
   .triggers-view .quick-add, .settings-view .quick-add { display: none; }
   .settings { max-width: 640px; padding: 0 4px 24px; }

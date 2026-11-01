@@ -211,6 +211,30 @@ class TaskList {
       );
 }
 
+/// Datei an einer Aufgabe; liegt in Home Assistant unter `thask_attachments/`.
+class TaskAttachment {
+  const TaskAttachment({required this.id, required this.name, this.size = 0, this.contentType = ''});
+
+  final String id;
+  final String name;
+  final int size;
+  final String contentType;
+
+  factory TaskAttachment.fromJson(Map<String, dynamic> json) => TaskAttachment(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        size: (json['size'] as num?)?.toInt() ?? 0,
+        contentType: json['content_type'] as String? ?? '',
+      );
+
+  /// Größe für Menschen: „830 B“, „12 KB“, „3,4 MB“.
+  String get sizeLabel {
+    if (size < 1024) return '$size B';
+    if (size < 1024 * 1024) return '${(size / 1024).round()} KB';
+    return '${(size / (1024 * 1024)).toStringAsFixed(1)} MB';
+  }
+}
+
 class Task {
   const Task({
     required this.id,
@@ -229,6 +253,7 @@ class Task {
     this.position = 0,
     this.created = '',
     this.completedAt,
+    this.attachments = const [],
   });
 
   final String id;
@@ -248,6 +273,7 @@ class Task {
   final double position;
   final String created;
   final String? completedAt;
+  final List<TaskAttachment> attachments;
 
   factory Task.fromJson(Map<String, dynamic> json) => Task(
         id: json['id'] as String,
@@ -268,6 +294,9 @@ class Task {
         position: (json['position'] as num?)?.toDouble() ?? 0,
         created: json['created'] as String? ?? '',
         completedAt: json['completed_at'] as String?,
+        attachments: [
+          for (final a in json['attachments'] as List? ?? const []) TaskAttachment.fromJson(a as Map<String, dynamic>),
+        ],
       );
 
   bool get isHighPriority => priority >= 3;

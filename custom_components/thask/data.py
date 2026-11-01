@@ -6,6 +6,7 @@ import logging
 from collections.abc import Mapping
 from datetime import date, datetime, timedelta, tzinfo
 from functools import partial
+from pathlib import Path
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntryState
@@ -52,6 +53,7 @@ from .const import (
     WEEK_MODES,
 )
 from .core.collection import Change, TaskCollection
+from .core.files import ATTACHMENTS_DIR, remove_orphans, remove_task_files
 from .core.models import Task
 from .core.period import Period, language
 from .core.triggers import Evaluator, Match, TriggerBook, TriggerRun
@@ -140,6 +142,10 @@ class ThaskData:
         }
 
     @property
+    def attachments_root(self) -> Path:
+        return Path(self.hass.config.path(ATTACHMENTS_DIR))
+
+    @property
     def tz(self) -> tzinfo:
         return dt_util.get_default_time_zone()
 
@@ -168,6 +174,11 @@ class ThaskData:
         )
         self._started = True
         self.auto_clear()
+        removed = await self.hass.async_add_executor_job(
+            remove_orphans, self.attachments_root, set(self.collection.tasks)
+        )
+        if removed:
+            _LOGGER.debug("Deleted attachments of %s tasks that no longer exist", removed)
         for task in self.collection.tasks.values():
             self._schedule_reminder(task)
         self._unsubs.append(
@@ -280,6 +291,9 @@ class ThaskData:
         if change.action == "removed":
             if unsub := self._reminders.pop(change.id, None):
                 unsub()
+            # "removed" also comes when a task moves to another list; then it still exists.
+            if change.id not in self.collection.tasks:
+                self.hass.async_add_executor_job(remove_task_files, self.attachments_root, change.id)
         else:
             self._schedule_reminder(self.collection.tasks[change.id])
 

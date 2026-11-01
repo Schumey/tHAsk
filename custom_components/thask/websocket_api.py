@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from datetime import timedelta
-from functools import wraps
+from functools import partial, wraps
 from typing import Any
 
 import voluptuous as vol
@@ -83,6 +83,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
         ws_options_get,
         ws_options_update,
         ws_users,
+        ws_attachment_delete,
     ):
         websocket_api.async_register_command(hass, command)
 
@@ -404,6 +405,17 @@ def ws_trigger_undo(hass, connection, msg, data: ThaskData) -> None:
 def _notify_services(hass: HomeAssistant) -> list[str]:
     """Legacy notify services for reminders, as in the options flow (notify.send_message needs an entity)."""
     return sorted(service for service in hass.services.async_services_for_domain("notify") if service != "send_message")
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "thask/attachment/delete", vol.Required("task_id"): str, vol.Required("attachment_id"): str}
+)
+@_with_data
+def ws_attachment_delete(hass, connection, msg, data: ThaskData) -> None:
+    attachment = data.collection.remove_attachment(msg["task_id"], msg["attachment_id"])
+    path = data.attachments_root / msg["task_id"] / attachment.id
+    hass.async_add_executor_job(partial(path.unlink, missing_ok=True))
+    connection.send_result(msg["id"])
 
 
 @websocket_api.websocket_command({vol.Required("type"): "thask/users"})

@@ -31,6 +31,13 @@ Uri websocketUri(String address) {
   return Uri(scheme: secure ? 'wss' : 'ws', host: uri.host, port: uri.hasPort ? uri.port : null, path: '$base/api/websocket');
 }
 
+/// Die HTTP-Adresse von Home Assistant für [path], z. B. für Anhänge.
+Uri httpUri(String address, String path) {
+  final ws = websocketUri(address);
+  final base = ws.path.substring(0, ws.path.length - '/api/websocket'.length);
+  return ws.replace(scheme: ws.scheme == 'wss' ? 'https' : 'http', path: '$base$path');
+}
+
 /// Was der Rest der App von einer Verbindung braucht; in Tests durch eine Attrappe ersetzbar.
 abstract class HaConnection {
   Future<void> get closed;

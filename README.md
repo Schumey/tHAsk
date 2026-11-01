@@ -25,6 +25,7 @@ Aktueller Stand: **0.9.1** (siehe [Releases](https://github.com/Schumey/tHAsk/re
 - **Erinnerungen** als Push (Companion-App, mit Knopf „Erledigt“), in der HA-Glocke und als Windows-Benachrichtigung.
 - **Sprachsteuerung** mit Assist: „Was ist diese Woche fällig?“, „Neue Aufgabe Steuer KW 47“.
 - **Trigger**: legen Aufgaben automatisch an, wenn in HA etwas zutrifft (z. B. ein Kalendertermin morgen).
+- **Anhänge**: Dateien an Aufgaben, gespeichert in Home Assistant (im Backup).
 - **Import** aus Microsoft To Do, Todoist, Google Tasks, TickTick, iCalendar und CSV.
 
 ## Sprachen
@@ -81,6 +82,14 @@ Nach dem Einrichten erscheint **tHAsk** in der HA-Seitenleiste:
 - **Erledigte löschen** (Besen-Symbol im Listenkopf).
 - **Trigger** (unten in der Seitenleiste, nur für Administratoren), siehe [Trigger](#trigger).
 - **Einstellungen** (darunter, nur für Administratoren): die [Optionen](#optionen) der Integration.
+
+### Anhänge
+
+Im Detailbereich lassen sich Dateien an eine Aufgabe hängen (Weboberfläche: „Datei hinzufügen“ oder Dateien auf den Detailbereich ziehen; Apps: „Datei hinzufügen“). Ein Klick öffnet die Datei, das Kreuz löscht sie. In der Zeile zeigt eine Büroklammer die Anzahl.
+
+- Gespeichert werden sie in Home Assistant unter `config/thask_attachments/<Aufgabe>/` und sind damit im Backup. Höchstens 15 MB pro Datei.
+- Wird die Aufgabe gelöscht (auch über „Erledigte löschen“), verschwinden ihre Dateien mit. Die nächste Wiederholung einer Aufgabe übernimmt keine Anhänge.
+- Anhänge brauchen eine Verbindung; offline sind sie nur zu sehen.
 
 ### Listen für bestimmte Personen
 
@@ -297,6 +306,7 @@ Die Apps, die Weboberfläche und die Karte nutzen diese Befehle über die normal
 | `thask/data` | – (alle Listen und Aufgaben) |
 | `thask/subscribe` | – (Snapshot mit `options`, danach jede Änderung als Event; `options` nach einer Änderung der Optionen; `reminder` mit der Aufgabe zum Erinnerungszeitpunkt) |
 | `thask/list/create`, `thask/list/update`, `thask/list/delete` | `name`, `group`, `color`, `icon`, `position`, `sort` (`manual`, `priority`, `due`, `title`, `created`), `members` (HA-Benutzer-IDs, leer = alle) / `list_id` |
+| `thask/attachment/delete` | `task_id`, `attachment_id`. Hochladen per HTTP: `POST /api/thask/attachments/<task_id>` (multipart, Feld `file`), Abrufen: `GET /api/thask/attachments/<task_id>/<attachment_id>` (Bearer-Token oder mit `auth/sign_path` signierter Pfad) |
 | `thask/users` | – (aktive HA-Benutzer `{id, name}` und `me`, für die Auswahl „Für wen“) |
 | `thask/list/move` | `list_id`, `previous_id` |
 | `thask/list/clear_completed` | `list_id` (leer = alle), `older_than_days` |

@@ -11,6 +11,8 @@ from __future__ import annotations
 import argparse
 import asyncio
 from datetime import date, datetime, timedelta
+from email import policy as email_policy
+from email.parser import BytesParser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 from pathlib import Path
@@ -22,7 +24,7 @@ INTEGRATION = ROOT / "custom_components" / "thask"
 sys.path.insert(0, str(INTEGRATION))
 
 from core.collection import NotFoundError, TaskCollection  # noqa: E402
-from core.models import Task, TaskList  # noqa: E402
+from core.models import Attachment, Task, TaskList, new_id  # noqa: E402
 from core.parser import parse  # noqa: E402
 from core.period import Granularity, Period  # noqa: E402
 from core.triggers import CalendarEvent, EntityState, Evaluator, Trigger, TriggerBook  # noqa: E402
@@ -90,7 +92,14 @@ PAGE = """<!doctype html>
       state("binary_sensor.waschmaschine", "off", "Waschmaschine"),
       state("sensor.aussentemperatur", "4.5", "Außentemperatur"),
     ].map((s) => [s.entity_id, s])),
+    // Attachments go over HTTP like in Home Assistant; links need no signature here.
+    fetchWithAuth: async (path, init) => {
+      const response = await fetch(path, init);
+      broadcast();
+      return response;
+    },
     callWS: async (message) => {
+      if (message.type === "auth/sign_path") return { path: message.path };
       const result = await call(message);
       if (!["thask/data", "thask/parse", "thask/info", "thask/trigger/test"].includes(message.type)) broadcast();
       return result;
@@ -189,6 +198,8 @@ class Backend:
         self.collection = TaskCollection()
         seed(self.collection, self.today)
         self.triggers = TriggerBook()
+        # Uploaded attachments, in memory: attachment id -> content.
+        self.files: dict[str, bytes] = {}
         self.source = FakeSource(self.today)
         self.last_check: str | None = None
         seed_triggers(self.triggers, self.collection)
@@ -238,6 +249,10 @@ class Backend:
                 return collection.update_task(msg["task_id"], pick(Task.EDITABLE), today).as_dict()
             case "thask/task/delete":
                 collection.delete_task(msg["task_id"])
+                return None
+            case "thask/attachment/delete":
+                collection.remove_attachment(msg["task_id"], msg["attachment_id"])
+                self.files.pop(msg["attachment_id"], None)
                 return None
             case "thask/task/move":
                 return collection.move_task(msg["task_id"], msg.get("previous_id")).as_dict()
@@ -303,6 +318,9 @@ CARD_PAGE = PAGE.replace("<thask-panel></thask-panel>", """<div class="cards">
 )
 
 
+ATTACHMENT_URL = "/api/thask/attachments/"
+
+
 class Handler(BaseHTTPRequestHandler):
     def _send(self, status: int, body: bytes, content_type: str) -> None:
         self.send_response(status)
@@ -313,7 +331,15 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self) -> None:
         path = self.path.split("?")[0]
-        if path in ("/", "/index.html"):
+        if path.startswith(ATTACHMENT_URL):
+            task_id, _, attachment_id = path.removeprefix(ATTACHMENT_URL).partition("/")
+            try:
+                attachment = BACKEND.collection.get_attachment(task_id, attachment_id)
+            except NotFoundError:
+                self._send(404, b"not found", "text/plain")
+                return
+            self._send(200, BACKEND.files.get(attachment_id, b""), attachment.content_type)
+        elif path in ("/", "/index.html"):
             self._send(200, PAGE.replace("__VERSION__", VERSION).encode(), "text/html; charset=utf-8")
         elif path in ("/card", "/card.html"):
             self._send(200, CARD_PAGE.replace("__VERSION__", VERSION).encode(), "text/html; charset=utf-8")
@@ -325,12 +351,29 @@ class Handler(BaseHTTPRequestHandler):
             self._send(404, b"not found", "text/plain")
 
     def do_POST(self) -> None:
+        if self.path.startswith(ATTACHMENT_URL):
+            self._upload(self.path.removeprefix(ATTACHMENT_URL))
+            return
         msg = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
         try:
             result = BACKEND.handle(msg)
             self._send(200, json.dumps(result).encode(), "application/json")
         except (NotFoundError, ValueError, KeyError) as err:
             self._send(400, json.dumps({"message": str(err)}).encode(), "application/json")
+
+    def _upload(self, task_id: str) -> None:
+        body = self.rfile.read(int(self.headers["Content-Length"]))
+        head = f"Content-Type: {self.headers['Content-Type']}\r\n\r\n".encode()
+        message = BytesParser(policy=email_policy.default).parsebytes(head + body)
+        part = next((part for part in message.iter_parts() if part.get_param("name", header="content-disposition") == "file"), None)
+        if part is None or task_id not in BACKEND.collection.tasks:
+            self._send(400, json.dumps({"message": "no file or task"}).encode(), "application/json")
+            return
+        content = part.get_payload(decode=True) or b""
+        attachment = Attachment(new_id(), part.get_filename() or "file", len(content), part.get_content_type())
+        BACKEND.files[attachment.id] = content
+        BACKEND.collection.add_attachment(task_id, attachment)
+        self._send(200, json.dumps(attachment.as_dict()).encode(), "application/json")
 
     def log_message(self, *args: Any) -> None:
         pass

@@ -85,6 +85,36 @@ class Step:
         return cls(data.get("id") or new_id(), data["title"], bool(data.get("completed", False)))
 
 
+@dataclass(slots=True)
+class Attachment:
+    """A file attached to a task. The file itself lies in `thask_attachments/<task id>/<id>`."""
+
+    id: str
+    name: str
+    size: int
+    content_type: str = "application/octet-stream"
+    created: str = field(default_factory=utc_now_iso)
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "name": self.name,
+            "size": self.size,
+            "content_type": self.content_type,
+            "created": self.created,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> Attachment:
+        return cls(
+            id=data["id"],
+            name=data["name"],
+            size=int(data.get("size", 0)),
+            content_type=data.get("content_type") or "application/octet-stream",
+            created=data.get("created") or utc_now_iso(),
+        )
+
+
 TASK_SORTS = ("manual", "priority", "due", "title", "created")
 # Priority levels: 0 none, 1 low (green), 2 medium (orange), 3 high (red).
 PRIORITIES = (0, 1, 2, 3)
@@ -198,6 +228,8 @@ class Task:
     position: float = 0
     # Id in the system the task was imported from, to make imports idempotent.
     external_id: str | None = None
+    # Files; changed only through the attachment endpoints, not by patches.
+    attachments: list[Attachment] = field(default_factory=list)
     created: str = field(default_factory=utc_now_iso)
     modified: str = field(default_factory=utc_now_iso)
     completed_at: str | None = None
@@ -325,6 +357,7 @@ class Task:
             "categories": self.categories,
             "position": self.position,
             "external_id": self.external_id,
+            "attachments": [attachment.as_dict() for attachment in self.attachments],
             "created": self.created,
             "modified": self.modified,
             "completed_at": self.completed_at,
@@ -337,4 +370,5 @@ class Task:
         for key in ("external_id", "created", "modified", "completed_at"):
             if key in data:
                 setattr(task, key, data[key])
+        task.attachments = [Attachment.from_dict(item) for item in data.get("attachments") or []]
         return task

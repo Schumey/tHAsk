@@ -439,6 +439,7 @@ class ThaskCard extends HTMLElement {
     if (task.steps?.length) meta.push(`<span class="meta"><ha-icon icon="mdi:format-list-bulleted"></ha-icon>${task.steps.filter((s) => s.completed).length}/${task.steps.length}</span>`);
     if (task.recurrence) meta.push(`<span class="meta"><ha-icon icon="mdi:repeat"></ha-icon></span>`);
     if (task.notes) meta.push(`<span class="meta"><ha-icon icon="mdi:note-text-outline"></ha-icon></span>`);
+    if (task.attachments?.length) meta.push(`<span class="meta"><ha-icon icon="mdi:paperclip"></ha-icon>${task.attachments.length}</span>`);
     const expanded = this._expanded === task.id;
     return `
       <div class="task prio-${task.priority || 0} ${task.completed ? "completed" : ""} ${expanded ? "expanded" : ""}" data-action="expand" data-id="${esc(task.id)}">

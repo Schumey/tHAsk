@@ -1,8 +1,14 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
 
 import 'l10n.dart';
 import 'models.dart';
 import 'priority.dart';
+import 'ha_client.dart';
 import 'store.dart';
 
 /// Einheit in Einzahl und Mehrzahl, z. B. („Woche“, „Wochen“).
@@ -109,6 +115,91 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         ..hideCurrentSnackBar()
         ..showSnackBar(SnackBar(content: Text('$e')));
     }
+  }
+
+  bool _uploading = false;
+
+  Future<void> _addFiles(Task task) async {
+    final picked = await FilePicker.pickFiles();
+    if (picked.isEmpty || !mounted) return;
+    setState(() => _uploading = true);
+    try {
+      for (final file in picked) {
+        await _guard(() async => store.uploadAttachment(task, file.name, await file.readAsBytes()));
+      }
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  /// Lädt den Anhang in den Zwischenordner und öffnet ihn mit der passenden App des Systems.
+  Future<void> _openAttachment(Task task, TaskAttachment attachment) => _guard(() async {
+        final bytes = await store.downloadAttachment(task, attachment);
+        final dir = Directory('${(await getTemporaryDirectory()).path}${Platform.pathSeparator}thask_${attachment.id}');
+        await dir.create(recursive: true);
+        final name = attachment.name.replaceAll(RegExp(r'[\\/:*?"<>|]'), '_');
+        final file = File('${dir.path}${Platform.pathSeparator}$name');
+        await file.writeAsBytes(bytes);
+        final result = await OpenFilex.open(file.path);
+        if (result.type != ResultType.done) throw HaException(result.message);
+      });
+
+  Future<void> _deleteAttachment(Task task, TaskAttachment attachment) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(tr('delete_attachment_q')),
+        content: Text(attachment.name),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(tr('cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(tr('delete'))),
+        ],
+      ),
+    );
+    if (confirmed ?? false) await _guard(() => store.deleteAttachment(task, attachment));
+  }
+
+  Widget _attachments(Task task) {
+    final online = store.connection == LinkState.connected;
+    IconData icon(String type) => type.startsWith('image/')
+        ? Icons.image_outlined
+        : type == 'application/pdf'
+            ? Icons.picture_as_pdf_outlined
+            : type.startsWith('audio/')
+                ? Icons.audio_file_outlined
+                : type.startsWith('video/')
+                    ? Icons.video_file_outlined
+                    : Icons.insert_drive_file_outlined;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+          child: Text(tr('attachments'), style: Theme.of(context).textTheme.labelLarge),
+        ),
+        for (final attachment in task.attachments)
+          ListTile(
+            leading: Icon(icon(attachment.contentType)),
+            title: Text(attachment.name, overflow: TextOverflow.ellipsis),
+            subtitle: Text(attachment.sizeLabel),
+            enabled: online,
+            onTap: () => _openAttachment(task, attachment),
+            trailing: IconButton(
+              tooltip: tr('delete'),
+              icon: const Icon(Icons.close),
+              onPressed: online ? () => _deleteAttachment(task, attachment) : null,
+            ),
+          ),
+        ListTile(
+          leading: _uploading
+              ? const SizedBox.square(dimension: 24, child: CircularProgressIndicator(strokeWidth: 2))
+              : const Icon(Icons.attach_file),
+          title: Text(_uploading ? tr('uploading') : tr('add_file')),
+          enabled: online && !_uploading,
+          onTap: () => _addFiles(task),
+        ),
+      ],
+    );
   }
 
   Future<void> _update(Map<String, dynamic> patch) {
@@ -461,6 +552,8 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                   ),
                 ),
               ),
+              _attachments(task),
+              const SizedBox(height: 16),
             ],
           ),
         );
