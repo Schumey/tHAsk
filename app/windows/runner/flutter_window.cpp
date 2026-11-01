@@ -2,6 +2,8 @@
 
 #include <optional>
 
+#include <flutter/standard_method_codec.h>
+
 #include "flutter/generated_plugin_registrant.h"
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
@@ -27,6 +29,29 @@ bool FlutterWindow::OnCreate() {
   RegisterPlugins(flutter_controller_->engine());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
+  badge_.Attach(GetHandle());
+  taskbar_channel_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
+      flutter_controller_->engine()->messenger(), "thask/taskbar",
+      &flutter::StandardMethodCodec::GetInstance());
+  taskbar_channel_->SetMethodCallHandler(
+      [this](const flutter::MethodCall<flutter::EncodableValue>& call,
+             std::unique_ptr<flutter::MethodResult<flutter::EncodableValue>> result) {
+        if (call.method_name() == "setBadge") {
+          const auto* count = std::get_if<int32_t>(call.arguments());
+          badge_.Set(count ? *count : 0);
+          result->Success();
+        } else if (call.method_name() == "activate") {
+          HWND window = GetHandle();
+          if (::IsIconic(window)) {
+            ::ShowWindow(window, SW_RESTORE);
+          }
+          ::SetForegroundWindow(window);
+          result->Success();
+        } else {
+          result->NotImplemented();
+        }
+      });
+
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
     if (start_minimized_) {
       ::ShowWindow(GetHandle(), SW_SHOWMINNOACTIVE);
@@ -44,6 +69,7 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
+  taskbar_channel_ = nullptr;
   if (flutter_controller_) {
     flutter_controller_ = nullptr;
   }
@@ -69,6 +95,9 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
     case WM_FONTCHANGE:
       flutter_controller_->engine()->ReloadSystemFonts();
       break;
+  }
+  if (message == TaskbarBadge::ButtonCreatedMessage()) {
+    badge_.OnButtonCreated();
   }
 
   return Win32Window::MessageHandler(hwnd, message, wparam, lparam);

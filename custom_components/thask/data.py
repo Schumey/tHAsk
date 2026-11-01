@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Mapping
 from datetime import date, datetime, timedelta, tzinfo
 from functools import partial
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntryState
-from homeassistant.core import CALLBACK_TYPE, HomeAssistant, callback
+from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import (
@@ -21,16 +22,19 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_OVERDUE,
+    CONF_REMINDER_TARGETS,
     DEFAULT_OVERDUE,
     DOMAIN,
     EVENT_REMINDER,
     EVENT_TASK_DUE,
     EVENT_TASK_OVERDUE,
     EVENT_TRIGGER_FIRED,
+    NOTIFY_ACTION_DONE,
     OVERDUE_MODES,
     SAVE_DELAY,
     SIGNAL_DAY_CHANGED,
     SIGNAL_OPTIONS_CHANGED,
+    SIGNAL_REMINDER,
     SIGNAL_TRIGGERS_CHANGED,
     STORAGE_KEY,
     STORAGE_KEY_TRIGGERS,
@@ -42,6 +46,8 @@ from .core.models import Task
 from .core.period import Period
 from .core.triggers import Evaluator, Match, TriggerBook, TriggerRun
 from .trigger_source import HassSource
+
+_LOGGER = logging.getLogger(__name__)
 
 
 @callback
@@ -66,11 +72,13 @@ class ThaskData:
         self._reminders: dict[str, CALLBACK_TYPE] = {}
         self._unsubs: list[CALLBACK_TYPE] = []
         self.overdue_mode = DEFAULT_OVERDUE
+        self.reminder_targets: list[str] = []
 
     @callback
     def set_options(self, options: Mapping[str, Any]) -> None:
         mode = options.get(CONF_OVERDUE, DEFAULT_OVERDUE)
         self.overdue_mode = mode if mode in OVERDUE_MODES else DEFAULT_OVERDUE
+        self.reminder_targets = list(options.get(CONF_REMINDER_TARGETS, []))
         async_dispatcher_send(self.hass, SIGNAL_OPTIONS_CHANGED)
 
     @property
@@ -104,6 +112,9 @@ class ThaskData:
         )
         for task in self.collection.tasks.values():
             self._schedule_reminder(task)
+        self._unsubs.append(
+            self.hass.bus.async_listen("mobile_app_notification_action", self._on_notification_action)
+        )
 
         if data := await self._trigger_store.async_load():
             self.triggers.load(data)
@@ -231,8 +242,45 @@ class ThaskData:
     def _fire_reminder(self, task_id: str, _now: datetime) -> None:
         self._reminders.pop(task_id, None)
         task = self.collection.tasks.get(task_id)
+        if not task or task.completed:
+            return
+        info = self.task_info(task)
+        self.hass.bus.async_fire(EVENT_REMINDER, info)
+        async_dispatcher_send(self.hass, SIGNAL_REMINDER, info)
+        for target in self.reminder_targets:
+            self.hass.async_create_task(self._async_notify(target, task, info))
+
+    async def _async_notify(self, target: str, task: Task, info: dict[str, Any]) -> None:
+        details = [part for part in (info["list_name"], info["due_label"]) if part]
+        service_data: dict[str, Any] = {
+            "title": task.title,
+            "message": " · ".join(details) or ("Erinnerung" if self.language.startswith("de") else "Reminder"),
+        }
+        if target.startswith("mobile_app_"):
+            service_data["data"] = {
+                # The same tag replaces an earlier notification of the task.
+                "tag": f"thask-{task.id}",
+                "actions": [
+                    {
+                        "action": f"{NOTIFY_ACTION_DONE}{task.id}",
+                        "title": "Erledigt" if self.language.startswith("de") else "Done",
+                    }
+                ],
+            }
+        try:
+            await self.hass.services.async_call("notify", target, service_data, blocking=True)
+        except Exception:  # noqa: BLE001 - one failing target must not stop the others
+            _LOGGER.exception("Sending the reminder for %s to notify.%s failed", task.title, target)
+
+    @callback
+    def _on_notification_action(self, event: Event) -> None:
+        action = event.data.get("action", "")
+        if not action.startswith(NOTIFY_ACTION_DONE):
+            return
+        task_id = action.removeprefix(NOTIFY_ACTION_DONE)
+        task = self.collection.tasks.get(task_id)
         if task and not task.completed:
-            self.hass.bus.async_fire(EVENT_REMINDER, self.task_info(task))
+            self.collection.update_task(task_id, {"completed": True}, self.today)
 
     @callback
     def _on_new_day(self, _now: datetime) -> None:

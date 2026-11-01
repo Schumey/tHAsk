@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:thask/desktop_bridge.dart';
 import 'package:thask/ha_client.dart';
 import 'package:thask/models.dart';
 import 'package:thask/store.dart';
@@ -487,6 +488,42 @@ void main() {
       expect([for (final t in store.overdue) t.id], ['a']);
       expect(ViewRef.all(store)[1], isA<OverdueView>());
       expect(ViewRef.fromId('overdue'), isA<OverdueView>());
+    });
+
+    test('Erinnerungen der Integration kommen als Stream, ohne die Daten zu ändern', () async {
+      await signIn();
+      final reminders = <Task>[];
+      final sub = store.reminders.listen(reminders.add);
+      connection.emit({
+        'type': 'reminder',
+        'task': {'id': 't1', 'list_id': 'l1', 'title': 'Steuer', 'list_name': 'Aufgaben'},
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect([for (final t in reminders) t.title], ['Steuer']);
+      expect(store.task('t1')?.due, isNotNull);
+      await sub.cancel();
+    });
+
+    test('Zähler an der Taskleiste: offene Aufgaben bis heute, auch Überfälliges', () async {
+      await signIn();
+      connection.emit({
+        ..._snapshot,
+        'options': {'overdue_in_today': 'separate'},
+        'tasks': [
+          {'id': 'a', 'list_id': 'l1', 'title': 'Alt', 'due': {'granularity': 'day', 'start': '2026-10-29'}},
+          {'id': 'b', 'list_id': 'l1', 'title': 'Heute', 'due': {'granularity': 'day', 'start': '2026-10-31'}},
+          {'id': 'c', 'list_id': 'l2', 'title': 'Morgen', 'due': {'granularity': 'day', 'start': '2026-11-01'}},
+          {
+            'id': 'd',
+            'list_id': 'l2',
+            'title': 'Erledigt',
+            'completed': true,
+            'due': {'granularity': 'day', 'start': '2026-10-31'},
+          },
+        ],
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect(taskbarCount(store), 2);
     });
 
     test('Abmelden löscht Zugangsdaten und Daten', () async {

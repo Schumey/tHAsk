@@ -20,7 +20,7 @@ flutter build apk      # APK in app/build/app/outputs/flutter-apk/
 
 ## Windows-App
 
-Dieselbe App läuft auch unter Windows. Ab 900 px Fensterbreite stehen Navigation, Liste und Details nebeneinander. Strg+N springt in die Eingabe, Esc schließt die Details. Ein zweiter Start holt das laufende Fenster nach vorn.
+Dieselbe App läuft auch unter Windows. Ab 900 px Fensterbreite stehen Navigation, Liste und Details nebeneinander. Strg+N springt in die Eingabe, Esc schließt die Details. Ein zweiter Start holt das laufende Fenster nach vorn. Solange die App läuft, zeigt sie Erinnerungen als Windows-Benachrichtigung (mit „Erledigt“) und an der Taskleiste die Zahl der offenen Aufgaben, die bis heute fällig sind (inklusive Überfälligem).
 
 Den Installer baut ein Skript. Es braucht Flutter mit den Visual Studio Build Tools (C++ und ATL) und [Inno Setup 6](https://jrsoftware.org/isinfo.php) (`winget install --id JRSoftware.InnoSetup --exact --scope user`):
 
@@ -90,6 +90,8 @@ Zeiträume erscheinen als Chips (KW 46, November, Q4), Überfälliges rot; „He
 
 **Optionen** (Einstellungen → Geräte & Dienste → tHAsk → Konfigurieren): *Überfällige Aufgaben in „Heute“* – oben als eigener Abschnitt (Standard), zwischen den heutigen oder nicht in „Heute“, sondern in einer eigenen Ansicht „Überfällig“. Gilt für Weboberfläche, App, Widget und `todo.thask_mein_tag`; ändert sich ohne Neustart.
 
+*Erinnerungen senden an* – Benachrichtigungsdienste, die Erinnerungen bekommen, z. B. `mobile_app_<handy>` (Push mit Knopf „Erledigt“, der die Aufgabe abhakt) oder `persistent_notification` (Glocke in HA). Ohne Auswahl gibt es nur das Event `thask_reminder`.
+
 Home Assistant kennt nur exakte Daten. Deshalb zeigt es bei einer Zeitraum-Fälligkeit das **letzte Datum** des Zeitraums an (KW 46 → 15.11.). Solange das Datum dort nicht geändert wird, bleibt der Zeitraum erhalten.
 
 Jede Liste hat die Attribute `overdue` und `due_today` (Anzahl).
@@ -110,7 +112,7 @@ Jede Liste hat die Attribute `overdue` und `due_today` (Anzahl).
 | `thask_reminder` | zum Erinnerungszeitpunkt einer Aufgabe |
 | `thask_trigger_fired` | wenn ein Trigger eine Aufgabe angelegt hat (`trigger_id`, `trigger_name`, `day`, `task`) |
 
-Beispiel: Erinnerung als Push aufs Handy – Automation mit Trigger *Event* `thask_reminder` und Aktion `notify.mobile_app_<handy>` mit `{{ trigger.event.data.title }}`.
+Erinnerungen als Push gehen am einfachsten über die Option *Erinnerungen senden an*. Für Sonderfälle (andere Dienste, Bedingungen) eine eigene Automation mit Trigger *Event* `thask_reminder`, z. B. mit `{{ trigger.event.data.title }}`.
 
 ## Import aus MS To-Do
 

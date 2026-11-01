@@ -2,10 +2,13 @@
 #define RUNNER_FLUTTER_WINDOW_H_
 
 #include <flutter/dart_project.h>
+#include <flutter/encodable_value.h>
 #include <flutter/flutter_view_controller.h>
+#include <flutter/method_channel.h>
 
 #include <memory>
 
+#include "taskbar_badge.h"
 #include "win32_window.h"
 
 // A window that does nothing but host a Flutter view.
@@ -33,6 +36,10 @@ class FlutterWindow : public Win32Window {
   std::unique_ptr<flutter::FlutterViewController> flutter_controller_;
 
   bool start_minimized_ = false;
+
+  // "thask/taskbar" (lib/desktop_bridge.dart): setBadge(int), activate.
+  std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> taskbar_channel_;
+  TaskbarBadge badge_;
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_

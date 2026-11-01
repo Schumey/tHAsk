@@ -351,8 +351,16 @@ class ThaskStore extends ChangeNotifier {
     overdueMode = const ['section', 'mixed', 'separate'].contains(mode) ? mode as String : 'section';
   }
 
+  final _reminders = StreamController<Task>.broadcast();
+
+  /// Fällige Erinnerungen, so wie die Integration sie meldet (für Benachrichtigungen am PC).
+  Stream<Task> get reminders => _reminders.stream;
+
   void _apply(Map<String, dynamic> event, {bool fromServer = true}) {
     switch (event['type']) {
+      case 'reminder':
+        _reminders.add(Task.fromJson((event['task'] as Map).cast<String, dynamic>()));
+        return;
       case 'snapshot':
         _rawLists
           ..clear()
@@ -644,6 +652,7 @@ class ThaskStore extends ChangeNotifier {
     _saveTimer?.cancel();
     _events?.cancel();
     _client?.close();
+    _reminders.close();
     super.dispose();
   }
 }

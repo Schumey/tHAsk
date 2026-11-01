@@ -32,3 +32,12 @@ SIGNAL_OPTIONS_CHANGED = f"{DOMAIN}_options_changed"
 CONF_OVERDUE = "overdue_in_today"
 OVERDUE_MODES = ("section", "mixed", "separate")
 DEFAULT_OVERDUE = "section"
+
+# Option: notify services (notify.<name>) that receive reminders.
+CONF_REMINDER_TARGETS = "reminder_targets"
+
+# Dispatched with the task info when a reminder is due, for the apps.
+SIGNAL_REMINDER = f"{DOMAIN}_reminder"
+
+# Action of the "Done" button on companion app notifications; the task id follows.
+NOTIFY_ACTION_DONE = "THASK_DONE_"

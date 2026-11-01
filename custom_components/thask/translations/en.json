@@ -149,10 +149,12 @@
       "init": {
         "title": "tHAsk options",
         "data": {
-          "overdue_in_today": "Overdue tasks in “Today”"
+          "overdue_in_today": "Overdue tasks in “Today”",
+          "reminder_targets": "Send reminders to"
         },
         "data_description": {
-          "overdue_in_today": "Applies to the web interface, the app, the widget and the “Today” list in Home Assistant."
+          "overdue_in_today": "Applies to the web interface, the app, the widget and the “Today” list in Home Assistant.",
+          "reminder_targets": "Notify services (notify.…) that receive reminders, e.g. the companion app on your phone (with a “Done” button) or persistent_notification for the bell in Home Assistant. The Windows app shows reminders on its own while it is running."
         }
       }
     }

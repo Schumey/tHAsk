@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'credentials.dart';
+import 'desktop_bridge.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
 import 'snapshot_cache.dart';
@@ -12,6 +13,7 @@ Future<void> main() async {
   final store = ThaskStore(SecureCredentialStore(), cache: PrefsSnapshotCache());
   final bridge = WidgetBridge(store);
   await bridge.attach();
+  await DesktopBridge(store).attach();
   runApp(ThaskApp(store: store, bridge: bridge));
 }
 

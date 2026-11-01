@@ -149,10 +149,12 @@
       "init": {
         "title": "tHAsk-Optionen",
         "data": {
-          "overdue_in_today": "Überfällige Aufgaben in „Heute“"
+          "overdue_in_today": "Überfällige Aufgaben in „Heute“",
+          "reminder_targets": "Erinnerungen senden an"
         },
         "data_description": {
-          "overdue_in_today": "Gilt für die Weboberfläche, die App, das Widget und die Liste „Heute“ in Home Assistant."
+          "overdue_in_today": "Gilt für die Weboberfläche, die App, das Widget und die Liste „Heute“ in Home Assistant.",
+          "reminder_targets": "Benachrichtigungsdienste (notify.…), die Erinnerungen bekommen, z. B. die Companion-App auf dem Handy (mit Knopf „Erledigt“) oder persistent_notification für die Glocke in Home Assistant. Die Windows-App zeigt Erinnerungen unabhängig davon an, solange sie läuft."
         }
       }
     }
