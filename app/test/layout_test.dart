@@ -43,7 +43,9 @@ void main() {
   testWidgets('„Heute“ zeigt Überfälliges oben in einem eigenen Abschnitt', (tester) async {
     await pumpHome(tester, const Size(400, 800));
     expect(find.text('Überfällig (1)'), findsOneWidget);
-    expect(find.text('Heute (1)'), findsOneWidget);
+    // Abschnittskopf „Heute“ mit Anzahl (der Name steht auch in Kopfzeile und Fälligkeit).
+    expect(find.text('Heute'), findsWidgets);
+    expect(find.text('1'), findsOneWidget);
     await tester.tap(find.text('Überfällig (1)'));
     await tester.pumpAndSettle();
     expect(find.text('Alt'), findsNothing);

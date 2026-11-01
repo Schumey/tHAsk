@@ -410,7 +410,10 @@ class ThaskCard extends HTMLElement {
   }
 
   _dueChip(task) {
-    const status = task.completed ? "" : periodStatus(task.due, this._today);
+    // Like the app (DueChip): red when overdue, blue when it ends today; periods fade out to the right.
+    const end = periodEndOf(task.due).getTime();
+    const status = task.completed ? "" : end < this._today.getTime() ? "overdue" : end === this._today.getTime() ? "today" : "";
+    const fuzzy = task.due.granularity !== "day" ? "fuzzy" : "";
     let label = periodLabel(task.due, lang(this._hass), this._today);
     if (task.due.granularity === "day") {
       const days = Math.round((parseISO(task.due.start) - this._today) / 864e5);
@@ -419,7 +422,7 @@ class ThaskCard extends HTMLElement {
       if (task.due_time) label += `, ${task.due_time}`;
     }
     const icon = task.due.granularity === "day" ? "mdi:calendar" : "mdi:calendar-range";
-    return `<span class="meta due ${status}"><ha-icon icon="${icon}"></ha-icon>${esc(label)}</span>`;
+    return `<span class="meta due ${status} ${fuzzy}"><ha-icon icon="${icon}"></ha-icon>${esc(label)}</span>`;
   }
 
   _row(task, view) {
@@ -696,8 +699,13 @@ const STYLE = `
   .metas { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 12px; color: var(--thask-muted); }
   .meta { display: inline-flex; align-items: center; gap: 3px; }
   .meta ha-icon { --mdc-icon-size: 14px; }
-  .meta.due.current { color: var(--thask-accent); }
-  .meta.due.overdue { color: var(--thask-danger); }
+  .meta.due {
+    --thask-due: var(--thask-muted); --thask-due-bg: color-mix(in srgb, var(--thask-due) 14%, transparent);
+    color: var(--thask-due); background: var(--thask-due-bg); padding: 1px 8px; border-radius: 10px;
+  }
+  .meta.due.today { --thask-due: var(--thask-accent); }
+  .meta.due.overdue { --thask-due: var(--thask-danger); }
+  .meta.due.fuzzy { background: linear-gradient(90deg, var(--thask-due-bg) 55%, transparent); padding-right: 16px; }
   .check { width: 22px; height: 22px; margin-top: 0; border-radius: 50%; border: 2px solid var(--thask-muted); display: inline-flex;
     align-items: center; justify-content: center; flex: none; color: transparent; box-sizing: border-box; }
   .check ha-icon { --mdc-icon-size: 14px; }

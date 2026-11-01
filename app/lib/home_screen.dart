@@ -179,7 +179,21 @@ class _HomeScreenState extends State<HomeScreen> {
     final page = Scaffold(
       appBar: AppBar(
         automaticallyImplyLeading: !wide,
-        title: Text(_title),
+        title: _view is TodayView
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(_title),
+                  Text(
+                    L10n.longDate(store.today),
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                        ),
+                  ),
+                ],
+              )
+            : Text(_title),
         actions: [
           if (_view is ImportantView)
             PopupMenuButton<String>(
@@ -238,12 +252,7 @@ class _HomeScreenState extends State<HomeScreen> {
           if (store.connection != LinkState.connected || store.pendingCount > 0) _ConnectionBanner(store: store),
           Expanded(
             child: tasks.isEmpty
-                ? Center(
-                    child: Text(
-                      store.connection == LinkState.connected ? tr('no_tasks') : '',
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                  )
+                ? _EmptyView(visible: store.connection == LinkState.connected || store.fromCache)
                 : list != null && list.sort == 'manual'
                     ? _reorderableList(open, done, tile)
                     : ListView(
@@ -330,19 +339,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   : 'later';
       sections[key]!.add(task);
     }
-    final theme = Theme.of(context);
     return [
       for (final entry in sections.entries)
         if (entry.value.isNotEmpty) ...[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-            child: Text(
-              tr(entry.key),
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: entry.key == 'view_overdue' ? theme.colorScheme.error : null,
-              ),
-            ),
-          ),
+          _SectionHeader(tr(entry.key), entry.value.length, error: entry.key == 'view_overdue'),
           for (final task in entry.value) tile(task),
         ],
     ];
@@ -366,10 +366,7 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [for (final task in overdue) tile(task)],
       ),
       if (rest.isNotEmpty) ...[
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-          child: Text(tr('today_n', [rest.length]), style: theme.textTheme.labelLarge),
-        ),
+        _SectionHeader(tr('view_today'), rest.length),
         for (final task in rest) tile(task),
       ],
     ];
@@ -388,9 +385,12 @@ class _HomeScreenState extends State<HomeScreen> {
           onSubmitted: (_) => _submit(),
           decoration: InputDecoration(
             hintText: tr('entry_hint'),
-            border: const OutlineInputBorder(),
-            isDense: true,
-            suffixIcon: IconButton(icon: const Icon(Icons.add), onPressed: _submit),
+            filled: true,
+            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(28), borderSide: BorderSide.none),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+            prefixIcon: const Icon(Icons.add_task),
+            suffixIcon: IconButton(icon: const Icon(Icons.arrow_upward), tooltip: tr('create'), onPressed: _submit),
           ),
         ),
       ),
@@ -655,6 +655,66 @@ class _PriorityBar extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(border: Border(left: BorderSide(color: color, width: priorityBarWidth(priority)))),
         child: child,
+      ),
+    );
+  }
+}
+
+/// Abschnittskopf in den Ansichten („Überfällig“, „Diese Woche“ …): Name und Anzahl, überall gleich.
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader(this.text, this.count, {this.error = false});
+
+  final String text;
+  final int count;
+  final bool error;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = error ? theme.colorScheme.error : theme.colorScheme.primary;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 6),
+      child: Row(
+        children: [
+          Text(text, style: theme.textTheme.titleSmall?.copyWith(color: color, fontWeight: FontWeight.w600)),
+          const SizedBox(width: 8),
+          Text('$count', style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+        ],
+      ),
+    );
+  }
+}
+
+/// Leere Ansicht: freundlicher Hinweis statt nur „Keine Aufgaben“.
+class _EmptyView extends StatelessWidget {
+  const _EmptyView({required this.visible});
+
+  /// Ohne Verbindung und ohne gespeicherten Stand ist leer nur „noch nicht geladen“.
+  final bool visible;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!visible) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.task_alt, size: 64, color: theme.colorScheme.primary.withValues(alpha: 0.6)),
+            const SizedBox(height: 16),
+            Text(tr('empty_title'), style: theme.textTheme.titleMedium),
+            const SizedBox(height: 4),
+            Text(tr('empty_text'), style: theme.textTheme.bodyMedium, textAlign: TextAlign.center),
+            const SizedBox(height: 12),
+            Text(
+              tr('empty_hint'),
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
