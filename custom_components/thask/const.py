@@ -39,6 +39,20 @@ DEFAULT_OVERDUE = "section"
 CONF_SEPARATE_WEEK = "separate_week"
 CONF_SEPARATE_MONTH = "separate_month"
 
+# Option: what "This week" covers. "calendar": Monday to Sunday, "rolling": today and the next seven days.
+CONF_WEEK_MODE = "week_mode"
+WEEK_MODES = ("calendar", "rolling")
+DEFAULT_WEEK_MODE = "calendar"
+
+# Defaults of all options, also for the settings page in the web interface.
+DEFAULT_OPTIONS = {
+    "overdue_in_today": "section",
+    CONF_SEPARATE_WEEK: False,
+    CONF_SEPARATE_MONTH: False,
+    CONF_WEEK_MODE: DEFAULT_WEEK_MODE,
+    "reminder_targets": [],
+}
+
 # Option: notify services (notify.<name>) that receive reminders.
 CONF_REMINDER_TARGETS = "reminder_targets"
 

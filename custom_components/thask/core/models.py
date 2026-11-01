@@ -156,6 +156,17 @@ class TaskList:
         return result
 
 
+def this_week_range(today: date, rolling: bool = False) -> tuple[date, date]:
+    """First and last day of "This week": the calendar week, or with `rolling` today and the next seven days.
+
+    Seven days and not six, so that on a Sunday next week's period ("week 45") is already in it.
+    """
+    if rolling:
+        return today, today + timedelta(days=7)
+    week = Period(Granularity.WEEK, today)
+    return week.start, week.end
+
+
 @dataclass(slots=True)
 class Task:
     id: str
@@ -227,24 +238,25 @@ class Task:
             return self.completed_on_or_after(today, tz)
         return overdue or not self.overdue(today)
 
-    def in_this_week(self, today: date, tz: tzinfo, separate: bool = False) -> bool:
+    def in_this_week(self, today: date, tz: tzinfo, separate: bool = False, rolling: bool = False) -> bool:
         """The "This week" view: due by Sunday (overdue tasks included), and those completed this week.
 
         With `separate` it leaves out what "Today" shows when that only has days: overdue tasks and days due today.
+        With `rolling` the week is today and the next seven days (see `this_week_range`).
         """
-        week = Period(Granularity.WEEK, today)
-        if not self.due_by(week.end):
+        start, end = this_week_range(today, rolling)
+        if not self.due_by(end):
             return False
         if separate and (self.due.end < today or (self.due.granularity is Granularity.DAY and self.due.end == today)):
             return False
-        return not self.completed or self.completed_on_or_after(week.start, tz)
+        return not self.completed or self.completed_on_or_after(start, tz)
 
-    def in_this_month(self, today: date, tz: tzinfo, separate: bool = False) -> bool:
+    def in_this_month(self, today: date, tz: tzinfo, separate: bool = False, rolling: bool = False) -> bool:
         """The "This month" view: due by the end of the month; with `separate` only what is due after this week."""
         month = Period(Granularity.MONTH, today)
         if not self.due_by(month.end):
             return False
-        if separate and self.due.end <= Period(Granularity.WEEK, today).end:
+        if separate and self.due.end <= this_week_range(today, rolling)[1]:
             return False
         return not self.completed or self.completed_on_or_after(month.start, tz)
 

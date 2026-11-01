@@ -15,9 +15,12 @@ from .const import (
     CONF_REMINDER_TARGETS,
     CONF_SEPARATE_MONTH,
     CONF_SEPARATE_WEEK,
+    CONF_WEEK_MODE,
     DEFAULT_OVERDUE,
+    DEFAULT_WEEK_MODE,
     DOMAIN,
     OVERDUE_MODES,
+    WEEK_MODES,
 )
 
 
@@ -50,6 +53,9 @@ class ThaskOptionsFlow(OptionsFlow):
                     SelectSelectorConfig(
                         options=list(OVERDUE_MODES), translation_key=CONF_OVERDUE, mode=SelectSelectorMode.LIST
                     )
+                ),
+                vol.Required(CONF_WEEK_MODE, default=options.get(CONF_WEEK_MODE, DEFAULT_WEEK_MODE)): SelectSelector(
+                    SelectSelectorConfig(options=list(WEEK_MODES), translation_key=CONF_WEEK_MODE, mode=SelectSelectorMode.LIST)
                 ),
                 vol.Required(CONF_SEPARATE_WEEK, default=options.get(CONF_SEPARATE_WEEK, False)): BooleanSelector(),
                 vol.Required(CONF_SEPARATE_MONTH, default=options.get(CONF_SEPARATE_MONTH, False)): BooleanSelector(),

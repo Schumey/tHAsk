@@ -124,6 +124,15 @@ class ThaskStore extends ChangeNotifier {
   bool separateWeek = false;
   bool separateMonth = false;
 
+  /// Option der Integration, was „Diese Woche“ umfasst: 'calendar' (Montag bis Sonntag) oder 'rolling'
+  /// (heute und die nächsten sieben Tage, damit am Sonntag die nächste Woche schon drin ist).
+  String weekMode = 'calendar';
+
+  /// Letzter Tag von „Diese Woche“.
+  DateTime get thisWeekEnd => weekMode == 'rolling'
+      ? DateTime(today.year, today.month, today.day + 7)
+      : Period.containing(Granularity.week, today).end;
+
   /// Ob eine Aufgabe zu „Heute“ gehört, Überfälliges eingeschlossen (auch für den Zähler an der Taskleiste).
   bool inTodayView(Task t) {
     if (!t.inToday(today)) return false;
@@ -151,7 +160,7 @@ class ThaskStore extends ChangeNotifier {
 
   /// Alles, was bis zum Ende der laufenden Woche fällig ist (inkl. Überfälligem), ohne Erledigtes.
   List<Task> get thisWeek {
-    final weekEnd = Period.containing(Granularity.week, today).end;
+    final weekEnd = thisWeekEnd;
     final day = dateOnly(today);
     bool inToday(Task t) => t.due!.end.isBefore(day) || (t.due!.granularity == Granularity.day && t.due!.end == day);
     return sortTasks(
@@ -165,7 +174,7 @@ class ThaskStore extends ChangeNotifier {
   /// Alles, was bis zum Ende des laufenden Monats fällig ist (inkl. Überfälligem), ohne Erledigtes.
   List<Task> get thisMonth {
     final monthEnd = Period.containing(Granularity.month, today).end;
-    final weekEnd = Period.containing(Granularity.week, today).end;
+    final weekEnd = thisWeekEnd;
     return sortTasks(
       _tasks.values.where(
         (t) =>
@@ -252,7 +261,12 @@ class ThaskStore extends ChangeNotifier {
     _saveTimer = Timer(const Duration(seconds: 2), () {
       _cache.save(jsonEncode({
         'today': isoDate(today),
-        'options': {'overdue_in_today': overdueMode, 'separate_week': separateWeek, 'separate_month': separateMonth},
+        'options': {
+          'overdue_in_today': overdueMode,
+          'separate_week': separateWeek,
+          'separate_month': separateMonth,
+          'week_mode': weekMode,
+        },
         'lists': _rawLists.values.toList(),
         'tasks': _rawTasks.values.toList(),
       }));
@@ -382,6 +396,7 @@ class ThaskStore extends ChangeNotifier {
     overdueMode = const ['section', 'mixed', 'separate'].contains(mode) ? mode as String : 'section';
     separateWeek = options['separate_week'] == true;
     separateMonth = options['separate_month'] == true;
+    weekMode = options['week_mode'] == 'rolling' ? 'rolling' : 'calendar';
   }
 
   final _reminders = StreamController<Task>.broadcast();

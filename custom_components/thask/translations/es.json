@@ -58,6 +58,12 @@
         "csv": "CSV (genérico)",
         "ical": "iCalendar (.ics, VTODO)"
       }
+    },
+    "week_mode": {
+      "options": {
+        "calendar": "Semana natural (lunes a domingo)",
+        "rolling": "Hoy y los próximos 7 días"
+      }
     }
   },
   "services": {
@@ -186,12 +192,14 @@
         "title": "Opciones de tHAsk",
         "data": {
           "overdue_in_today": "Tareas vencidas en «Hoy»",
+          "week_mode": "«Esta semana»",
           "separate_week": "Separar «Hoy» y «Esta semana»",
           "separate_month": "Separar «Este mes»",
           "reminder_targets": "Enviar recordatorios a"
         },
         "data_description": {
           "overdue_in_today": "Se aplica a la interfaz web, la app, el widget y la lista «Hoy» en Home Assistant.",
+          "week_mode": "Con los próximos 7 días, el domingo ya aparece la semana siguiente.",
           "separate_week": "«Hoy» solo muestra las tareas que vencen un día concreto (y las vencidas); los periodos como «semana 44» están en «Esta semana», que a su vez no muestra lo que ya está en «Hoy».",
           "separate_month": "«Este mes» solo muestra lo que vence después de esta semana hasta final de mes, sin las tareas vencidas.",
           "reminder_targets": "Servicios de notificación (notify.…) que reciben los recordatorios, p. ej. la app Companion de tu móvil (con un botón «Hecho») o persistent_notification para la campana de Home Assistant. La app de Windows muestra los recordatorios por sí misma mientras está abierta."

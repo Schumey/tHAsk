@@ -257,3 +257,21 @@ def test_views_kept_apart():
     assert names(lambda t: t.in_this_week(sunday, utc, separate=True)) == {"week 44"}
     assert names(lambda t: t.in_this_month(sunday, utc)) == {"today", "week 44", "overdue", "november", "later"}
     assert names(lambda t: t.in_this_month(sunday, utc, separate=True)) == {"november", "later"}
+
+
+def test_this_week_as_next_seven_days():
+    """Option "week_mode": "rolling". On Sunday, 1 November 2026, the next week is already in it."""
+    sunday = date(2026, 11, 1)
+    utc = timezone.utc
+    next_week = Task(id="1", list_id="l", title="KW 45", due=Period.iso_week(2026, 45))
+    monday = Task(id="2", list_id="l", title="Mo", due=Period.day(date(2026, 11, 2)))
+    far = Task(id="3", list_id="l", title="far", due=Period.day(date(2026, 11, 9)))
+    assert not next_week.in_this_week(sunday, utc)
+    assert not monday.in_this_week(sunday, utc)
+    assert next_week.in_this_week(sunday, utc, rolling=True)
+    assert monday.in_this_week(sunday, utc, rolling=True)
+    assert not far.in_this_week(sunday, utc, rolling=True)
+    # Kept apart, "This month" starts after the rolling week.
+    assert monday.in_this_month(sunday, utc, separate=True)
+    assert not monday.in_this_month(sunday, utc, separate=True, rolling=True)
+    assert far.in_this_month(sunday, utc, separate=True, rolling=True)

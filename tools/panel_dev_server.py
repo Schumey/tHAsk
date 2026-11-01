@@ -193,7 +193,10 @@ class Backend:
         self.last_check: str | None = None
         seed_triggers(self.triggers, self.collection)
         # Options of the integration; "dev/options" changes them, e.g. {"overdue_in_today": "separate"}.
-        self.options: dict[str, Any] = {"overdue_in_today": "section", "separate_week": False, "separate_month": False}
+        self.options: dict[str, Any] = {
+            "overdue_in_today": "section", "separate_week": False, "separate_month": False, "week_mode": "calendar",
+            "reminder_targets": [],
+        }
 
     def handle(self, msg: dict[str, Any]) -> Any:
         collection, today = self.collection, self.today
@@ -206,9 +209,11 @@ class Backend:
                     "lists": [item.as_dict() for item in collection.sorted_lists()],
                     "tasks": [task.as_dict() for task in collection.tasks.values()],
                 }
-            case "dev/options":
+            case "dev/options" | "thask/options/update":
                 self.options.update({key: value for key, value in msg.items() if key not in ("type", "id")})
-                return self.options
+                return {"options": self.options}
+            case "thask/options/get":
+                return {"options": self.options, "notify_services": ["mobile_app_pixel_7", "persistent_notification"]}
             case "thask/parse":
                 return parse(msg["text"], today, set(msg.get("disabled", []))).as_dict(LANGUAGE, today)
             case "thask/list/create":

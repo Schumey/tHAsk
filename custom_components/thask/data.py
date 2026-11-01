@@ -25,7 +25,9 @@ from .const import (
     CONF_REMINDER_TARGETS,
     CONF_SEPARATE_MONTH,
     CONF_SEPARATE_WEEK,
+    CONF_WEEK_MODE,
     DEFAULT_OVERDUE,
+    DEFAULT_WEEK_MODE,
     DOMAIN,
     EVENT_REMINDER,
     EVENT_TASK_DUE,
@@ -42,6 +44,7 @@ from .const import (
     STORAGE_KEY_TRIGGERS,
     STORAGE_VERSION,
     TRIGGER_INTERVAL_SECONDS,
+    WEEK_MODES,
 )
 from .core.collection import Change, TaskCollection
 from .core.models import Task
@@ -85,6 +88,7 @@ class ThaskData:
         self.overdue_mode = DEFAULT_OVERDUE
         self.separate_week = False
         self.separate_month = False
+        self.week_mode = DEFAULT_WEEK_MODE
         self.reminder_targets: list[str] = []
 
     @callback
@@ -94,6 +98,8 @@ class ThaskData:
         self.reminder_targets = list(options.get(CONF_REMINDER_TARGETS, []))
         self.separate_week = bool(options.get(CONF_SEPARATE_WEEK, False))
         self.separate_month = bool(options.get(CONF_SEPARATE_MONTH, False))
+        week_mode = options.get(CONF_WEEK_MODE, DEFAULT_WEEK_MODE)
+        self.week_mode = week_mode if week_mode in WEEK_MODES else DEFAULT_WEEK_MODE
         async_dispatcher_send(self.hass, SIGNAL_OPTIONS_CHANGED)
 
     @property
@@ -103,6 +109,7 @@ class ThaskData:
             CONF_OVERDUE: self.overdue_mode,
             CONF_SEPARATE_WEEK: self.separate_week,
             CONF_SEPARATE_MONTH: self.separate_month,
+            CONF_WEEK_MODE: self.week_mode,
         }
 
     @property

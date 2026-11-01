@@ -519,6 +519,12 @@ void main() {
       // Der Monat endet vor der Woche, getrennt bleibt nichts übrig.
       expect(ids(store.thisMonth), isEmpty);
       expect(taskbarCount(store), 2);
+
+      // Als die nächsten 7 Tage reicht die Woche bis zum 7. November.
+      connection.emit({'type': 'options', 'week_mode': 'rolling'});
+      await Future<void>.delayed(Duration.zero);
+      expect(store.thisWeekEnd, DateTime(2026, 11, 7));
+      expect(ids(store.thisWeek), {'alt', 'heute', 'oktober', 'sonntag', 'kw44'});
     });
 
     test('Erinnerungen der Integration kommen als Stream, ohne die Daten zu ändern', () async {

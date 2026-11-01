@@ -58,6 +58,12 @@
         "csv": "CSV (allgemein)",
         "ical": "iCalendar (.ics, VTODO)"
       }
+    },
+    "week_mode": {
+      "options": {
+        "calendar": "Kalenderwoche (Montag bis Sonntag)",
+        "rolling": "Heute und die nächsten 7 Tage"
+      }
     }
   },
   "services": {
@@ -186,12 +192,14 @@
         "title": "tHAsk-Optionen",
         "data": {
           "overdue_in_today": "Überfällige Aufgaben in „Heute“",
+          "week_mode": "„Diese Woche“",
           "separate_week": "„Heute“ und „Diese Woche“ trennen",
           "separate_month": "„Diesen Monat“ trennen",
           "reminder_targets": "Erinnerungen senden an"
         },
         "data_description": {
           "overdue_in_today": "Gilt für die Weboberfläche, die App, das Widget und die Liste „Heute“ in Home Assistant.",
+          "week_mode": "Mit den nächsten 7 Tagen steht am Sonntag schon die kommende Woche darin.",
           "separate_week": "„Heute“ zeigt nur Aufgaben, die an einem bestimmten Tag fällig sind (und Überfälliges); Zeiträume wie „KW 44“ stehen in „Diese Woche“, das wiederum nichts zeigt, was schon in „Heute“ steht.",
           "separate_month": "„Diesen Monat“ zeigt nur, was nach dieser Woche bis Monatsende fällig ist, ohne Überfälliges.",
           "reminder_targets": "Benachrichtigungsdienste (notify.…), die Erinnerungen bekommen, z. B. die Companion-App auf dem Handy (mit Knopf „Erledigt“) oder persistent_notification für die Glocke in Home Assistant. Die Windows-App zeigt Erinnerungen unabhängig davon an, solange sie läuft."

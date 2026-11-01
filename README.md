@@ -50,9 +50,10 @@ Beim ersten Start wird die Liste „Aufgaben“ angelegt. Für ein Update den Or
 
 ### Optionen
 
-Einstellungen → Geräte & Dienste → tHAsk → **Konfigurieren**. Änderungen wirken ohne Neustart, auch in den Apps.
+In der Weboberfläche unter **Einstellungen** (unten in der Seitenleiste, nur für Administratoren) oder in Home Assistant unter Einstellungen → Geräte & Dienste → tHAsk → **Konfigurieren**. Änderungen wirken ohne Neustart, auch in den Apps.
 
 - **Überfällige Aufgaben in „Heute“**: oben als eigener, zuklappbarer Abschnitt (Standard), zwischen den heutigen oder nicht in „Heute“, sondern in einer eigenen Ansicht „Überfällig“. Gilt für Weboberfläche, Karte, Apps, Widget und `todo.thask_mein_tag`.
+- **„Diese Woche“**: die Kalenderwoche (Montag bis Sonntag, Standard) oder heute und die nächsten 7 Tage. Mit den 7 Tagen steht am Sonntag schon die kommende Woche darin, auch ein Zeitraum wie „KW 45“. Gilt auch für `todo.thask_diese_woche`.
 - **„Heute“ und „Diese Woche“ trennen** (aus): „Heute“ zeigt nur Aufgaben, die an einem bestimmten Tag fällig sind, dazu Überfälliges. Ein Zeitraum, der heute endet (am Sonntag „KW 44“), steht dann in „Diese Woche“; „Diese Woche“ zeigt umgekehrt nichts, was schon in „Heute“ steht. Gilt auch für `todo.thask_mein_tag`, `todo.thask_diese_woche` und den Zähler an der Taskleiste.
 - **„Diesen Monat“ trennen** (aus): „Diesen Monat“ zeigt nur, was nach dieser Woche bis Monatsende fällig ist.
 - **Erinnerungen senden an**: Benachrichtigungsdienste für Erinnerungen, siehe [Erinnerungen](#erinnerungen).
@@ -75,6 +76,7 @@ Nach dem Einrichten erscheint **tHAsk** in der HA-Seitenleiste:
 - **Sortierung pro Liste**: manuell, nach Priorität, Fälligkeit, alphabetisch oder Erstellungsdatum (gilt auch für die HA-Entity). Bei automatischer Sortierung ist Drag & Drop innerhalb der Liste aus.
 - **Erledigte löschen** (Besen-Symbol im Listenkopf).
 - **Trigger** (unten in der Seitenleiste, nur für Administratoren), siehe [Trigger](#trigger).
+- **Einstellungen** (darunter, nur für Administratoren): die [Optionen](#optionen) der Integration.
 
 ### Priorität
 
@@ -274,6 +276,8 @@ Die Apps, die Weboberfläche und die Karte nutzen diese Befehle über die normal
 | `thask/trigger/test`, `thask/trigger/run` | `trigger_id` |
 | `thask/trigger/check` | – (alle Trigger jetzt prüfen) |
 | `thask/trigger/undo` | `run_id` |
+| `thask/options/get` | – (alle Optionen und die Benachrichtigungsdienste); nur Administratoren |
+| `thask/options/update` | `overdue_in_today`, `week_mode`, `separate_week`, `separate_month`, `reminder_targets`; nur Administratoren |
 
 Aufgabenfelder: `list_id`, `title`, `notes`, `completed`, `priority` (0 keine, 1 niedrig, 2 mittel, 3 hoch), `due` (`{"granularity": "day|week|month|quarter|year", "start": "2026-11-09"}`), `due_time` (`"HH:MM"`, nur bei Tagen), `reminder` (ISO-Datum mit Uhrzeit), `recurrence` (`{"unit": "month", "interval": 1}`, wöchentlich an mehreren Tagen: `{"unit": "week", "interval": 1, "weekdays": [2, 5]}` mit 0 = Montag), `steps`, `categories`. `my_day` wird noch angenommen, hat aber keine Wirkung mehr („Heute“ richtet sich nach der Fälligkeit).
 

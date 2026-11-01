@@ -169,8 +169,12 @@ export const completedSince = (task, day) => !!task.completed_at && new Date(tas
 
 export const isOverdue = (task, today) => !task.completed && !!task.due && periodEndOf(task.due) < today;
 
+// "This week": the calendar week, or with `rolling` today and the next seven days (this_week_range in core/models.py).
+export const thisWeekRange = (today, rolling) =>
+  rolling ? [today, addDays(today, 7)] : [periodStart("week", today), periodEnd("week", periodStart("week", today))];
+
 // Whether a task belongs to a smart view (same rules as core/models.py).
-// `ctx`: { today, overdueMode, importantRange, separateWeek, separateMonth }.
+// `ctx`: { today, overdueMode, importantRange, separateWeek, separateMonth, rollingWeek }.
 export function matchesSmart(task, key, ctx) {
   const { today } = ctx;
   switch (key) {
@@ -190,16 +194,17 @@ export function matchesSmart(task, key, ctx) {
     case "planned":
       return !!task.due;
     case "this_week": {
-      if (!dueBy(task, periodEnd("week", periodStart("week", today)))) return false;
+      const [weekStart, weekEnd] = thisWeekRange(today, ctx.rollingWeek);
+      if (!dueBy(task, weekEnd)) return false;
       // Kept apart from "Today": without overdue tasks and days due today.
       const end = periodEndOf(task.due);
       if (ctx.separateWeek && (end < today || (task.due.granularity === "day" && end.getTime() === today.getTime()))) return false;
-      return !task.completed || completedSince(task, periodStart("week", today));
+      return !task.completed || completedSince(task, weekStart);
     }
     case "this_month":
       if (!dueBy(task, periodEnd("month", periodStart("month", today)))) return false;
       // Kept apart: only what is due after this week.
-      if (ctx.separateMonth && dueBy(task, periodEnd("week", periodStart("week", today)))) return false;
+      if (ctx.separateMonth && dueBy(task, thisWeekRange(today, ctx.rollingWeek)[1])) return false;
       return !task.completed || completedSince(task, periodStart("month", today));
   }
   return false;

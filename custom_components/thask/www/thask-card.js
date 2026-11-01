@@ -273,6 +273,7 @@ class ThaskCard extends HTMLElement {
     const ctx = {
       today: this._today, overdueMode: this._overdueMode, importantRange: readStorage(RANGE_STORAGE_KEY) || "all",
       separateWeek: !!this._options.separate_week, separateMonth: !!this._options.separate_month,
+      rollingWeek: this._options.week_mode === "rolling",
     };
     const minPriority = Number(this._config.min_priority) || 0;
     const tasks = [...this._tasks.values()].filter((task) =>

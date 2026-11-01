@@ -10,12 +10,27 @@ from typing import Any
 import voluptuous as vol
 
 from homeassistant.components import websocket_api
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.util import dt as dt_util
 
-from .const import SIGNAL_DAY_CHANGED, SIGNAL_OPTIONS_CHANGED, SIGNAL_REMINDER, SIGNAL_TRIGGERS_CHANGED
+from .const import (
+    CONF_OVERDUE,
+    CONF_REMINDER_TARGETS,
+    CONF_SEPARATE_MONTH,
+    CONF_SEPARATE_WEEK,
+    CONF_WEEK_MODE,
+    DEFAULT_OPTIONS,
+    DOMAIN,
+    OVERDUE_MODES,
+    SIGNAL_DAY_CHANGED,
+    SIGNAL_OPTIONS_CHANGED,
+    SIGNAL_REMINDER,
+    SIGNAL_TRIGGERS_CHANGED,
+    WEEK_MODES,
+)
 from .core.collection import Change, NotFoundError
 from .core.models import Task, TaskList
 from .core.parser import KIND_DUE, KIND_PRIORITY, KIND_RECURRENCE, KIND_TIME, parse
@@ -60,6 +75,8 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
         ws_trigger_run,
         ws_trigger_check,
         ws_trigger_undo,
+        ws_options_get,
+        ws_options_update,
     ):
         websocket_api.async_register_command(hass, command)
 
@@ -374,3 +391,40 @@ async def ws_trigger_check(hass, connection, msg, data: ThaskData) -> None:
 def ws_trigger_undo(hass, connection, msg, data: ThaskData) -> None:
     """Remove the task a run created; the trigger does not fire again for that day."""
     connection.send_result(msg["id"], data.triggers.undo(msg["run_id"], data.collection).as_dict())
+
+
+def _notify_services(hass: HomeAssistant) -> list[str]:
+    """Legacy notify services for reminders, as in the options flow (notify.send_message needs an entity)."""
+    return sorted(service for service in hass.services.async_services_for_domain("notify") if service != "send_message")
+
+
+@websocket_api.websocket_command({vol.Required("type"): "thask/options/get"})
+@websocket_api.require_admin
+@_with_data
+def ws_options_get(hass, connection, msg, data: ThaskData) -> None:
+    """All options of the integration, for the settings page of the web interface."""
+    entry = next(e for e in hass.config_entries.async_entries(DOMAIN) if e.state is ConfigEntryState.LOADED)
+    connection.send_result(
+        msg["id"], {"options": {**DEFAULT_OPTIONS, **entry.options}, "notify_services": _notify_services(hass)}
+    )
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "thask/options/update",
+        vol.Optional(CONF_OVERDUE): vol.In(OVERDUE_MODES),
+        vol.Optional(CONF_SEPARATE_WEEK): bool,
+        vol.Optional(CONF_SEPARATE_MONTH): bool,
+        vol.Optional(CONF_WEEK_MODE): vol.In(WEEK_MODES),
+        vol.Optional(CONF_REMINDER_TARGETS): [str],
+    }
+)
+@websocket_api.require_admin
+@_with_data
+def ws_options_update(hass, connection, msg, data: ThaskData) -> None:
+    """Change options, the same as the options flow; the update listener applies them and tells the apps."""
+    entry = next(e for e in hass.config_entries.async_entries(DOMAIN) if e.state is ConfigEntryState.LOADED)
+    patch = {key: value for key, value in msg.items() if key not in ("type", "id")}
+    options = {**DEFAULT_OPTIONS, **entry.options, **patch}
+    hass.config_entries.async_update_entry(entry, options=options)
+    connection.send_result(msg["id"], {"options": options})

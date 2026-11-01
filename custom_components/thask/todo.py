@@ -245,7 +245,9 @@ class ThaskSmartListEntity(ThaskTodoEntity):
             )
         if self._key == SMART_OVERDUE:
             return task.overdue(today)
-        return task.in_this_week(today, self._data.tz, separate=self._data.separate_week)
+        return task.in_this_week(
+            today, self._data.tz, separate=self._data.separate_week, rolling=self._data.week_mode == "rolling"
+        )
 
     def _tasks(self) -> list[Task]:
         today = self._data.today
