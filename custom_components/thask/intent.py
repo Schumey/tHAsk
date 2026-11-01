@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import voluptuous as vol
 
-from homeassistant.core import HomeAssistant, callback
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers import intent
 
 from .core.assist import (
@@ -25,8 +25,8 @@ from .core.parser import parse
 from .data import ThaskData, async_get_data
 
 
-@callback
-def async_register_intents(hass: HomeAssistant) -> None:
+async def async_setup_intents(hass: HomeAssistant) -> None:
+    """Called by Home Assistant's intent integration, which loads this file as the intent platform."""
     intent.async_register(hass, DueTasksIntent())
     intent.async_register(hass, AddTaskIntent())
 

@@ -15,7 +15,6 @@ from homeassistant.loader import async_get_integration
 
 from .const import DOMAIN, PANEL_STATIC_URL, PANEL_URL_PATH
 from .data import ThaskData
-from .intent import async_register_intents
 from .services import async_setup_services
 from .websocket_api import async_register_websocket_commands
 
@@ -29,7 +28,6 @@ type ThaskConfigEntry = ConfigEntry[ThaskData]
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     async_register_websocket_commands(hass)
     async_setup_services(hass)
-    async_register_intents(hass)
     await hass.http.async_register_static_paths(
         [StaticPathConfig(PANEL_STATIC_URL, str(Path(__file__).parent / "www"), cache_headers=False)]
     )
