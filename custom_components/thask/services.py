@@ -1,4 +1,4 @@
-"""Services: add tasks with fuzzy due dates, query tasks and import from Microsoft To Do."""
+"""Services: add tasks with fuzzy due dates, query tasks and import from Microsoft To Do and other apps."""
 
 from __future__ import annotations
 
@@ -18,7 +18,8 @@ from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
 from .core.models import PRIORITIES, Task
-from .core.ms_todo import ImportOptions, import_export
+from .core.importers import FORMATS, merge_lists, read_export
+from .core.ms_todo import ImportOptions, ImportResult, import_export
 from .core.period import Granularity, Period, PeriodStatus
 from .data import ThaskData, async_get_data
 from .schema import GRANULARITIES
@@ -27,6 +28,7 @@ SERVICE_ADD_TASK = "add_task"
 SERVICE_GET_TASKS = "get_tasks"
 SERVICE_IMPORT_MS_TODO = "import_ms_todo"
 SERVICE_CLEAR_COMPLETED = "clear_completed"
+SERVICE_IMPORT_TASKS = "import_tasks"
 
 DUE_FILTERS = ["today", "this_week", "this_month", "overdue", "all"]
 
@@ -71,14 +73,31 @@ IMPORT_MS_TODO_SCHEMA = vol.Schema(
 )
 
 
-def _read_export(config_dir: str, file: str) -> dict[str, Any]:
-    """Read an export file; only files inside the config directory are allowed."""
+IMPORT_TASKS_SCHEMA = vol.Schema(
+    {
+        vol.Required("file"): cv.string,
+        vol.Optional("format", default="auto"): vol.In(FORMATS),
+        vol.Optional("list"): cv.string,
+        vol.Optional("dry_run", default=True): cv.boolean,
+        vol.Optional("include_completed", default=True): cv.boolean,
+    }
+)
+
+
+def _config_file(config_dir: str, file: str) -> Path:
+    """A file inside the config directory; anything outside is refused."""
     root = Path(config_dir).resolve()
     path = (root / file).resolve()
     if not path.is_relative_to(root):
         raise ServiceValidationError("Die Datei muss im Home-Assistant-Konfigurationsordner liegen")
     if not path.is_file():
         raise ServiceValidationError(f"Datei nicht gefunden: {path}")
+    return path
+
+
+def _read_export(config_dir: str, file: str) -> dict[str, Any]:
+    """Read a JSON export file from the config directory."""
+    path = _config_file(config_dir, file)
     try:
         return json.loads(path.read_text(encoding="utf-8"))
     except ValueError as err:
@@ -173,6 +192,32 @@ def async_setup_services(hass: HomeAssistant) -> None:
             raise ServiceValidationError(str(err)) from err
         return result.as_dict()
 
+    async def import_tasks(call: ServiceCall) -> ServiceResponse:
+        if call.context.user_id:
+            user = await hass.auth.async_get_user(call.context.user_id)
+            if user is None or not user.is_admin:
+                raise Unauthorized(context=call.context)
+        data = async_get_data(hass)
+        path = _config_file(hass.config.config_dir, call.data["file"])
+        content = await hass.async_add_executor_job(path.read_bytes)
+        dry_run = call.data["dry_run"]
+        result = ImportResult(dry_run=dry_run)
+        try:
+            lists = read_export(
+                path.name, content, call.data["format"], call.data.get("list") or path.stem, data.today, data.tz, result
+            )
+        except (ValueError, KeyError) as err:
+            raise ServiceValidationError(f"Datei konnte nicht gelesen werden: {err}") from err
+        merge_lists(
+            data.collection,
+            lists,
+            result,
+            include_completed=call.data["include_completed"],
+            target_list=call.data.get("list"),
+            dry_run=dry_run,
+        )
+        return result.as_dict()
+
     hass.services.async_register(
         DOMAIN, SERVICE_ADD_TASK, add_task, schema=ADD_TASK_SCHEMA, supports_response=SupportsResponse.OPTIONAL
     )
@@ -184,6 +229,13 @@ def async_setup_services(hass: HomeAssistant) -> None:
         SERVICE_IMPORT_MS_TODO,
         import_ms_todo,
         schema=IMPORT_MS_TODO_SCHEMA,
+        supports_response=SupportsResponse.ONLY,
+    )
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_IMPORT_TASKS,
+        import_tasks,
+        schema=IMPORT_TASKS_SCHEMA,
         supports_response=SupportsResponse.ONLY,
     )
     hass.services.async_register(

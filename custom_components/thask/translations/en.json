@@ -48,6 +48,16 @@
         "mixed": "Among today's tasks",
         "separate": "Not in “Today” but in a view “Overdue” of their own"
       }
+    },
+    "import_format": {
+      "options": {
+        "auto": "Detect automatically",
+        "todoist": "Todoist (CSV or backup ZIP)",
+        "google_tasks": "Google Tasks (Takeout, Tasks.json)",
+        "ticktick": "TickTick (CSV backup)",
+        "csv": "CSV (generic)",
+        "ical": "iCalendar (.ics, VTODO)"
+      }
     }
   },
   "services": {
@@ -126,6 +136,32 @@
         "convert_sundays": {
           "name": "Sunday → whole week",
           "description": "Tasks due on a Sunday become due within that week."
+        }
+      }
+    },
+    "import_tasks": {
+      "name": "Import tasks",
+      "description": "Imports tasks from Todoist, Google Tasks, TickTick, a CSV or an iCalendar file. Tasks imported before are skipped. Administrators only.",
+      "fields": {
+        "file": {
+          "name": "File",
+          "description": "Path relative to the configuration folder, e.g. todoist.zip, Tasks.json or tasks.csv."
+        },
+        "format": {
+          "name": "Format",
+          "description": "Format of the file; automatic detection is usually enough."
+        },
+        "list": {
+          "name": "Into list",
+          "description": "Import everything into this list (created if needed). Empty: lists as in the file, or one list named after the file."
+        },
+        "dry_run": {
+          "name": "Dry run",
+          "description": "Only summarize, change nothing."
+        },
+        "include_completed": {
+          "name": "Import completed",
+          "description": "Also import completed tasks."
         }
       }
     },

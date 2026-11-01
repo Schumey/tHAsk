@@ -58,6 +58,38 @@ get_tasks:
       selector:
         boolean:
 
+import_tasks:
+  fields:
+    file:
+      required: true
+      example: todoist.zip
+      selector:
+        text:
+    format:
+      default: auto
+      selector:
+        select:
+          translation_key: import_format
+          options:
+            - auto
+            - todoist
+            - google_tasks
+            - ticktick
+            - csv
+            - ical
+    list:
+      example: Import
+      selector:
+        text:
+    dry_run:
+      default: true
+      selector:
+        boolean:
+    include_completed:
+      default: true
+      selector:
+        boolean:
+
 clear_completed:
   fields:
     entity_id:

@@ -48,6 +48,16 @@
         "mixed": "Zwischen den heutigen Aufgaben",
         "separate": "Nicht in „Heute“, sondern in einer eigenen Ansicht „Überfällig“"
       }
+    },
+    "import_format": {
+      "options": {
+        "auto": "Automatisch erkennen",
+        "todoist": "Todoist (CSV oder Backup-ZIP)",
+        "google_tasks": "Google Tasks (Takeout, Tasks.json)",
+        "ticktick": "TickTick (Sicherung als CSV)",
+        "csv": "CSV (allgemein)",
+        "ical": "iCalendar (.ics, VTODO)"
+      }
     }
   },
   "services": {
@@ -126,6 +136,32 @@
         "convert_sundays": {
           "name": "Sonntag → ganze Woche",
           "description": "Aufgaben, die an einem Sonntag fällig sind, werden „fällig in dieser Woche“."
+        }
+      }
+    },
+    "import_tasks": {
+      "name": "Aufgaben importieren",
+      "description": "Importiert Aufgaben aus Todoist, Google Tasks, TickTick, einer CSV- oder iCalendar-Datei. Bereits importierte Aufgaben werden übersprungen. Nur für Administratoren.",
+      "fields": {
+        "file": {
+          "name": "Datei",
+          "description": "Pfad relativ zum Konfigurationsordner, z. B. todoist.zip, Tasks.json oder aufgaben.csv."
+        },
+        "format": {
+          "name": "Format",
+          "description": "Format der Datei; meist reicht die automatische Erkennung."
+        },
+        "list": {
+          "name": "In Liste",
+          "description": "Alles in diese Liste importieren (wird bei Bedarf angelegt). Leer: Listen wie in der Datei bzw. eine Liste mit dem Dateinamen."
+        },
+        "dry_run": {
+          "name": "Nur testen",
+          "description": "Nur zusammenfassen, nichts ändern."
+        },
+        "include_completed": {
+          "name": "Erledigte importieren",
+          "description": "Auch erledigte Aufgaben übernehmen."
         }
       }
     },

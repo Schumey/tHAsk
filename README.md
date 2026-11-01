@@ -23,7 +23,7 @@ Aktueller Stand: **0.9.1** (siehe [Releases](https://github.com/Schumey/tHAsk/re
 - **Schnelleingabe mit Erkennung**: „Steuer KW 47 !!!“, „Blumen gießen jeden Mi und Sa“, „Zahnarzt morgen um 9:30“.
 - **Erinnerungen** als Push (Companion-App, mit Knopf „Erledigt“), in der HA-Glocke und als Windows-Benachrichtigung.
 - **Trigger**: legen Aufgaben automatisch an, wenn in HA etwas zutrifft (z. B. ein Kalendertermin morgen).
-- **Import aus Microsoft To Do**.
+- **Import** aus Microsoft To Do, Todoist, Google Tasks, TickTick, iCalendar und CSV.
 
 ## Installation
 
@@ -143,6 +143,7 @@ Aufgaben aus Automationen legt man am einfachsten mit `todo.add_item` an, mit Ze
 - `thask.get_tasks` – Aufgaben abfragen (`due: today | this_week | this_month | overdue | all`), liefert eine Antwort für Automationen und Skripte.
 - `thask.clear_completed` – erledigte Aufgaben einer Liste (oder aller Listen) löschen, optional nur ältere als `older_than_days`. Gut für eine nächtliche Aufräum-Automation.
 - `thask.import_ms_todo` – Import aus Microsoft To Do (siehe unten).
+- `thask.import_tasks` – Import aus Todoist, Google Tasks, TickTick, iCalendar und CSV (siehe unten).
 
 ### Events
 
@@ -187,6 +188,20 @@ Das Skript zeigt einen Code; im Browser auf der angezeigten Seite eingeben und a
    - `convert_sundays: true` – fällig am Sonntag → „fällig in der Woche“
 
 Listen mit gleichem Namen werden zusammengeführt (z. B. „Aufgaben“). Ein erneuter Import überspringt bereits importierte Aufgaben. Die JSON-Datei enthält persönliche Daten; nach dem Import kann sie gelöscht werden.
+
+## Import aus anderen Apps
+
+Der Service `thask.import_tasks` übernimmt Aufgaben aus weiteren Apps. Die Exportdatei in den HA-Konfigurationsordner kopieren (neben `configuration.yaml`), dann unter **Entwicklerwerkzeuge → Aktionen** `thask.import_tasks` mit `file: <Dateiname>` und zuerst `dry_run: true` ausführen (**Antwort anzeigen**), danach mit `dry_run: false`. Das Format wird in der Regel erkannt; mit `list` landet alles in einer Liste, sonst entstehen die Listen wie in der Datei. Ein erneuter Import überspringt bereits importierte Aufgaben.
+
+| App | Exportieren | Übernommen |
+|---|---|---|
+| **Todoist** | pro Projekt: Projektmenü → *Als CSV exportieren*; alle Projekte: Einstellungen → *Backups* → ZIP herunterladen | Projekte als Listen, Aufgaben, Beschreibung und Kommentare als Notizen, Unteraufgaben als Schritte, Priorität (p1 = Hoch, p2 = Mittel, p3 = Niedrig), Fälligkeit (auch „every day“, „next month“ usw.), Labels und Abschnitte als Kategorien. Erledigte Aufgaben exportiert Todoist nicht. |
+| **Google Tasks** | [Google Takeout](https://takeout.google.com) → nur *Tasks* → `Tasks.json` aus dem ZIP | Listen, Aufgaben, Notizen, Fälligkeit (Tag), Unteraufgaben als Schritte, erledigte Aufgaben |
+| **TickTick** | Einstellungen → Konto → *Sicherung erstellen* (CSV) | Listen (Ordner als Gruppe), Aufgaben, Inhalt als Notizen, Checklisten und Unteraufgaben als Schritte, Fälligkeit mit Uhrzeit, Wiederholung, Priorität, Tags, erledigte Aufgaben. Erinnerungen nicht. |
+| **iCalendar** (`.ics` mit Aufgaben) | z. B. Apple Erinnerungen über einen CalDAV-Client, Thunderbird, Nextcloud Tasks | Aufgaben (VTODO), Beschreibung, Fälligkeit, Wiederholung, Priorität, Kategorien, Unteraufgaben als Schritte. Listenname aus der Datei, sonst der Dateiname. |
+| **CSV** (allgemein) | aus jeder App oder Tabelle mit Kopfzeile, Trennzeichen Komma oder Semikolon | Spalten werden am Namen erkannt (deutsch oder englisch): Titel, Notizen, Liste, Fällig, Priorität, Erledigt, Kategorien. Fälligkeit als `2026-11-30`, `30.11.2026`, `11/30/2026` oder wie in der Schnelleingabe („KW 47“, „November“). |
+
+Für Apps ohne passenden Export (etwa Any.do oder Things) die Aufgaben in eine Tabelle übertragen und als CSV speichern; eine Spalte „Titel“ genügt.
 
 ## Android-App
 
@@ -253,7 +268,7 @@ Wird eine wiederkehrende Aufgabe erledigt, entsteht eine neue Aufgabe für den n
 
 | Ordner | Inhalt |
 |---|---|
-| `custom_components/thask/core` | Datums- und Datenlogik, Parser der Schnelleingabe, Trigger, MS-To-Do-Import; ohne Abhängigkeit von Home Assistant |
+| `custom_components/thask/core` | Datums- und Datenlogik, Parser der Schnelleingabe, Trigger, Importe; ohne Abhängigkeit von Home Assistant |
 | `custom_components/thask/www` | Weboberfläche (`thask-panel.js`), Karte (`thask-card.js`) und gemeinsamer Code (`thask-common.js`), ohne Build-Schritt |
 | `custom_components/thask/brand` | Symbol der Integration |
 | `app/` | Flutter-App für Android und Windows, Widget in `android/app/src/main/kotlin`, Installer in `windows/installer` |
