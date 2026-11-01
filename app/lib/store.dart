@@ -128,6 +128,9 @@ class ThaskStore extends ChangeNotifier {
   /// (heute und die nächsten sieben Tage, damit am Sonntag die nächste Woche schon drin ist).
   String weekMode = 'calendar';
 
+  /// Option der Integration: intelligente Ansichten, die in der Navigation (und im Widget) fehlen.
+  List<String> hiddenViews = const [];
+
   /// Letzter Tag von „Diese Woche“.
   DateTime get thisWeekEnd => weekMode == 'rolling'
       ? DateTime(today.year, today.month, today.day + 7)
@@ -266,6 +269,7 @@ class ThaskStore extends ChangeNotifier {
           'separate_week': separateWeek,
           'separate_month': separateMonth,
           'week_mode': weekMode,
+          'hidden_views': hiddenViews,
         },
         'lists': _rawLists.values.toList(),
         'tasks': _rawTasks.values.toList(),
@@ -397,6 +401,7 @@ class ThaskStore extends ChangeNotifier {
     separateWeek = options['separate_week'] == true;
     separateMonth = options['separate_month'] == true;
     weekMode = options['week_mode'] == 'rolling' ? 'rolling' : 'calendar';
+    hiddenViews = [for (final view in options['hidden_views'] as List? ?? const []) '$view'];
   }
 
   final _reminders = StreamController<Task>.broadcast();

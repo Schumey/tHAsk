@@ -11,6 +11,7 @@ from homeassistant.core import callback
 from homeassistant.helpers.selector import BooleanSelector, SelectSelector, SelectSelectorConfig, SelectSelectorMode
 
 from .const import (
+    CONF_HIDDEN_VIEWS,
     CONF_OVERDUE,
     CONF_REMINDER_TARGETS,
     CONF_SEPARATE_MONTH,
@@ -19,6 +20,7 @@ from .const import (
     DEFAULT_OVERDUE,
     DEFAULT_WEEK_MODE,
     DOMAIN,
+    HIDEABLE_VIEWS,
     OVERDUE_MODES,
     WEEK_MODES,
 )
@@ -59,6 +61,14 @@ class ThaskOptionsFlow(OptionsFlow):
                 ),
                 vol.Required(CONF_SEPARATE_WEEK, default=options.get(CONF_SEPARATE_WEEK, False)): BooleanSelector(),
                 vol.Required(CONF_SEPARATE_MONTH, default=options.get(CONF_SEPARATE_MONTH, False)): BooleanSelector(),
+                vol.Optional(CONF_HIDDEN_VIEWS, default=options.get(CONF_HIDDEN_VIEWS, [])): SelectSelector(
+                    SelectSelectorConfig(
+                        options=list(HIDEABLE_VIEWS),
+                        multiple=True,
+                        translation_key=CONF_HIDDEN_VIEWS,
+                        mode=SelectSelectorMode.LIST,
+                    )
+                ),
                 vol.Optional(CONF_REMINDER_TARGETS, default=targets): SelectSelector(
                     SelectSelectorConfig(
                         # Keep targets whose service is gone (phone removed) visible, so they can be unticked.

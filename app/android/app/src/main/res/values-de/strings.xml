@@ -7,4 +7,5 @@
     <string name="widget_sign_in">tHAsk öffnen und anmelden</string>
     <string name="widget_empty">Keine Aufgaben</string>
     <string name="widget_view">Ansicht</string>
+    <string name="widget_open">tHAsk öffnen</string>
 </resources>

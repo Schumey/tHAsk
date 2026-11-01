@@ -64,6 +64,14 @@
         "calendar": "Kalenderweek (maandag tot zondag)",
         "rolling": "Vandaag en de komende 7 dagen"
       }
+    },
+    "hidden_views": {
+      "options": {
+        "important": "Belangrijk",
+        "planned": "Gepland",
+        "this_week": "Deze week",
+        "this_month": "Deze maand"
+      }
     }
   },
   "services": {
@@ -195,6 +203,7 @@
           "week_mode": "„Deze week”",
           "separate_week": "„Vandaag” en „Deze week” scheiden",
           "separate_month": "„Deze maand” scheiden",
+          "hidden_views": "Weergaven verbergen",
           "reminder_targets": "Herinneringen sturen naar"
         },
         "data_description": {
@@ -202,6 +211,7 @@
           "week_mode": "Met de komende 7 dagen staat op zondag de volgende week er al in.",
           "separate_week": "„Vandaag” toont alleen taken die op een bepaalde dag moeten (en te late); periodes zoals „week 44” staan in „Deze week”, die op zijn beurt niets toont wat al in „Vandaag” staat.",
           "separate_month": "„Deze maand” toont alleen wat na deze week tot het einde van de maand moet, zonder te late taken.",
+          "hidden_views": "Deze weergaven verschijnen niet in de navigatie van de webinterface, de apps en de widget. „Vandaag” blijft altijd.",
           "reminder_targets": "Meldingsdiensten (notify.…) die herinneringen krijgen, bijv. de Companion-app op je telefoon (met een knop „Klaar”) of persistent_notification voor de bel in Home Assistant. De Windows-app toont herinneringen zelf zolang hij draait."
         }
       }

@@ -56,6 +56,7 @@ In der Weboberfläche unter **Einstellungen** (unten in der Seitenleiste, nur f�
 - **„Diese Woche“**: die Kalenderwoche (Montag bis Sonntag, Standard) oder heute und die nächsten 7 Tage. Mit den 7 Tagen steht am Sonntag schon die kommende Woche darin, auch ein Zeitraum wie „KW 45“. Gilt auch für `todo.thask_diese_woche`.
 - **„Heute“ und „Diese Woche“ trennen** (aus): „Heute“ zeigt nur Aufgaben, die an einem bestimmten Tag fällig sind, dazu Überfälliges. Ein Zeitraum, der heute endet (am Sonntag „KW 44“), steht dann in „Diese Woche“; „Diese Woche“ zeigt umgekehrt nichts, was schon in „Heute“ steht. Gilt auch für `todo.thask_mein_tag`, `todo.thask_diese_woche` und den Zähler an der Taskleiste.
 - **„Diesen Monat“ trennen** (aus): „Diesen Monat“ zeigt nur, was nach dieser Woche bis Monatsende fällig ist.
+- **Ansichten ausblenden**: „Wichtig“, „Geplant“, „Diese Woche“ und „Diesen Monat“ lassen sich aus der Navigation der Weboberfläche, der Apps und des Widgets nehmen. „Heute“ bleibt immer; Dashboard-Karten mit einer ausdrücklich gewählten Ansicht zeigen sie weiter.
 - **Erinnerungen senden an**: Benachrichtigungsdienste für Erinnerungen, siehe [Erinnerungen](#erinnerungen).
 
 ## Weboberfläche
@@ -224,7 +225,7 @@ Für Apps ohne passenden Export (etwa Any.do oder Things) die Aufgaben in eine T
 
 Die App spiegelt die Weboberfläche: intelligente Listen und eigene Listen (anlegen, umbenennen, Gruppe, Sortierung, löschen), Detailbereich, Schnelleingabe mit Erkennung, Priorität als farbiger Balken, Fälligkeit als Pille (rot überfällig, blau wenn sie heute endet). Sie hält Verbindung zu Home Assistant über die WebSocket-API, zeigt offline den letzten Stand und merkt Änderungen ohne Verbindung vor, bis sie gesendet werden können.
 
-**Widget**: zeigt eine Ansicht mit der Zahl der offenen Aufgaben; ein Tipp auf den Titel öffnet die Auswahl der Ansicht. Aufgaben lassen sich abhaken (auch offline vorgemerkt), „+“ öffnet die Schnelleingabe. Es aktualisiert sich alle 30 Minuten (das Minimum von Android) und von Hand mit ↻.
+**Widget**: zeigt eine Ansicht mit der Zahl der offenen Aufgaben; ein Tipp auf den Titel öffnet die Auswahl der Ansicht, das tHAsk-Symbol öffnet die App in dieser Ansicht. Aufgaben lassen sich abhaken (auch offline vorgemerkt), „+“ öffnet die Schnelleingabe. Es aktualisiert sich alle 30 Minuten (das Minimum von Android) und von Hand mit ↻.
 
 Erinnerungen kommen auf dem Handy über die Companion-App, siehe [Erinnerungen](#erinnerungen).
 

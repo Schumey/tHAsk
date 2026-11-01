@@ -38,6 +38,7 @@ const STRINGS = {
     delete_trigger_confirm: "Trigger „{0}“ löschen?", for_day: "für {0}", task_created: "Aufgabe „{0}“ angelegt",
     fired_none: "Kein Trigger hat ausgelöst", fired_n: "{0} Aufgabe(n) angelegt", missing_fields: "Name, Titel und für jede Bedingung die Entität bzw. Uhrzeit angeben",
     is_on: "an", by_hand: "von Hand",
+    opt_hidden_views: "Ansichten ausblenden", opt_hidden_views_hint: "Angehakte Ansichten erscheinen nicht in der Navigation, auch nicht in den Apps und im Widget. „Heute“ bleibt immer.",
     settings: "Einstellungen", saved: "Gespeichert", opt_overdue_in_today: "Überfällige Aufgaben in „Heute“", overdue_in_today_section: "Oben in einem eigenen Abschnitt „Überfällig“", overdue_in_today_mixed: "Zwischen den heutigen Aufgaben", overdue_in_today_separate: "Nicht in „Heute“, sondern in einer eigenen Ansicht „Überfällig“", opt_week_mode: "„Diese Woche“", week_mode_calendar: "Kalenderwoche (Montag bis Sonntag)", week_mode_rolling: "Heute und die nächsten 7 Tage", opt_views_apart: "Ansichten trennen", opt_separate_week: "„Heute“ und „Diese Woche“ trennen", opt_separate_week_hint: "„Heute“ zeigt nur Aufgaben mit einem festen Tag (und Überfälliges); Zeiträume wie „KW 44“ stehen in „Diese Woche“, das nichts zeigt, was schon in „Heute“ steht.", opt_separate_month: "„Diesen Monat“ trennen", opt_separate_month_hint: "„Diesen Monat“ zeigt nur, was nach dieser Woche bis Monatsende fällig ist.", opt_reminder_targets: "Erinnerungen senden an", opt_reminder_targets_hint: "Push über die Companion-App (mit Knopf „Erledigt“) oder persistent_notification für die Glocke in Home Assistant. Die Windows-App zeigt Erinnerungen selbst, solange sie läuft.", no_notify: "Keine Benachrichtigungsdienste gefunden.",
   },
   en: {
@@ -76,6 +77,7 @@ const STRINGS = {
     delete_trigger_confirm: "Delete trigger “{0}”?", for_day: "for {0}", task_created: "Task “{0}” added",
     fired_none: "No trigger fired", fired_n: "{0} task(s) added", missing_fields: "Enter a name, a title and the entity or time of each condition",
     is_on: "on", by_hand: "by hand",
+    opt_hidden_views: "Hide views", opt_hidden_views_hint: "Ticked views do not appear in the navigation, nor in the apps and the widget. “Today” always stays.",
     settings: "Settings", saved: "Saved", opt_overdue_in_today: "Overdue tasks in “Today”", overdue_in_today_section: "At the top in a section “Overdue”", overdue_in_today_mixed: "Among today's tasks", overdue_in_today_separate: "Not in “Today” but in a view “Overdue” of their own", opt_week_mode: "“This week”", week_mode_calendar: "Calendar week (Monday to Sunday)", week_mode_rolling: "Today and the next 7 days", opt_views_apart: "Keep views apart", opt_separate_week: "Keep “Today” and “This week” apart", opt_separate_week_hint: "“Today” only shows tasks due on a specific day (and overdue ones); periods such as “week 44” are in “This week”, which leaves out what “Today” shows.", opt_separate_month: "Keep “This month” apart", opt_separate_month_hint: "“This month” only shows what is due after this week until the end of the month.", opt_reminder_targets: "Send reminders to", opt_reminder_targets_hint: "Push via the companion app (with a “Done” button) or persistent_notification for the bell in Home Assistant. The Windows app shows reminders on its own while it is running.", no_notify: "No notify services found.",
   },
   nl: {
@@ -114,6 +116,7 @@ const STRINGS = {
     delete_trigger_confirm: "Trigger „{0}” verwijderen?", for_day: "voor {0}", task_created: "Taak „{0}” toegevoegd",
     fired_none: "Geen trigger uitgevoerd", fired_n: "{0} taak/taken toegevoegd", missing_fields: "Vul een naam, een titel en de entiteit of tijd van elke voorwaarde in",
     is_on: "aan", by_hand: "handmatig",
+    opt_hidden_views: "Weergaven verbergen", opt_hidden_views_hint: "Aangevinkte weergaven verschijnen niet in de navigatie, ook niet in de apps en de widget. „Vandaag” blijft altijd.",
     settings: "Instellingen", saved: "Opgeslagen", opt_overdue_in_today: "Te late taken in „Vandaag”", overdue_in_today_section: "Bovenaan in een sectie „Te laat”", overdue_in_today_mixed: "Tussen de taken van vandaag", overdue_in_today_separate: "Niet in „Vandaag”, maar in een eigen weergave „Te laat”", opt_week_mode: "„Deze week”", week_mode_calendar: "Kalenderweek (maandag tot zondag)", week_mode_rolling: "Vandaag en de komende 7 dagen", opt_views_apart: "Weergaven scheiden", opt_separate_week: "„Vandaag” en „Deze week” scheiden", opt_separate_week_hint: "„Vandaag” toont alleen taken op een vaste dag (en te late); periodes zoals „week 44” staan in „Deze week”, die niets toont wat al in „Vandaag” staat.", opt_separate_month: "„Deze maand” scheiden", opt_separate_month_hint: "„Deze maand” toont alleen wat na deze week tot het einde van de maand moet.", opt_reminder_targets: "Herinneringen sturen naar", opt_reminder_targets_hint: "Push via de Companion-app (met een knop „Klaar”) of persistent_notification voor de bel in Home Assistant. De Windows-app toont herinneringen zelf zolang hij draait.", no_notify: "Geen meldingsdiensten gevonden.",
   },
   fr: {
@@ -152,6 +155,7 @@ const STRINGS = {
     delete_trigger_confirm: "Supprimer le déclencheur « {0} » ?", for_day: "pour {0}", task_created: "Tâche « {0} » ajoutée",
     fired_none: "Aucun déclencheur exécuté", fired_n: "{0} tâche(s) ajoutée(s)", missing_fields: "Indiquez un nom, un titre et l'entité ou l'heure de chaque condition",
     is_on: "activé", by_hand: "manuellement",
+    opt_hidden_views: "Masquer des vues", opt_hidden_views_hint: "Les vues cochées n'apparaissent pas dans la navigation, ni dans les applications et le widget. « Aujourd'hui » reste toujours.",
     settings: "Paramètres", saved: "Enregistré", opt_overdue_in_today: "Tâches en retard dans « Aujourd'hui »", overdue_in_today_section: "En haut, dans une section « En retard »", overdue_in_today_mixed: "Parmi les tâches du jour", overdue_in_today_separate: "Pas dans « Aujourd'hui », mais dans une vue « En retard » à part", opt_week_mode: "« Cette semaine »", week_mode_calendar: "Semaine calendaire (lundi à dimanche)", week_mode_rolling: "Aujourd'hui et les 7 prochains jours", opt_views_apart: "Séparer les vues", opt_separate_week: "Séparer « Aujourd'hui » et « Cette semaine »", opt_separate_week_hint: "« Aujourd'hui » n'affiche que les tâches d'un jour précis (et celles en retard) ; les périodes comme « semaine 44 » sont dans « Cette semaine », qui n'affiche pas ce qui est déjà dans « Aujourd'hui ».", opt_separate_month: "Séparer « Ce mois-ci »", opt_separate_month_hint: "« Ce mois-ci » n'affiche que ce qui est à faire après cette semaine jusqu'à la fin du mois.", opt_reminder_targets: "Envoyer les rappels à", opt_reminder_targets_hint: "Push via l'application Companion (avec un bouton « Terminé ») ou persistent_notification pour la cloche de Home Assistant. L'application Windows affiche elle-même les rappels tant qu'elle est ouverte.", no_notify: "Aucun service de notification trouvé.",
   },
   es: {
@@ -190,6 +194,7 @@ const STRINGS = {
     delete_trigger_confirm: "¿Eliminar el disparador «{0}»?", for_day: "para {0}", task_created: "Tarea «{0}» añadida",
     fired_none: "Ningún disparador ejecutado", fired_n: "{0} tarea(s) añadida(s)", missing_fields: "Introduce un nombre, un título y la entidad o la hora de cada condición",
     is_on: "encendido", by_hand: "a mano",
+    opt_hidden_views: "Ocultar vistas", opt_hidden_views_hint: "Las vistas marcadas no aparecen en la navegación, tampoco en las apps ni en el widget. «Hoy» siempre se mantiene.",
     settings: "Ajustes", saved: "Guardado", opt_overdue_in_today: "Tareas vencidas en «Hoy»", overdue_in_today_section: "Arriba, en una sección «Vencidas»", overdue_in_today_mixed: "Entre las tareas de hoy", overdue_in_today_separate: "No en «Hoy», sino en una vista propia «Vencidas»", opt_week_mode: "«Esta semana»", week_mode_calendar: "Semana natural (lunes a domingo)", week_mode_rolling: "Hoy y los próximos 7 días", opt_views_apart: "Separar vistas", opt_separate_week: "Separar «Hoy» y «Esta semana»", opt_separate_week_hint: "«Hoy» solo muestra tareas de un día concreto (y las vencidas); los periodos como «semana 44» están en «Esta semana», que no muestra lo que ya está en «Hoy».", opt_separate_month: "Separar «Este mes»", opt_separate_month_hint: "«Este mes» solo muestra lo que vence después de esta semana hasta final de mes.", opt_reminder_targets: "Enviar recordatorios a", opt_reminder_targets_hint: "Push mediante la app Companion (con un botón «Hecho») o persistent_notification para la campana de Home Assistant. La app de Windows muestra los recordatorios por sí misma mientras está abierta.", no_notify: "No se encontraron servicios de notificación.",
   },
 };
@@ -242,6 +247,7 @@ class ThaskPanel extends HTMLElement {
     this._separateWeek = false; // options of the integration: keep the smart views apart
     this._separateMonth = false;
     this._weekMode = "calendar"; // "This week": calendar | rolling (today and the next seven days)
+    this._hiddenViews = []; // smart views left out of the navigation
     this._settings = null; // settings page: { options, notify_services } once loaded
     this._overdueCollapsed = false;
     try {
@@ -350,7 +356,9 @@ class ThaskPanel extends HTMLElement {
     this._separateWeek = !!options.separate_week;
     this._separateMonth = !!options.separate_month;
     this._weekMode = options.week_mode || "calendar";
-    if (this._view.type === "smart" && this._view.key === "overdue" && this._overdueMode !== "separate") {
+    this._hiddenViews = options.hidden_views || [];
+    const hidden = this._view.key === "overdue" ? this._overdueMode !== "separate" : this._hiddenViews.includes(this._view.key);
+    if (this._view.type === "smart" && hidden) {
       this._view = { type: "smart", key: "my_day" };
     }
   }
@@ -586,7 +594,7 @@ class ThaskPanel extends HTMLElement {
         <span class="count">${count(view) || ""}</span>
       </button>`;
 
-    let html = `<div class="search"><ha-icon icon="mdi:magnify"></ha-icon><input class="search-input" type="search" placeholder="${esc(this.t("search"))}" autocomplete="off"></div><div class="nav-section">${SMART_VIEWS.filter((v) => v.key !== "overdue" || this._overdueMode === "separate").map((v) => item({ type: "smart", key: v.key }, v.icon, this.t(v.key))).join("")}</div><div class="divider"></div><div class="nav-section lists">`;
+    let html = `<div class="search"><ha-icon icon="mdi:magnify"></ha-icon><input class="search-input" type="search" placeholder="${esc(this.t("search"))}" autocomplete="off"></div><div class="nav-section">${SMART_VIEWS.filter((v) => (v.key !== "overdue" || this._overdueMode === "separate") && !this._hiddenViews.includes(v.key)).map((v) => item({ type: "smart", key: v.key }, v.icon, this.t(v.key))).join("")}</div><div class="divider"></div><div class="nav-section lists">`;
     let group = null;
     for (const list of this._lists) {
       if ((list.group || null) !== group) {
@@ -1044,8 +1052,8 @@ class ThaskPanel extends HTMLElement {
 
   async _saveOption(input) {
     const key = input.dataset.option;
-    const value = key === "reminder_targets"
-      ? [...this.shadowRoot.querySelectorAll("[data-option=reminder_targets]")].filter((box) => box.checked).map((box) => box.value)
+    const value = key === "reminder_targets" || key === "hidden_views"
+      ? [...this.shadowRoot.querySelectorAll(`[data-option=${key}]`)].filter((box) => box.checked).map((box) => box.value)
       : input.type === "checkbox" ? input.checked : input.value;
     try {
       const result = await this._hass.callWS({ type: "thask/options/update", [key]: value });
@@ -1082,6 +1090,11 @@ class ThaskPanel extends HTMLElement {
       <div class="section-title">${esc(this.t("opt_views_apart"))}</div>
       ${toggle("separate_week")}
       ${toggle("separate_month")}
+      <div class="section-title">${esc(this.t("opt_hidden_views"))}</div>
+      ${["important", "planned", "this_week", "this_month"].map((view) => `
+        <label class="option-choice"><input type="checkbox" value="${view}" data-option="hidden_views" ${(o.hidden_views || []).includes(view) ? "checked" : ""}>
+          <span>${esc(this.t(view))}</span></label>`).join("")}
+      <div class="muted option-hint">${esc(this.t("opt_hidden_views_hint"))}</div>
       <div class="section-title">${esc(this.t("opt_reminder_targets"))}</div>
       ${targets.length ? targets.map((service) => `
         <label class="option-choice"><input type="checkbox" value="${esc(service)}" data-option="reminder_targets" ${chosen.includes(service) ? "checked" : ""}>

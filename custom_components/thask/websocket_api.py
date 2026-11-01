@@ -17,6 +17,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_HIDDEN_VIEWS,
     CONF_OVERDUE,
     CONF_REMINDER_TARGETS,
     CONF_SEPARATE_MONTH,
@@ -24,6 +25,7 @@ from .const import (
     CONF_WEEK_MODE,
     DEFAULT_OPTIONS,
     DOMAIN,
+    HIDEABLE_VIEWS,
     OVERDUE_MODES,
     SIGNAL_DAY_CHANGED,
     SIGNAL_OPTIONS_CHANGED,
@@ -416,6 +418,7 @@ def ws_options_get(hass, connection, msg, data: ThaskData) -> None:
         vol.Optional(CONF_SEPARATE_WEEK): bool,
         vol.Optional(CONF_SEPARATE_MONTH): bool,
         vol.Optional(CONF_WEEK_MODE): vol.In(WEEK_MODES),
+        vol.Optional(CONF_HIDDEN_VIEWS): [vol.In(HIDEABLE_VIEWS)],
         vol.Optional(CONF_REMINDER_TARGETS): [str],
     }
 )

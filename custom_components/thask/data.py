@@ -21,6 +21,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_HIDDEN_VIEWS,
     CONF_OVERDUE,
     CONF_REMINDER_TARGETS,
     CONF_SEPARATE_MONTH,
@@ -33,6 +34,7 @@ from .const import (
     EVENT_TASK_DUE,
     EVENT_TASK_OVERDUE,
     EVENT_TRIGGER_FIRED,
+    HIDEABLE_VIEWS,
     NOTIFY_ACTION_DONE,
     OVERDUE_MODES,
     SAVE_DELAY,
@@ -89,6 +91,7 @@ class ThaskData:
         self.separate_week = False
         self.separate_month = False
         self.week_mode = DEFAULT_WEEK_MODE
+        self.hidden_views: list[str] = []
         self.reminder_targets: list[str] = []
 
     @callback
@@ -100,6 +103,7 @@ class ThaskData:
         self.separate_month = bool(options.get(CONF_SEPARATE_MONTH, False))
         week_mode = options.get(CONF_WEEK_MODE, DEFAULT_WEEK_MODE)
         self.week_mode = week_mode if week_mode in WEEK_MODES else DEFAULT_WEEK_MODE
+        self.hidden_views = [view for view in options.get(CONF_HIDDEN_VIEWS, []) if view in HIDEABLE_VIEWS]
         async_dispatcher_send(self.hass, SIGNAL_OPTIONS_CHANGED)
 
     @property
@@ -110,6 +114,7 @@ class ThaskData:
             CONF_SEPARATE_WEEK: self.separate_week,
             CONF_SEPARATE_MONTH: self.separate_month,
             CONF_WEEK_MODE: self.week_mode,
+            CONF_HIDDEN_VIEWS: self.hidden_views,
         }
 
     @property

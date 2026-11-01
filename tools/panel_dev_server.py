@@ -194,7 +194,7 @@ class Backend:
         seed_triggers(self.triggers, self.collection)
         # Options of the integration; "dev/options" changes them, e.g. {"overdue_in_today": "separate"}.
         self.options: dict[str, Any] = {
-            "overdue_in_today": "section", "separate_week": False, "separate_month": False, "week_mode": "calendar",
+            "overdue_in_today": "section", "separate_week": False, "separate_month": False, "week_mode": "calendar", "hidden_views": [],
             "reminder_targets": [],
         }
 

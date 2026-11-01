@@ -64,6 +64,14 @@
         "calendar": "Calendar week (Monday to Sunday)",
         "rolling": "Today and the next 7 days"
       }
+    },
+    "hidden_views": {
+      "options": {
+        "important": "Important",
+        "planned": "Planned",
+        "this_week": "This week",
+        "this_month": "This month"
+      }
     }
   },
   "services": {
@@ -195,6 +203,7 @@
           "week_mode": "“This week”",
           "separate_week": "Keep “Today” and “This week” apart",
           "separate_month": "Keep “This month” apart",
+          "hidden_views": "Hide views",
           "reminder_targets": "Send reminders to"
         },
         "data_description": {
@@ -202,6 +211,7 @@
           "week_mode": "With the next 7 days, next week is already in it on a Sunday.",
           "separate_week": "“Today” only shows tasks due on a specific day (and overdue ones); periods such as “week 44” are in “This week”, which in turn leaves out what “Today” shows.",
           "separate_month": "“This month” only shows what is due after this week until the end of the month, without overdue tasks.",
+          "hidden_views": "These views do not appear in the navigation of the web interface, the apps and the widget. “Today” always stays.",
           "reminder_targets": "Notify services (notify.…) that receive reminders, e.g. the companion app on your phone (with a “Done” button) or persistent_notification for the bell in Home Assistant. The Windows app shows reminders on its own while it is running."
         }
       }

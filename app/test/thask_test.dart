@@ -525,6 +525,15 @@ void main() {
       await Future<void>.delayed(Duration.zero);
       expect(store.thisWeekEnd, DateTime(2026, 11, 7));
       expect(ids(store.thisWeek), {'alt', 'heute', 'oktober', 'sonntag', 'kw44'});
+
+      // Ausgeblendete Ansichten fehlen in der Navigation und im Widget.
+      expect(ViewRef.all(store).whereType<PlannedView>(), hasLength(1));
+      connection.emit({'type': 'options', 'hidden_views': ['planned', 'this_month']});
+      await Future<void>.delayed(Duration.zero);
+      final views = ViewRef.all(store);
+      expect(views.whereType<PlannedView>(), isEmpty);
+      expect(views.whereType<ThisMonthView>(), isEmpty);
+      expect(views.whereType<ThisWeekView>(), hasLength(1));
     });
 
     test('Erinnerungen der Integration kommen als Stream, ohne die Daten zu ändern', () async {

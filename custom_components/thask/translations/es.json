@@ -64,6 +64,14 @@
         "calendar": "Semana natural (lunes a domingo)",
         "rolling": "Hoy y los próximos 7 días"
       }
+    },
+    "hidden_views": {
+      "options": {
+        "important": "Importante",
+        "planned": "Planificado",
+        "this_week": "Esta semana",
+        "this_month": "Este mes"
+      }
     }
   },
   "services": {
@@ -195,6 +203,7 @@
           "week_mode": "«Esta semana»",
           "separate_week": "Separar «Hoy» y «Esta semana»",
           "separate_month": "Separar «Este mes»",
+          "hidden_views": "Ocultar vistas",
           "reminder_targets": "Enviar recordatorios a"
         },
         "data_description": {
@@ -202,6 +211,7 @@
           "week_mode": "Con los próximos 7 días, el domingo ya aparece la semana siguiente.",
           "separate_week": "«Hoy» solo muestra las tareas que vencen un día concreto (y las vencidas); los periodos como «semana 44» están en «Esta semana», que a su vez no muestra lo que ya está en «Hoy».",
           "separate_month": "«Este mes» solo muestra lo que vence después de esta semana hasta final de mes, sin las tareas vencidas.",
+          "hidden_views": "Estas vistas no aparecen en la navegación de la interfaz web, las apps y el widget. «Hoy» siempre se mantiene.",
           "reminder_targets": "Servicios de notificación (notify.…) que reciben los recordatorios, p. ej. la app Companion de tu móvil (con un botón «Hecho») o persistent_notification para la campana de Home Assistant. La app de Windows muestra los recordatorios por sí misma mientras está abierta."
         }
       }

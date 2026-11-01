@@ -44,12 +44,17 @@ CONF_WEEK_MODE = "week_mode"
 WEEK_MODES = ("calendar", "rolling")
 DEFAULT_WEEK_MODE = "calendar"
 
+# Option: smart views left out of the navigation (web interface, apps, widget). "Today" always stays.
+CONF_HIDDEN_VIEWS = "hidden_views"
+HIDEABLE_VIEWS = ("important", "planned", "this_week", "this_month")
+
 # Defaults of all options, also for the settings page in the web interface.
 DEFAULT_OPTIONS = {
     "overdue_in_today": "section",
     CONF_SEPARATE_WEEK: False,
     CONF_SEPARATE_MONTH: False,
     CONF_WEEK_MODE: DEFAULT_WEEK_MODE,
+    CONF_HIDDEN_VIEWS: [],
     "reminder_targets": [],
 }
 

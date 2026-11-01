@@ -28,10 +28,8 @@ sealed class ViewRef {
   static List<ViewRef> all(ThaskStore store) => [
         const TodayView(),
         if (store.overdueMode == 'separate') const OverdueView(),
-        const ThisWeekView(),
-        const ThisMonthView(),
-        const ImportantView(),
-        const PlannedView(),
+        for (final view in const [ThisWeekView(), ThisMonthView(), ImportantView(), PlannedView()])
+          if (!store.hiddenViews.contains(view.id)) view,
         for (final list in store.lists) ListRef(list.id),
       ];
 }

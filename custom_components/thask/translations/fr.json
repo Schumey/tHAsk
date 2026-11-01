@@ -64,6 +64,14 @@
         "calendar": "Semaine calendaire (lundi à dimanche)",
         "rolling": "Aujourd'hui et les 7 prochains jours"
       }
+    },
+    "hidden_views": {
+      "options": {
+        "important": "Important",
+        "planned": "Planifié",
+        "this_week": "Cette semaine",
+        "this_month": "Ce mois-ci"
+      }
     }
   },
   "services": {
@@ -195,6 +203,7 @@
           "week_mode": "« Cette semaine »",
           "separate_week": "Séparer « Aujourd'hui » et « Cette semaine »",
           "separate_month": "Séparer « Ce mois-ci »",
+          "hidden_views": "Masquer des vues",
           "reminder_targets": "Envoyer les rappels à"
         },
         "data_description": {
@@ -202,6 +211,7 @@
           "week_mode": "Avec les 7 prochains jours, la semaine suivante y figure déjà le dimanche.",
           "separate_week": "« Aujourd'hui » n'affiche que les tâches à faire un jour précis (et celles en retard) ; les périodes comme « semaine 44 » sont dans « Cette semaine », qui n'affiche pas ce qui est déjà dans « Aujourd'hui ».",
           "separate_month": "« Ce mois-ci » n'affiche que ce qui est à faire après cette semaine jusqu'à la fin du mois, sans les tâches en retard.",
+          "hidden_views": "Ces vues n'apparaissent pas dans la navigation de l'interface web, des applications et du widget. « Aujourd'hui » reste toujours.",
           "reminder_targets": "Services de notification (notify.…) qui reçoivent les rappels, p. ex. l'application Companion sur votre téléphone (avec un bouton « Terminé ») ou persistent_notification pour la cloche de Home Assistant. L'application Windows affiche elle-même les rappels tant qu'elle est ouverte."
         }
       }

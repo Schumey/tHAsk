@@ -160,6 +160,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildScreen(BuildContext context, bool wide) {
     // Die Ansicht „Überfällig“ gibt es nur mit der passenden Option.
     if (_view is OverdueView && store.overdueMode != 'separate') _view = const TodayView();
+    // Ausgeblendete Ansichten (Option der Integration) ebenso.
+    if (store.hiddenViews.contains(_view.id)) _view = const TodayView();
     final tasks = _tasks;
     final open = tasks.where((t) => !t.completed).toList();
     final done = tasks.where((t) => t.completed).toList();
@@ -391,34 +393,38 @@ class _HomeScreenState extends State<HomeScreen> {
             trailing: _count(store.overdue.length),
             onTap: () => select(const OverdueView()),
           ),
-        ListTile(
-          leading: const Icon(Icons.date_range_outlined),
-          title: Text(tr('view_this_week')),
-          selected: _view is ThisWeekView,
-          trailing: _count(store.thisWeek.length),
-          onTap: () => select(const ThisWeekView()),
-        ),
-        ListTile(
-          leading: const Icon(Icons.calendar_today_outlined),
-          title: Text(tr('view_this_month')),
-          selected: _view is ThisMonthView,
-          trailing: _count(store.thisMonth.length),
-          onTap: () => select(const ThisMonthView()),
-        ),
-        ListTile(
-          leading: const Icon(Icons.flag_outlined),
-          title: Text(tr('view_important')),
-          selected: _view is ImportantView,
-          trailing: _count(store.important.where((t) => !t.completed).length),
-          onTap: () => select(const ImportantView()),
-        ),
-        ListTile(
-          leading: const Icon(Icons.calendar_month_outlined),
-          title: Text(tr('view_planned')),
-          selected: _view is PlannedView,
-          trailing: _count(store.planned.where((t) => !t.completed).length),
-          onTap: () => select(const PlannedView()),
-        ),
+        if (!store.hiddenViews.contains('this_week'))
+          ListTile(
+            leading: const Icon(Icons.date_range_outlined),
+            title: Text(tr('view_this_week')),
+            selected: _view is ThisWeekView,
+            trailing: _count(store.thisWeek.length),
+            onTap: () => select(const ThisWeekView()),
+          ),
+        if (!store.hiddenViews.contains('this_month'))
+          ListTile(
+            leading: const Icon(Icons.calendar_today_outlined),
+            title: Text(tr('view_this_month')),
+            selected: _view is ThisMonthView,
+            trailing: _count(store.thisMonth.length),
+            onTap: () => select(const ThisMonthView()),
+          ),
+        if (!store.hiddenViews.contains('important'))
+          ListTile(
+            leading: const Icon(Icons.flag_outlined),
+            title: Text(tr('view_important')),
+            selected: _view is ImportantView,
+            trailing: _count(store.important.where((t) => !t.completed).length),
+            onTap: () => select(const ImportantView()),
+          ),
+        if (!store.hiddenViews.contains('planned'))
+          ListTile(
+            leading: const Icon(Icons.calendar_month_outlined),
+            title: Text(tr('view_planned')),
+            selected: _view is PlannedView,
+            trailing: _count(store.planned.where((t) => !t.completed).length),
+            onTap: () => select(const PlannedView()),
+          ),
         const Divider(),
         for (final group in groups) ...[
           if (group != null)

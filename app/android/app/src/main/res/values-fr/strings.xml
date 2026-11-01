@@ -7,4 +7,5 @@
     <string name="widget_sign_in">Ouvrir tHAsk et se connecter</string>
     <string name="widget_empty">Aucune tâche</string>
     <string name="widget_view">Vue</string>
+    <string name="widget_open">Ouvrir tHAsk</string>
 </resources>

@@ -12,6 +12,7 @@ Schreibt:
 - app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
 - custom_components/thask/brand/icon.png und icon@2x.png (Symbol der Integration in HA, ab 2026.3)
 - custom_components/thask/www/thask-icons.js (einfarbiges Symbol `thask:logo` für die HA-Seitenleiste)
+- app/android/app/src/main/res/drawable/ic_widget_open.xml (dasselbe für den Knopf „tHAsk öffnen“ im Widget)
 """
 
 from __future__ import annotations
@@ -158,6 +159,15 @@ window.customIcons.thask = {{
 """
 
 
+WIDGET_OPEN = """<?xml version="1.0" encoding="utf-8"?>
+<!-- Erzeugt von tools/make_app_icon.py: tHAsk-Logo für den Knopf „tHAsk öffnen“ im Widget -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp" android:height="24dp"
+    android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FFFFFFFF" android:pathData="{path}" />
+</vector>
+"""
+
 ADAPTIVE = """<?xml version="1.0" encoding="utf-8"?>
 <!-- Erzeugt von tools/make_app_icon.py -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
@@ -191,6 +201,7 @@ def main() -> None:
     render(512).save(brand / "icon@2x.png")
     icons_js = ROOT / "custom_components" / "thask" / "www" / "thask-icons.js"
     icons_js.write_text(ICONS_JS.format(path=sidebar_icon_path()), encoding="utf-8")
+    (RES / "drawable" / "ic_widget_open.xml").write_text(WIDGET_OPEN.format(path=sidebar_icon_path()), encoding="utf-8")
     print("Symbole geschrieben.")
 
 

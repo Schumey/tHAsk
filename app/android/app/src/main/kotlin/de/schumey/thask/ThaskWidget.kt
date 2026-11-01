@@ -174,6 +174,20 @@ class ThaskWidget : GlanceAppWidget() {
                         modifier = GlanceModifier.size(20.dp),
                     )
                 }
+                // tHAsk in der Ansicht öffnen, die das Widget zeigt.
+                Box(
+                    modifier = GlanceModifier.size(40.dp).clickable(
+                        actionStartActivity<MainActivity>(context, Uri.parse("thask://open?view=$viewId")),
+                    ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Image(
+                        provider = ImageProvider(R.drawable.ic_widget_open),
+                        contentDescription = context.getString(R.string.widget_open),
+                        colorFilter = ColorFilter.tint(textSecondary),
+                        modifier = GlanceModifier.size(20.dp),
+                    )
+                }
                 Box(
                     modifier = GlanceModifier.size(40.dp).clickable(actionRunCallback<RefreshCallback>()),
                     contentAlignment = Alignment.Center,
