@@ -188,7 +188,8 @@ export function matchesSmart(task, key, ctx) {
     case "overdue":
       return isOverdue(task, today);
     case "important":
-      if (task.priority < 3) return false;
+      // Option "important_priority": high only, or medium and high.
+      if (task.priority < (ctx.importantMedium ? 2 : 3)) return false;
       if (!ctx.importantRange || ctx.importantRange === "all") return true;
       return dueBy(task, periodEnd(ctx.importantRange, periodStart(ctx.importantRange, today)));
     case "planned":

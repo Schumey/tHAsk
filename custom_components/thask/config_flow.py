@@ -20,6 +20,7 @@ from homeassistant.helpers.selector import (
 
 from .const import (
     CONF_AUTO_CLEAR_DAYS,
+    CONF_IMPORTANT_PRIORITY,
     CONF_HIDDEN_VIEWS,
     CONF_OVERDUE,
     CONF_REMINDER_TARGETS,
@@ -30,6 +31,7 @@ from .const import (
     DEFAULT_WEEK_MODE,
     DOMAIN,
     HIDEABLE_VIEWS,
+    IMPORTANT_PRIORITIES,
     OVERDUE_MODES,
     WEEK_MODES,
 )
@@ -70,6 +72,13 @@ class ThaskOptionsFlow(OptionsFlow):
                 ),
                 vol.Required(CONF_SEPARATE_WEEK, default=options.get(CONF_SEPARATE_WEEK, False)): BooleanSelector(),
                 vol.Required(CONF_SEPARATE_MONTH, default=options.get(CONF_SEPARATE_MONTH, False)): BooleanSelector(),
+                vol.Required(CONF_IMPORTANT_PRIORITY, default=options.get(CONF_IMPORTANT_PRIORITY, "high")): SelectSelector(
+                    SelectSelectorConfig(
+                        options=list(IMPORTANT_PRIORITIES),
+                        translation_key=CONF_IMPORTANT_PRIORITY,
+                        mode=SelectSelectorMode.LIST,
+                    )
+                ),
                 vol.Optional(CONF_HIDDEN_VIEWS, default=options.get(CONF_HIDDEN_VIEWS, [])): SelectSelector(
                     SelectSelectorConfig(
                         options=list(HIDEABLE_VIEWS),

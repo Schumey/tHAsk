@@ -131,6 +131,9 @@ class ThaskStore extends ChangeNotifier {
   /// Option der Integration: intelligente Ansichten, die in der Navigation (und im Widget) fehlen.
   List<String> hiddenViews = const [];
 
+  /// Option der Integration, ab welcher Priorität „Wichtig“ zeigt: 'high' (nur Hoch) oder 'medium' (Mittel und Hoch).
+  String importantPriority = 'high';
+
   /// Letzter Tag von „Diese Woche“.
   DateTime get thisWeekEnd => weekMode == 'rolling'
       ? DateTime(today.year, today.month, today.day + 7)
@@ -201,12 +204,12 @@ class ThaskStore extends ChangeNotifier {
     await _cache?.saveSetting('important_range', range);
   }
 
-  /// „Wichtig“: Aufgaben mit Priorität hoch im gewählten Zeitraum, nach Fälligkeit.
+  /// „Wichtig“: Aufgaben mit Priorität hoch (je nach Option auch mittel) im gewählten Zeitraum, nach Fälligkeit.
   List<Task> get important {
     final unit = Granularity.values.where((g) => g.name == importantRange).firstOrNull;
     final end = unit == null ? null : Period.containing(unit, today).end;
     return sortTasks(
-      _tasks.values.where((t) => t.isHighPriority && (end == null || (t.due != null && !t.due!.end.isAfter(end)))),
+      _tasks.values.where((t) => t.priority >= (importantPriority == 'medium' ? 2 : 3) && (end == null || (t.due != null && !t.due!.end.isAfter(end)))),
       'due',
     );
   }
@@ -270,6 +273,7 @@ class ThaskStore extends ChangeNotifier {
           'separate_month': separateMonth,
           'week_mode': weekMode,
           'hidden_views': hiddenViews,
+          'important_priority': importantPriority,
         },
         'lists': _rawLists.values.toList(),
         'tasks': _rawTasks.values.toList(),
@@ -402,6 +406,7 @@ class ThaskStore extends ChangeNotifier {
     separateMonth = options['separate_month'] == true;
     weekMode = options['week_mode'] == 'rolling' ? 'rolling' : 'calendar';
     hiddenViews = [for (final view in options['hidden_views'] as List? ?? const []) '$view'];
+    importantPriority = options['important_priority'] == 'medium' ? 'medium' : 'high';
   }
 
   final _reminders = StreamController<Task>.broadcast();

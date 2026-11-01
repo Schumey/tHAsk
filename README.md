@@ -56,6 +56,7 @@ In der Weboberfläche unter **Einstellungen** (unten in der Seitenleiste), in de
 - **„Diese Woche“**: die Kalenderwoche (Montag bis Sonntag, Standard) oder heute und die nächsten 7 Tage. Mit den 7 Tagen steht am Sonntag schon die kommende Woche darin, auch ein Zeitraum wie „KW 45“. Gilt auch für `todo.thask_diese_woche`.
 - **„Heute“ und „Diese Woche“ trennen** (aus): „Heute“ zeigt nur Aufgaben, die an einem bestimmten Tag fällig sind, dazu Überfälliges. Ein Zeitraum, der heute endet (am Sonntag „KW 44“), steht dann in „Diese Woche“; „Diese Woche“ zeigt umgekehrt nichts, was schon in „Heute“ steht. Gilt auch für `todo.thask_mein_tag`, `todo.thask_diese_woche` und den Zähler an der Taskleiste.
 - **„Diesen Monat“ trennen** (aus): „Diesen Monat“ zeigt nur, was nach dieser Woche bis Monatsende fällig ist.
+- **„Wichtig“ zeigt**: nur Priorität Hoch (Standard) oder Mittel und Hoch.
 - **Ansichten ausblenden**: „Wichtig“, „Geplant“, „Diese Woche“ und „Diesen Monat“ lassen sich aus der Navigation der Weboberfläche, der Apps und des Widgets nehmen. „Heute“ bleibt immer; Dashboard-Karten mit einer ausdrücklich gewählten Ansicht zeigen sie weiter.
 - **Erledigte automatisch löschen**: erledigte Aufgaben so viele Tage nach dem Abhaken löschen (0 = nie, Standard). Geprüft beim Start von Home Assistant, jede Nacht und direkt nach dem Ändern der Option. Für einzelne Listen oder eigene Regeln gibt es weiterhin `thask.clear_completed`.
 - **Erinnerungen senden an**: Benachrichtigungsdienste für Erinnerungen, siehe [Erinnerungen](#erinnerungen).
@@ -279,7 +280,7 @@ Die Apps, die Weboberfläche und die Karte nutzen diese Befehle über die normal
 | `thask/trigger/check` | – (alle Trigger jetzt prüfen) |
 | `thask/trigger/undo` | `run_id` |
 | `thask/options/get` | – (alle Optionen und die Benachrichtigungsdienste); nur Administratoren |
-| `thask/options/update` | `overdue_in_today`, `week_mode`, `separate_week`, `separate_month`, `hidden_views`, `auto_clear_days`, `reminder_targets`; nur Administratoren |
+| `thask/options/update` | `overdue_in_today`, `week_mode`, `separate_week`, `separate_month`, `hidden_views`, `auto_clear_days`, `important_priority`, `reminder_targets`; nur Administratoren |
 
 Aufgabenfelder: `list_id`, `title`, `notes`, `completed`, `priority` (0 keine, 1 niedrig, 2 mittel, 3 hoch), `due` (`{"granularity": "day|week|month|quarter|year", "start": "2026-11-09"}`), `due_time` (`"HH:MM"`, nur bei Tagen), `reminder` (ISO-Datum mit Uhrzeit), `recurrence` (`{"unit": "month", "interval": 1}`, wöchentlich an mehreren Tagen: `{"unit": "week", "interval": 1, "weekdays": [2, 5]}` mit 0 = Montag), `steps`, `categories`. `my_day` wird noch angenommen, hat aber keine Wirkung mehr („Heute“ richtet sich nach der Fälligkeit).
 

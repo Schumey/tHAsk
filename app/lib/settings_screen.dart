@@ -118,6 +118,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _radios('overdue_in_today', const ['section', 'mixed', 'separate']),
                     _section(tr('opt_week_mode')),
                     _radios('week_mode', const ['calendar', 'rolling']),
+                    _section(tr('opt_important_priority')),
+                    _radios('important_priority', const ['high', 'medium']),
                     _section(tr('opt_views_apart')),
                     SwitchListTile(
                       value: options['separate_week'] == true,

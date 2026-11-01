@@ -72,6 +72,12 @@
         "this_week": "This week",
         "this_month": "This month"
       }
+    },
+    "important_priority": {
+      "options": {
+        "high": "High priority only",
+        "medium": "Medium and high priority"
+      }
     }
   },
   "services": {
@@ -203,6 +209,7 @@
           "week_mode": "“This week”",
           "separate_week": "Keep “Today” and “This week” apart",
           "separate_month": "Keep “This month” apart",
+          "important_priority": "“Important” shows",
           "hidden_views": "Hide views",
           "auto_clear_days": "Delete completed tasks after (days)",
           "reminder_targets": "Send reminders to"

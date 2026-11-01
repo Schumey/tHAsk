@@ -72,6 +72,12 @@
         "this_week": "Deze week",
         "this_month": "Deze maand"
       }
+    },
+    "important_priority": {
+      "options": {
+        "high": "Alleen prioriteit hoog",
+        "medium": "Prioriteit gemiddeld en hoog"
+      }
     }
   },
   "services": {
@@ -203,6 +209,7 @@
           "week_mode": "„Deze week”",
           "separate_week": "„Vandaag” en „Deze week” scheiden",
           "separate_month": "„Deze maand” scheiden",
+          "important_priority": "„Belangrijk” toont",
           "hidden_views": "Weergaven verbergen",
           "auto_clear_days": "Voltooide taken verwijderen na (dagen)",
           "reminder_targets": "Herinneringen sturen naar"

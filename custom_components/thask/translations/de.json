@@ -72,6 +72,12 @@
         "this_week": "Diese Woche",
         "this_month": "Diesen Monat"
       }
+    },
+    "important_priority": {
+      "options": {
+        "high": "Nur Priorität Hoch",
+        "medium": "Priorität Mittel und Hoch"
+      }
     }
   },
   "services": {
@@ -203,6 +209,7 @@
           "week_mode": "„Diese Woche“",
           "separate_week": "„Heute“ und „Diese Woche“ trennen",
           "separate_month": "„Diesen Monat“ trennen",
+          "important_priority": "„Wichtig“ zeigt",
           "hidden_views": "Ansichten ausblenden",
           "auto_clear_days": "Erledigte automatisch löschen nach (Tagen)",
           "reminder_targets": "Erinnerungen senden an"

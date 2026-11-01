@@ -52,6 +52,10 @@ HIDEABLE_VIEWS = ("important", "planned", "this_week", "this_month")
 # after midnight and when the option changes.
 CONF_AUTO_CLEAR_DAYS = "auto_clear_days"
 
+# Option: which priorities "Important" shows. "high" (default) or "medium" (medium and high).
+CONF_IMPORTANT_PRIORITY = "important_priority"
+IMPORTANT_PRIORITIES = ("high", "medium")
+
 # Defaults of all options, also for the settings page in the web interface.
 DEFAULT_OPTIONS = {
     "overdue_in_today": "section",
@@ -60,6 +64,7 @@ DEFAULT_OPTIONS = {
     CONF_WEEK_MODE: DEFAULT_WEEK_MODE,
     CONF_HIDDEN_VIEWS: [],
     CONF_AUTO_CLEAR_DAYS: 0,
+    CONF_IMPORTANT_PRIORITY: "high",
     "reminder_targets": [],
 }
 

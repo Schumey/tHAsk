@@ -22,6 +22,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_AUTO_CLEAR_DAYS,
+    CONF_IMPORTANT_PRIORITY,
     CONF_HIDDEN_VIEWS,
     CONF_OVERDUE,
     CONF_REMINDER_TARGETS,
@@ -36,6 +37,7 @@ from .const import (
     EVENT_TASK_OVERDUE,
     EVENT_TRIGGER_FIRED,
     HIDEABLE_VIEWS,
+    IMPORTANT_PRIORITIES,
     NOTIFY_ACTION_DONE,
     OVERDUE_MODES,
     SAVE_DELAY,
@@ -94,6 +96,7 @@ class ThaskData:
         self.week_mode = DEFAULT_WEEK_MODE
         self.hidden_views: list[str] = []
         self.auto_clear_days = 0
+        self.important_priority = "high"
         self._started = False
         self.reminder_targets: list[str] = []
 
@@ -108,6 +111,8 @@ class ThaskData:
         self.week_mode = week_mode if week_mode in WEEK_MODES else DEFAULT_WEEK_MODE
         self.hidden_views = [view for view in options.get(CONF_HIDDEN_VIEWS, []) if view in HIDEABLE_VIEWS]
         self.auto_clear_days = max(0, int(options.get(CONF_AUTO_CLEAR_DAYS, 0) or 0))
+        important = options.get(CONF_IMPORTANT_PRIORITY, "high")
+        self.important_priority = important if important in IMPORTANT_PRIORITIES else "high"
         async_dispatcher_send(self.hass, SIGNAL_OPTIONS_CHANGED)
         if self._started:
             self.auto_clear()
@@ -131,6 +136,7 @@ class ThaskData:
             CONF_SEPARATE_MONTH: self.separate_month,
             CONF_WEEK_MODE: self.week_mode,
             CONF_HIDDEN_VIEWS: self.hidden_views,
+            CONF_IMPORTANT_PRIORITY: self.important_priority,
         }
 
     @property

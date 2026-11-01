@@ -557,6 +557,23 @@ void main() {
       expect(views.whereType<ThisWeekView>(), hasLength(1));
     });
 
+    test('Option: „Wichtig“ mit Priorität Mittel', () async {
+      await signIn();
+      connection.emit({
+        ..._snapshot,
+        'tasks': [
+          {'id': 'hoch', 'list_id': 'l1', 'title': 'Hoch', 'priority': 3},
+          {'id': 'mittel', 'list_id': 'l1', 'title': 'Mittel', 'priority': 2},
+          {'id': 'niedrig', 'list_id': 'l1', 'title': 'Niedrig', 'priority': 1},
+        ],
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect([for (final t in store.important) t.id], ['hoch']);
+      connection.emit({'type': 'options', 'important_priority': 'medium'});
+      await Future<void>.delayed(Duration.zero);
+      expect({for (final t in store.important) t.id}, {'hoch', 'mittel'});
+    });
+
     test('Einstellungen: Optionen laden und ändern', () async {
       await signIn();
       connection.results['thask/options/get'] = {
