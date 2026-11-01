@@ -2,6 +2,8 @@
 // Loaded on every dashboard by the integration; use it as `type: custom:thask-card`.
 
 const VERSION = new URL(import.meta.url).searchParams.get("v") || "";
+// The sidebar entry uses the icon `thask:logo`; this module is loaded on every page, so it registers it.
+await import(`./thask-icons.js?v=${VERSION}`);
 const {
   parseISO, periodStart, periodEnd, periodEndOf, periodStatus, periodLabel, makePeriod, sortTasks, esc,
   isOverdue, matchesSmart, sortByDue, splitDone,

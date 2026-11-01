@@ -278,4 +278,4 @@ python tools/panel_dev_server.py
 
 Dann http://localhost:8765 (Weboberfläche) bzw. http://localhost:8765/card (Beispielkarten) öffnen. Den visuellen Karteneditor zeigt der Dev-Server nicht, der braucht `ha-form` aus HA.
 
-Die Symbole für Android, Windows und die Integration erzeugt `python tools/make_app_icon.py` (braucht Pillow); Farben und Maße stehen oben im Skript.
+Die Symbole für Android, Windows, die Integration und die Seitenleiste (`thask:logo`) erzeugt `python tools/make_app_icon.py` (braucht Pillow); Farben und Maße stehen oben im Skript.

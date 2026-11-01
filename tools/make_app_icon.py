@@ -11,6 +11,7 @@ Schreibt:
 - app/android/app/src/main/res/drawable/ic_launcher_foreground.xml (Vektor für das adaptive Symbol)
 - app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
 - custom_components/thask/brand/icon.png und icon@2x.png (Symbol der Integration in HA, ab 2026.3)
+- custom_components/thask/www/thask-icons.js (einfarbiges Symbol `thask:logo` für die HA-Seitenleiste)
 """
 
 from __future__ import annotations
@@ -114,6 +115,49 @@ def foreground_vector() -> str:
     )
 
 
+def _capsule(x0: float, y0: float, x1: float, y1: float, r: float) -> str:
+    """Strecke mit runden Enden als geschlossener Pfad; alle mit gleichem Umlaufsinn, damit sie sich vereinigen."""
+    import math
+
+    length = math.hypot(x1 - x0, y1 - y0) or 1
+    nx, ny = -(y1 - y0) / length * r, (x1 - x0) / length * r
+
+    def f(v: float) -> str:
+        return f"{round(v, 2):g}"
+
+    return (
+        f"M{f(x0 + nx)} {f(y0 + ny)}L{f(x1 + nx)} {f(y1 + ny)}"
+        f"A{f(r)} {f(r)} 0 0 0 {f(x1 - nx)} {f(y1 - ny)}"
+        f"L{f(x0 - nx)} {f(y0 - ny)}A{f(r)} {f(r)} 0 0 0 {f(x0 + nx)} {f(y0 + ny)}Z"
+    )
+
+
+def sidebar_icon_path() -> str:
+    """Balken und Haken ohne Hintergrund als ein Pfad im 24er-Raster (Material-Design-Icons-Format)."""
+    left, right = BARS[0][0], max(x + w for x, _, w, _, _, _ in BARS)
+    top, bottom = CHECK[2][1] - CHECK_WIDTH / 2, max(y + h for _, y, _, h, _, _ in BARS)
+    s = 22 / max(right - left, bottom - top)
+    ox = (24 - (right - left) * s) / 2 - left * s
+    oy = (24 - (bottom - top) * s) / 2 - top * s
+    parts = [
+        _capsule(ox + (x + h / 2) * s, oy + (y + h / 2) * s, ox + (x + w - h / 2) * s, oy + (y + h / 2) * s, h / 2 * s)
+        for x, y, w, h, _, _ in BARS
+    ]
+    for (ax, ay), (bx, by) in zip(CHECK, CHECK[1:]):
+        parts.append(_capsule(ox + ax * s, oy + ay * s, ox + bx * s, oy + by * s, CHECK_WIDTH / 2 * s))
+    return "".join(parts)
+
+
+ICONS_JS = """// Erzeugt von tools/make_app_icon.py: Symbol `thask:logo` für die Seitenleiste von Home Assistant.
+const ICONS = {{ logo: "{path}" }};
+window.customIcons = window.customIcons || {{}};
+window.customIcons.thask = {{
+  getIcon: async (name) => ({{ path: ICONS[name] || ICONS.logo }}),
+  getIconList: async () => Object.keys(ICONS).map((name) => ({{ name }})),
+}};
+"""
+
+
 ADAPTIVE = """<?xml version="1.0" encoding="utf-8"?>
 <!-- Erzeugt von tools/make_app_icon.py -->
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
@@ -145,6 +189,8 @@ def main() -> None:
     brand.mkdir(exist_ok=True)
     render(256).save(brand / "icon.png")
     render(512).save(brand / "icon@2x.png")
+    icons_js = ROOT / "custom_components" / "thask" / "www" / "thask-icons.js"
+    icons_js.write_text(ICONS_JS.format(path=sidebar_icon_path()), encoding="utf-8")
     print("Symbole geschrieben.")
 
 

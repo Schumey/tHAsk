@@ -52,7 +52,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ThaskConfigEntry) -> boo
         frontend_url_path=PANEL_URL_PATH,
         webcomponent_name="thask-panel",
         sidebar_title="tHAsk",
-        sidebar_icon="mdi:checkbox-marked-circle-outline",
+        # From www/thask-icons.js, which the card loads on every page.
+        sidebar_icon="thask:logo",
         # The version busts the browser cache after updates.
         module_url=f"{PANEL_STATIC_URL}/thask-panel.js?v={integration.version}",
     )
