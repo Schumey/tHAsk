@@ -15,6 +15,9 @@ class FlutterWindow : public Win32Window {
   explicit FlutterWindow(const flutter::DartProject& project);
   virtual ~FlutterWindow();
 
+  // Show the window minimized after the first frame (autostart).
+  void SetStartMinimized(bool minimized) { start_minimized_ = minimized; }
+
  protected:
   // Win32Window:
   bool OnCreate() override;
@@ -28,6 +31,8 @@ class FlutterWindow : public Win32Window {
 
   // The Flutter instance hosted by this window.
   std::unique_ptr<flutter::FlutterViewController> flutter_controller_;
+
+  bool start_minimized_ = false;
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_

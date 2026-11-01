@@ -18,6 +18,18 @@ flutter run            # Handy per USB, USB-Debugging an
 flutter build apk      # APK in app/build/app/outputs/flutter-apk/
 ```
 
+## Windows-App
+
+Dieselbe App läuft auch unter Windows. Ab 900 px Fensterbreite stehen Navigation, Liste und Details nebeneinander. Strg+N springt in die Eingabe, Esc schließt die Details. Ein zweiter Start holt das laufende Fenster nach vorn.
+
+Den Installer baut ein Skript. Es braucht Flutter mit den Visual Studio Build Tools (C++ und ATL) und [Inno Setup 6](https://jrsoftware.org/isinfo.php) (`winget install --id JRSoftware.InnoSetup --exact --scope user`):
+
+```powershell
+app\windows\installer\build_installer.ps1   # -> app\build\installer\thask-setup-<Version>.exe
+```
+
+Das Setup installiert ohne Adminrechte für den aktuellen Benutzer, nach `%LOCALAPPDATA%\Programs\tHAsk`, mit Startmenü-Eintrag. Optional legt es eine Desktop-Verknüpfung an und startet die App beim Anmelden minimiert. Ein Update installiert man über das alte Setup drüber; eine laufende App wird dabei geschlossen. Anmeldung und zwischengespeicherte Daten liegen unter `%APPDATA%\de.schumey\tHAsk`, das Setup lässt sie auch beim Deinstallieren unangetastet. Deinstallieren geht über Windows-Einstellungen → Apps.
+
 ## Installation
 
 1. Ordner `custom_components/thask` nach `/config/custom_components/thask` kopieren (oder per HACS als benutzerdefiniertes Repository).
