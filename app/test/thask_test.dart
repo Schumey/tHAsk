@@ -167,6 +167,27 @@ void main() {
       expect(cache.outbox, isNotNull);
     });
 
+    test('Reihenfolge ohne Verbindung ändern: sofort sichtbar, beim Verbinden gesendet', () async {
+      await store.addQuick('l1', 'Milch');
+      await store.addQuick('l1', 'Brot');
+      // Neue Aufgaben kommen ans Ende; Brot nach ganz oben ziehen.
+      expect([for (final t in store.tasksOf('l1')) t.title], ['Steuer', 'Milch', 'Brot']);
+      final bread = store.tasksOf('l1').last;
+      await store.moveTask(bread, null);
+      expect([for (final t in store.tasksOf('l1')) t.title], ['Brot', 'Steuer', 'Milch']);
+      await store.moveTask(store.task('t1')!, bread.id);
+      expect([for (final t in store.tasksOf('l1')) t.title], ['Brot', 'Steuer', 'Milch']);
+
+      connection.results['thask/task/create'] = {'id': 'real-1'};
+      await reconnect();
+      expect(store.pendingCount, 0);
+      final moves = [for (final c in connection.calls) if (c.$1 == 'thask/task/move') c.$2];
+      final created = connection.calls.where((c) => c.$1 == 'thask/task/create').length;
+      expect(created, 2);
+      // Die vorläufige Kennung von Brot ist durch die echte ersetzt.
+      expect(moves.last, {'task_id': 't1', 'previous_id': 'real-1'});
+    });
+
     test('Nach dem Verbinden werden die Änderungen der Reihe nach gesendet', () async {
       await store.addQuick('l1', 'Milch');
       final milk = store.tasksOf('l1').singleWhere((t) => t.title == 'Milch');

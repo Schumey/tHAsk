@@ -578,6 +578,19 @@ class ThaskStore extends ChangeNotifier {
         final id = payload['task_id'] as String;
         _tasks.remove(id);
         _rawTasks.remove(id);
+      case 'thask/task/move':
+        final task = _tasks[payload['task_id']];
+        if (task == null) return;
+        final order = sortTasks(_tasks.values.where((t) => t.listId == task.listId && t.id != task.id), 'manual');
+        final previous = payload['previous_id'] as String?;
+        final index = previous == null ? 0 : order.indexWhere((t) => t.id == previous) + 1;
+        order.insert(index < 0 ? order.length : index, task);
+        for (var position = 0; position < order.length; position++) {
+          final id = order[position].id;
+          final raw = Map<String, dynamic>.of(_rawTasks[id]!)..['position'] = position.toDouble();
+          _rawTasks[id] = raw;
+          _tasks[id] = Task.fromJson(raw);
+        }
     }
   }
 
@@ -595,6 +608,7 @@ class ThaskStore extends ChangeNotifier {
             final realId = result['id'] as String;
             for (final other in _outbox) {
               if (other.payload['task_id'] == op.tempId) other.payload['task_id'] = realId;
+              if (other.payload['previous_id'] == op.tempId) other.payload['previous_id'] = realId;
             }
             // Die echte Aufgabe kommt als Änderungsereignis vom Server.
             _tasks.remove(op.tempId);
@@ -661,6 +675,11 @@ class ThaskStore extends ChangeNotifier {
   Future<void> setPriority(Task task, int priority) => updateTask(task, {'priority': priority});
 
   Future<void> deleteTask(Task task) => _mutate('thask/task/delete', {'task_id': task.id});
+
+  /// Aufgabe in ihrer Liste direkt hinter [previousId] einordnen, ohne [previousId] ganz nach oben
+  /// (wie `move_task` in `core/collection.py`). Geht auch ohne Verbindung.
+  Future<void> moveTask(Task task, String? previousId) =>
+      _mutate('thask/task/move', {'task_id': task.id, 'previous_id': previousId});
 
   /// Für den Hintergrundlauf des Widgets: sofort senden, wenn verbunden, ohne die Warteschlange anzufassen.
   Future<void> completeNow(Task task) {

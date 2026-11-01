@@ -244,7 +244,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: Theme.of(context).textTheme.bodyLarge,
                     ),
                   )
-                : ListView(
+                : list != null && list.sort == 'manual'
+                    ? _reorderableList(open, done, tile)
+                    : ListView(
                     children: [
                       if (_view is PlannedView)
                         ..._plannedSections(context, open, tile)
@@ -285,6 +287,29 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ],
       ),
+    );
+  }
+
+  /// Eigene Liste mit manueller Reihenfolge: offene Aufgaben per Ziehen anordnen (Griff rechts bzw. lange drücken).
+  Widget _reorderableList(List<Task> open, List<Task> done, Widget Function(Task) tile) {
+    return ReorderableListView(
+      buildDefaultDragHandles: true,
+      footer: done.isEmpty
+          ? null
+          : ExpansionTile(
+              title: Text(tr('completed_n', [done.length])),
+              children: [for (final task in done) tile(task)],
+            ),
+      // newIndex zählt schon ohne die verschobene Aufgabe.
+      onReorderItem: (oldIndex, newIndex) {
+        if (newIndex == oldIndex) return;
+        final moved = open[oldIndex];
+        final rest = [...open]..removeAt(oldIndex);
+        // Nach oben: vor die Aufgabe, die jetzt an dieser Stelle steht, also hinter deren Vorgängerin.
+        final previous = newIndex == 0 ? null : rest[newIndex - 1].id;
+        _guard(() => store.moveTask(moved, previous));
+      },
+      children: [for (final task in open) KeyedSubtree(key: ValueKey('move-${task.id}'), child: tile(task))],
     );
   }
 
