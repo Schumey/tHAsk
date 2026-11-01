@@ -494,8 +494,13 @@ class ThaskStore extends ChangeNotifier {
   /// Solange Änderungen warten, wird alles hinten angestellt, damit die Reihenfolge stimmt.
   Future<void> _mutate(String type, Map<String, dynamic> payload, {String? tempId}) async {
     final taskId = payload['task_id'];
-    final direct =
-        connection == LinkState.connected && _client != null && _outbox.isEmpty && !_isTemp(taskId);
+    final listId = payload['list_id'];
+    final direct = connection == LinkState.connected &&
+        _client != null &&
+        _outbox.isEmpty &&
+        !_isTemp(taskId) &&
+        !_isTemp(listId) &&
+        !_isTemp(payload['previous_id']);
     if (direct) {
       await _client!.call(type, payload);
       return;
@@ -505,6 +510,17 @@ class ThaskStore extends ChangeNotifier {
       _outbox.removeWhere((op) => op.tempId == taskId || op.payload['task_id'] == taskId);
       _tasks.remove(taskId);
       _rawTasks.remove(taskId);
+    } else if (type == 'thask/list/delete' && _isTemp(listId)) {
+      // Ebenso eine offline angelegte Liste samt ihren Aufgaben.
+      final doomed = {for (final t in _tasks.values) if (t.listId == listId) t.id};
+      _outbox.removeWhere(
+        (op) => op.tempId == listId || op.payload['list_id'] == listId || doomed.contains(op.tempId) ||
+            doomed.contains(op.payload['task_id']),
+      );
+      _lists.remove(listId);
+      _rawLists.remove(listId);
+      doomed.forEach(_tasks.remove);
+      doomed.forEach(_rawTasks.remove);
     } else {
       final op = _Op(type, payload, _clock().toUtc().toIso8601String(), tempId: tempId);
       _outbox.add(op);
@@ -583,6 +599,38 @@ class ThaskStore extends ChangeNotifier {
         final id = payload['task_id'] as String;
         _tasks.remove(id);
         _rawTasks.remove(id);
+      case 'thask/list/create':
+        final id = op.tempId!;
+        final position = _lists.values.fold<double>(-1, (max, l) => l.position > max ? l.position : max) + 1;
+        final raw = <String, dynamic>{
+          'id': id,
+          'name': payload['name'],
+          'group': payload['group'],
+          'position': position,
+          'sort': 'manual',
+        };
+        _rawLists[id] = raw;
+        _lists[id] = TaskList.fromJson(raw);
+      case 'thask/list/update':
+        final id = payload['list_id'] as String;
+        final current = _rawLists[id];
+        if (current == null) return;
+        final raw = Map<String, dynamic>.of(current)
+          ..addAll({for (final e in payload.entries) if (e.key != 'list_id') e.key: e.value});
+        _rawLists[id] = raw;
+        _lists[id] = TaskList.fromJson(raw);
+      case 'thask/list/delete':
+        final id = payload['list_id'] as String;
+        _lists.remove(id);
+        _rawLists.remove(id);
+        final doomed = [for (final t in _tasks.values) if (t.listId == id) t.id];
+        doomed.forEach(_tasks.remove);
+        doomed.forEach(_rawTasks.remove);
+      case 'thask/list/clear_completed':
+        final id = payload['list_id'] as String?;
+        final doomed = [for (final t in _tasks.values) if (t.completed && (id == null || t.listId == id)) t.id];
+        doomed.forEach(_tasks.remove);
+        doomed.forEach(_rawTasks.remove);
       case 'thask/task/move':
         final task = _tasks[payload['task_id']];
         if (task == null) return;
@@ -612,12 +660,23 @@ class ThaskStore extends ChangeNotifier {
           if (op.tempId != null && result is Map) {
             final realId = result['id'] as String;
             for (final other in _outbox) {
-              if (other.payload['task_id'] == op.tempId) other.payload['task_id'] = realId;
-              if (other.payload['previous_id'] == op.tempId) other.payload['previous_id'] = realId;
+              for (final key in const ['task_id', 'previous_id', 'list_id']) {
+                if (other.payload[key] == op.tempId) other.payload[key] = realId;
+              }
             }
-            // Die echte Aufgabe kommt als Änderungsereignis vom Server.
-            _tasks.remove(op.tempId);
-            _rawTasks.remove(op.tempId);
+            // Die echte Aufgabe bzw. Liste kommt als Änderungsereignis vom Server.
+            if (op.type == 'thask/list/create') {
+              _lists.remove(op.tempId);
+              _rawLists.remove(op.tempId);
+              for (final task in [..._tasks.values.where((t) => t.listId == op.tempId)]) {
+                final raw = Map<String, dynamic>.of(_rawTasks[task.id]!)..['list_id'] = realId;
+                _rawTasks[task.id] = raw;
+                _tasks[task.id] = Task.fromJson(raw);
+              }
+            } else {
+              _tasks.remove(op.tempId);
+              _rawTasks.remove(op.tempId);
+            }
           }
         } on HaException catch (e) {
           if (e.code == null) break;
@@ -625,6 +684,8 @@ class ThaskStore extends ChangeNotifier {
           if (op.tempId != null) {
             _tasks.remove(op.tempId);
             _rawTasks.remove(op.tempId);
+            _lists.remove(op.tempId);
+            _rawLists.remove(op.tempId);
           }
         }
         _outbox.remove(op);
@@ -694,7 +755,8 @@ class ThaskStore extends ChangeNotifier {
     return setCompleted(task, true);
   }
 
-  Future<void> clearCompleted(String listId) => _call('thask/list/clear_completed', {'list_id': listId});
+  /// Erledigte einer Liste löschen; geht auch ohne Verbindung.
+  Future<void> clearCompleted(String listId) => _mutate('thask/list/clear_completed', {'list_id': listId});
 
   // -- Optionen der Integration (nur mit Verbindung und für Administratoren) ---
 
@@ -719,20 +781,24 @@ class ThaskStore extends ChangeNotifier {
     return names..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
   }
 
-  /// Legt eine Liste an und liefert ihre Id.
+  /// Legt eine Liste an und liefert ihre Id. Ohne Verbindung vorgemerkt, mit vorläufiger Id.
   Future<String?> createList(String name, {String? group}) async {
-    final result = await _call('thask/list/create', {'name': name, 'group': ?group});
-    return (result as Map?)?['id'] as String?;
+    final payload = {'name': name, 'group': ?group};
+    if (connection == LinkState.connected && _client != null && _outbox.isEmpty) {
+      final result = await _client!.call('thask/list/create', payload);
+      return (result as Map?)?['id'] as String?;
+    }
+    final tempId = _newTempId();
+    await _mutate('thask/list/create', payload, tempId: tempId);
+    return tempId;
   }
 
-  /// Felder wie `name`, `group` (null = keine Gruppe) oder `sort`.
-  Future<void> updateList(String listId, Map<String, dynamic> patch) async {
-    await _call('thask/list/update', {'list_id': listId, ...patch});
-  }
+  /// Felder wie `name`, `group` (null = keine Gruppe) oder `sort`; geht auch ohne Verbindung.
+  Future<void> updateList(String listId, Map<String, dynamic> patch) =>
+      _mutate('thask/list/update', {'list_id': listId, ...patch});
 
-  Future<void> deleteList(String listId) async {
-    await _call('thask/list/delete', {'list_id': listId});
-  }
+  /// Liste samt Aufgaben löschen; geht auch ohne Verbindung.
+  Future<void> deleteList(String listId) => _mutate('thask/list/delete', {'list_id': listId});
 
   @override
   void dispose() {

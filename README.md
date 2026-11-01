@@ -225,7 +225,7 @@ Für Apps ohne passenden Export (etwa Any.do oder Things) die Aufgaben in eine T
 
 ## Android-App
 
-Die App spiegelt die Weboberfläche: intelligente Listen und eigene Listen (anlegen, umbenennen, Gruppe, Sortierung, löschen), Detailbereich, Schnelleingabe mit Erkennung, Priorität als farbiger Balken, Fälligkeit als Pille (rot überfällig, blau wenn sie heute endet). Sie hält Verbindung zu Home Assistant über die WebSocket-API, zeigt offline den letzten Stand und merkt Änderungen ohne Verbindung vor, bis sie gesendet werden können.
+Die App spiegelt die Weboberfläche: intelligente Listen und eigene Listen (anlegen, umbenennen, Gruppe, Sortierung, löschen), Detailbereich, Schnelleingabe mit Erkennung, Priorität als farbiger Balken, Fälligkeit als Pille (rot überfällig, blau wenn sie heute endet). Sie hält Verbindung zu Home Assistant über die WebSocket-API, zeigt offline den letzten Stand und merkt Änderungen ohne Verbindung vor, bis sie gesendet werden können – auch Listen anlegen, umbenennen, sortieren, löschen und „Erledigte löschen“. Gesendet werden nur die geänderten Felder; ändern zwei Geräte dasselbe Feld, gilt die zuletzt gesendete Änderung. In eigenen Listen mit manueller Sortierung lassen sich Aufgaben per Ziehen anordnen (lange drücken bzw. am Griff ziehen).
 
 **Widget**: zeigt eine Ansicht mit der Zahl der offenen Aufgaben; ein Tipp auf den Titel öffnet die Auswahl der Ansicht, das tHAsk-Symbol öffnet die App in dieser Ansicht. Aufgaben lassen sich abhaken (auch offline vorgemerkt), „+“ öffnet die Schnelleingabe. Es aktualisiert sich alle 30 Minuten (das Minimum von Android) und von Hand mit ↻.
 

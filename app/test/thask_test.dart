@@ -188,6 +188,46 @@ void main() {
       expect(moves.last, {'task_id': 't1', 'previous_id': 'real-1'});
     });
 
+    test('Listen ohne Verbindung anlegen und ändern: vorläufige Kennung wird ersetzt', () async {
+      final listId = await store.createList('Garten');
+      expect(store.list(listId!)?.name, 'Garten');
+      await store.addQuick(listId, 'Rasen mähen');
+      await store.updateList(listId, {'name': 'Garten & Hof'});
+      await store.updateList('l1', {'sort': 'priority'});
+      expect(store.list(listId)?.name, 'Garten & Hof');
+      expect(store.list('l1')?.sort, 'priority');
+      expect(store.pendingCount, 4);
+
+      connection.results['thask/list/create'] = {'id': 'liste-echt'};
+      connection.results['thask/task/create'] = {'id': 'aufgabe-echt'};
+      await reconnect();
+      expect(store.pendingCount, 0);
+      final calls = [for (final c in connection.calls) if (c.$1 != 'thask/subscribe') c];
+      expect([for (final c in calls) c.$1], [
+        'thask/list/create',
+        'thask/task/create',
+        'thask/list/update',
+        'thask/list/update',
+      ]);
+      expect(calls[1].$2['list_id'], 'liste-echt');
+      expect(calls[2].$2['list_id'], 'liste-echt');
+    });
+
+    test('Offline angelegte Liste wieder löschen: nichts wird gesendet', () async {
+      final listId = await store.createList('Weg damit');
+      await store.addQuick(listId!, 'Aufgabe');
+      await store.deleteList(listId);
+      expect(store.list(listId), isNull);
+      expect(store.pendingCount, 0);
+    });
+
+    test('Erledigte ohne Verbindung löschen', () async {
+      await store.setCompleted(store.task('t1')!, true);
+      await store.clearCompleted('l1');
+      expect(store.tasksOf('l1'), isEmpty);
+      expect(store.pendingCount, 2);
+    });
+
     test('Nach dem Verbinden werden die Änderungen der Reihe nach gesendet', () async {
       await store.addQuick('l1', 'Milch');
       final milk = store.tasksOf('l1').singleWhere((t) => t.title == 'Milch');
@@ -350,10 +390,6 @@ void main() {
       }
       await Future<void>.delayed(Duration.zero);
       expect(store.groups, ['Auto', 'zuhause']);
-    });
-
-    test('Listen ändern braucht eine Verbindung', () async {
-      expect(() => store.updateList('l1', {'name': 'x'}), throwsA(isA<HaException>()));
     });
 
     test('updateTask schickt nur die geänderten Felder', () async {

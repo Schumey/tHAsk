@@ -477,7 +477,6 @@ class _HomeScreenState extends State<HomeScreen> {
         ListTile(
           leading: const Icon(Icons.add),
           title: Text(tr('new_list')),
-          enabled: store.connection == LinkState.connected,
           onTap: () {
             if (inDrawer) Navigator.pop(context);
             _newList();
