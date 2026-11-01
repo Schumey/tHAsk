@@ -8,9 +8,18 @@ import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult, OptionsFlow
 from homeassistant.core import callback
-from homeassistant.helpers.selector import BooleanSelector, SelectSelector, SelectSelectorConfig, SelectSelectorMode
+from homeassistant.helpers.selector import (
+    BooleanSelector,
+    NumberSelector,
+    NumberSelectorConfig,
+    NumberSelectorMode,
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+)
 
 from .const import (
+    CONF_AUTO_CLEAR_DAYS,
     CONF_HIDDEN_VIEWS,
     CONF_OVERDUE,
     CONF_REMINDER_TARGETS,
@@ -68,6 +77,12 @@ class ThaskOptionsFlow(OptionsFlow):
                         translation_key=CONF_HIDDEN_VIEWS,
                         mode=SelectSelectorMode.LIST,
                     )
+                ),
+                vol.Required(CONF_AUTO_CLEAR_DAYS, default=options.get(CONF_AUTO_CLEAR_DAYS, 0)): vol.All(
+                    NumberSelector(
+                        NumberSelectorConfig(min=0, max=3650, step=1, mode=NumberSelectorMode.BOX, unit_of_measurement="d")
+                    ),
+                    vol.Coerce(int),
                 ),
                 vol.Optional(CONF_REMINDER_TARGETS, default=targets): SelectSelector(
                     SelectSelectorConfig(

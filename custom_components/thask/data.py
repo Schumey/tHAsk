@@ -21,6 +21,7 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_AUTO_CLEAR_DAYS,
     CONF_HIDDEN_VIEWS,
     CONF_OVERDUE,
     CONF_REMINDER_TARGETS,
@@ -92,6 +93,8 @@ class ThaskData:
         self.separate_month = False
         self.week_mode = DEFAULT_WEEK_MODE
         self.hidden_views: list[str] = []
+        self.auto_clear_days = 0
+        self._started = False
         self.reminder_targets: list[str] = []
 
     @callback
@@ -104,7 +107,20 @@ class ThaskData:
         week_mode = options.get(CONF_WEEK_MODE, DEFAULT_WEEK_MODE)
         self.week_mode = week_mode if week_mode in WEEK_MODES else DEFAULT_WEEK_MODE
         self.hidden_views = [view for view in options.get(CONF_HIDDEN_VIEWS, []) if view in HIDEABLE_VIEWS]
+        self.auto_clear_days = max(0, int(options.get(CONF_AUTO_CLEAR_DAYS, 0) or 0))
         async_dispatcher_send(self.hass, SIGNAL_OPTIONS_CHANGED)
+        if self._started:
+            self.auto_clear()
+
+    @callback
+    def auto_clear(self) -> int:
+        """Delete completed tasks older than the option "auto_clear_days"; returns how many."""
+        if not self.auto_clear_days:
+            return 0
+        removed = self.collection.clear_completed(None, dt_util.utcnow() - timedelta(days=self.auto_clear_days))
+        if removed:
+            _LOGGER.debug("Deleted %s completed tasks older than %s days", removed, self.auto_clear_days)
+        return removed
 
     @property
     def options(self) -> dict[str, Any]:
@@ -144,6 +160,8 @@ class ThaskData:
         self._unsubs.append(
             async_track_time_change(self.hass, self._on_new_day, hour=0, minute=0, second=5)
         )
+        self._started = True
+        self.auto_clear()
         for task in self.collection.tasks.values():
             self._schedule_reminder(task)
         self._unsubs.append(
@@ -327,4 +345,5 @@ class ThaskData:
                 self.hass.bus.async_fire(EVENT_TASK_DUE, self.task_info(task))
             elif task.due.end == yesterday:
                 self.hass.bus.async_fire(EVENT_TASK_OVERDUE, self.task_info(task))
+        self.auto_clear()
         async_dispatcher_send(self.hass, SIGNAL_DAY_CHANGED)

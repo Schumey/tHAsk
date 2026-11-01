@@ -17,6 +17,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.util import dt as dt_util
 
 from .const import (
+    CONF_AUTO_CLEAR_DAYS,
     CONF_HIDDEN_VIEWS,
     CONF_OVERDUE,
     CONF_REMINDER_TARGETS,
@@ -419,6 +420,7 @@ def ws_options_get(hass, connection, msg, data: ThaskData) -> None:
         vol.Optional(CONF_SEPARATE_MONTH): bool,
         vol.Optional(CONF_WEEK_MODE): vol.In(WEEK_MODES),
         vol.Optional(CONF_HIDDEN_VIEWS): [vol.In(HIDEABLE_VIEWS)],
+        vol.Optional(CONF_AUTO_CLEAR_DAYS): vol.All(vol.Coerce(int), vol.Range(min=0, max=3650)),
         vol.Optional(CONF_REMINDER_TARGETS): [str],
     }
 )

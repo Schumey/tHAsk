@@ -204,6 +204,7 @@
           "separate_week": "Separar «Hoy» y «Esta semana»",
           "separate_month": "Separar «Este mes»",
           "hidden_views": "Ocultar vistas",
+          "auto_clear_days": "Eliminar tareas completadas después de (días)",
           "reminder_targets": "Enviar recordatorios a"
         },
         "data_description": {
@@ -212,6 +213,7 @@
           "separate_week": "«Hoy» solo muestra las tareas que vencen un día concreto (y las vencidas); los periodos como «semana 44» están en «Esta semana», que a su vez no muestra lo que ya está en «Hoy».",
           "separate_month": "«Este mes» solo muestra lo que vence después de esta semana hasta final de mes, sin las tareas vencidas.",
           "hidden_views": "Estas vistas no aparecen en la navegación de la interfaz web, las apps y el widget. «Hoy» siempre se mantiene.",
+          "auto_clear_days": "Las tareas completadas se eliminan tantos días después de marcarlas, comprobado al iniciar y cada noche. 0 = nunca.",
           "reminder_targets": "Servicios de notificación (notify.…) que reciben los recordatorios, p. ej. la app Companion de tu móvil (con un botón «Hecho») o persistent_notification para la campana de Home Assistant. La app de Windows muestra los recordatorios por sí misma mientras está abierta."
         }
       }

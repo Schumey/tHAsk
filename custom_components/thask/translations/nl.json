@@ -204,6 +204,7 @@
           "separate_week": "„Vandaag” en „Deze week” scheiden",
           "separate_month": "„Deze maand” scheiden",
           "hidden_views": "Weergaven verbergen",
+          "auto_clear_days": "Voltooide taken verwijderen na (dagen)",
           "reminder_targets": "Herinneringen sturen naar"
         },
         "data_description": {
@@ -212,6 +213,7 @@
           "separate_week": "„Vandaag” toont alleen taken die op een bepaalde dag moeten (en te late); periodes zoals „week 44” staan in „Deze week”, die op zijn beurt niets toont wat al in „Vandaag” staat.",
           "separate_month": "„Deze maand” toont alleen wat na deze week tot het einde van de maand moet, zonder te late taken.",
           "hidden_views": "Deze weergaven verschijnen niet in de navigatie van de webinterface, de apps en de widget. „Vandaag” blijft altijd.",
+          "auto_clear_days": "Voltooide taken worden zoveel dagen na het afvinken verwijderd, gecontroleerd bij het starten en elke nacht. 0 = nooit.",
           "reminder_targets": "Meldingsdiensten (notify.…) die herinneringen krijgen, bijv. de Companion-app op je telefoon (met een knop „Klaar”) of persistent_notification voor de bel in Home Assistant. De Windows-app toont herinneringen zelf zolang hij draait."
         }
       }

@@ -204,6 +204,7 @@
           "separate_week": "„Heute“ und „Diese Woche“ trennen",
           "separate_month": "„Diesen Monat“ trennen",
           "hidden_views": "Ansichten ausblenden",
+          "auto_clear_days": "Erledigte automatisch löschen nach (Tagen)",
           "reminder_targets": "Erinnerungen senden an"
         },
         "data_description": {
@@ -212,6 +213,7 @@
           "separate_week": "„Heute“ zeigt nur Aufgaben, die an einem bestimmten Tag fällig sind (und Überfälliges); Zeiträume wie „KW 44“ stehen in „Diese Woche“, das wiederum nichts zeigt, was schon in „Heute“ steht.",
           "separate_month": "„Diesen Monat“ zeigt nur, was nach dieser Woche bis Monatsende fällig ist, ohne Überfälliges.",
           "hidden_views": "Diese Ansichten erscheinen nicht in der Navigation der Weboberfläche, der Apps und des Widgets. „Heute“ bleibt immer.",
+          "auto_clear_days": "Erledigte Aufgaben werden so viele Tage nach dem Abhaken gelöscht, geprüft beim Start und jede Nacht. 0 = nie.",
           "reminder_targets": "Benachrichtigungsdienste (notify.…), die Erinnerungen bekommen, z. B. die Companion-App auf dem Handy (mit Knopf „Erledigt“) oder persistent_notification für die Glocke in Home Assistant. Die Windows-App zeigt Erinnerungen unabhängig davon an, solange sie läuft."
         }
       }

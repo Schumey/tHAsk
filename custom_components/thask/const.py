@@ -48,6 +48,10 @@ DEFAULT_WEEK_MODE = "calendar"
 CONF_HIDDEN_VIEWS = "hidden_views"
 HIDEABLE_VIEWS = ("important", "planned", "this_week", "this_month")
 
+# Option: delete completed tasks automatically this many days after completion (0 = never). Runs at start,
+# after midnight and when the option changes.
+CONF_AUTO_CLEAR_DAYS = "auto_clear_days"
+
 # Defaults of all options, also for the settings page in the web interface.
 DEFAULT_OPTIONS = {
     "overdue_in_today": "section",
@@ -55,6 +59,7 @@ DEFAULT_OPTIONS = {
     CONF_SEPARATE_MONTH: False,
     CONF_WEEK_MODE: DEFAULT_WEEK_MODE,
     CONF_HIDDEN_VIEWS: [],
+    CONF_AUTO_CLEAR_DAYS: 0,
     "reminder_targets": [],
 }
 
