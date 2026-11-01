@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'credentials.dart';
 import 'desktop_bridge.dart';
 import 'home_screen.dart';
+import 'l10n.dart';
 import 'login_screen.dart';
 import 'snapshot_cache.dart';
 import 'store.dart';
@@ -10,6 +12,7 @@ import 'widget_bridge.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  L10n.lang = L10n.resolve(WidgetsBinding.instance.platformDispatcher.locale.languageCode);
   final store = ThaskStore(SecureCredentialStore(), cache: PrefsSnapshotCache());
   final bridge = WidgetBridge(store);
   await bridge.attach();
@@ -64,6 +67,9 @@ class _ThaskAppState extends State<ThaskApp> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'tHAsk',
+      locale: L10n.locale,
+      supportedLocales: [for (final lang in L10n.languages) Locale(lang)],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
       theme: thaskTheme(Brightness.light),
       darkTheme: thaskTheme(Brightness.dark),
       home: ListenableBuilder(

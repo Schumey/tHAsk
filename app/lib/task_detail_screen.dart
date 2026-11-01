@@ -1,41 +1,31 @@
 import 'package:flutter/material.dart';
 
+import 'l10n.dart';
 import 'models.dart';
 import 'priority.dart';
 import 'store.dart';
 
-const _granularityNames = {
-  Granularity.day: 'Tag',
-  Granularity.week: 'Woche',
-  Granularity.month: 'Monat',
-  Granularity.quarter: 'Quartal',
-  Granularity.year: 'Jahr',
-};
+/// Einheit in Einzahl und Mehrzahl, z. B. („Woche“, „Wochen“).
+(String, String) _unitNames(Granularity g) => (tr('unit_${g.name}'), tr('units_${g.name}'));
 
-const _unitNames = {
-  Granularity.day: ('Tag', 'Tage'),
-  Granularity.week: ('Woche', 'Wochen'),
-  Granularity.month: ('Monat', 'Monate'),
-  Granularity.quarter: ('Quartal', 'Quartale'),
-  Granularity.year: ('Jahr', 'Jahre'),
-};
+/// Name der Granularität für die Chips („Tag“, „Woche“ …), groß geschrieben.
+String _granularityName(Granularity g) {
+  final name = tr('unit_${g.name}');
+  return name.isEmpty ? name : name[0].toUpperCase() + name.substring(1);
+}
 
 String _two(int n) => n.toString().padLeft(2, '0');
 
 String _everyText(Recurrence r) {
-  final (one, many) = _unitNames[r.unit]!;
-  return r.interval == 1 ? 'Jeden $one' : 'Alle ${r.interval} $many';
+  final (one, many) = _unitNames(r.unit);
+  return r.interval == 1 ? tr('every_one', [one]) : tr('every_many', [r.interval, many]);
 }
 
-const _weekdayNames = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+List<String> get _weekdayNames => L10n.weekdaysShort;
 
 String _recurrenceLabel(Recurrence r) {
   final label = switch (r.unit) {
-    Granularity.day when r.interval == 1 => 'Täglich',
-    Granularity.week when r.interval == 1 => 'Wöchentlich',
-    Granularity.month when r.interval == 1 => 'Monatlich',
-    Granularity.quarter when r.interval == 1 => 'Vierteljährlich',
-    Granularity.year when r.interval == 1 => 'Jährlich',
+    _ when r.interval == 1 => tr('rec_${r.unit.name}'),
     _ => _everyText(r),
   };
   return r.weekdays.isEmpty ? label : '$label: ${[for (final d in r.weekdays) _weekdayNames[d]].join(', ')}';
@@ -247,11 +237,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Aufgabe löschen?'),
-        content: Text('„${task.title}“ wird endgültig gelöscht.'),
+        title: Text(tr('delete_task_q')),
+        content: Text(tr('delete_task_text', [task.title])),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Abbrechen')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Löschen')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(tr('cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(tr('delete'))),
         ],
       ),
     );
@@ -273,10 +263,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
             automaticallyImplyLeading: widget.onClose == null,
             leading: widget.onClose == null
                 ? null
-                : IconButton(tooltip: 'Schließen', icon: const Icon(Icons.close), onPressed: widget.onClose),
+                : IconButton(tooltip: tr('close'), icon: const Icon(Icons.close), onPressed: widget.onClose),
             actions: [
               IconButton(
-                tooltip: 'Löschen',
+                tooltip: tr('delete'),
                 icon: const Icon(Icons.delete_outline),
                 onPressed: () => _delete(task),
               ),
@@ -297,7 +287,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                   style: theme.textTheme.titleLarge?.copyWith(
                     decoration: task.completed ? TextDecoration.lineThrough : null,
                   ),
-                  decoration: const InputDecoration(border: InputBorder.none, hintText: 'Titel'),
+                  decoration: InputDecoration(border: InputBorder.none, hintText: tr('title')),
                   minLines: 1,
                   maxLines: 3,
                   textInputAction: TextInputAction.done,
@@ -318,7 +308,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                     style: step.completed ? const TextStyle(decoration: TextDecoration.lineThrough) : null,
                   ),
                   trailing: IconButton(
-                    tooltip: 'Schritt entfernen',
+                    tooltip: tr('remove_step'),
                     icon: const Icon(Icons.close, size: 18),
                     onPressed: () => _removeStep(task, step),
                   ),
@@ -328,7 +318,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                 leading: const Icon(Icons.add),
                 title: TextField(
                   controller: _newStep,
-                  decoration: const InputDecoration(border: InputBorder.none, hintText: 'Schritt hinzufügen'),
+                  decoration: InputDecoration(border: InputBorder.none, hintText: tr('add_step')),
                   textInputAction: TextInputAction.done,
                   onSubmitted: (_) => _addStep(task),
                 ),
@@ -336,7 +326,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
               const Divider(height: 1),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                child: Text('Priorität', style: theme.textTheme.labelLarge),
+                child: Text(tr('priority'), style: theme.textTheme.labelLarge),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -358,7 +348,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
               const Divider(height: 1),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-                child: Text('Fällig', style: theme.textTheme.labelLarge),
+                child: Text(tr('due'), style: theme.textTheme.labelLarge),
               ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -366,13 +356,13 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                   spacing: 8,
                   children: [
                     ChoiceChip(
-                      label: const Text('Keine'),
+                      label: Text(tr('none')),
                       selected: due == null,
                       onSelected: (_) => _setGranularity(task, null),
                     ),
                     for (final g in Granularity.values)
                       ChoiceChip(
-                        label: Text(_granularityNames[g]!),
+                        label: Text(_granularityName(g)),
                         selected: due?.granularity == g,
                         onSelected: (_) => _setGranularity(task, g),
                       ),
@@ -382,7 +372,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
               if (due != null)
                 ListTile(
                   leading: IconButton(
-                    tooltip: 'Zurück',
+                    tooltip: tr('back'),
                     icon: const Icon(Icons.chevron_left),
                     onPressed: () => _update({'due': due.shift(-1).toJson()}),
                   ),
@@ -396,7 +386,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                     ),
                   ),
                   trailing: IconButton(
-                    tooltip: 'Weiter',
+                    tooltip: tr('forward'),
                     icon: const Icon(Icons.chevron_right),
                     onPressed: () => _update({'due': due.shift(1).toJson()}),
                   ),
@@ -404,11 +394,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
               if (due?.granularity == Granularity.day)
                 ListTile(
                   leading: const Icon(Icons.schedule),
-                  title: Text(task.dueTime ?? 'Uhrzeit hinzufügen'),
+                  title: Text(task.dueTime ?? tr('add_time')),
                   trailing: task.dueTime == null
                       ? null
                       : IconButton(
-                          tooltip: 'Uhrzeit entfernen',
+                          tooltip: tr('remove_time'),
                           icon: const Icon(Icons.close),
                           onPressed: () => _update({'due_time': null}),
                         ),
@@ -417,11 +407,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
               const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.notifications_none),
-                title: Text(task.reminder == null ? 'Erinnerung hinzufügen' : _reminderText(task.reminder!)),
+                title: Text(task.reminder == null ? tr('add_reminder') : _reminderText(task.reminder!)),
                 trailing: task.reminder == null
                     ? null
                     : IconButton(
-                        tooltip: 'Erinnerung entfernen',
+                        tooltip: tr('remove_reminder'),
                         icon: const Icon(Icons.close),
                         onPressed: () => _update({'reminder': null}),
                       ),
@@ -429,11 +419,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
               ),
               ListTile(
                 leading: const Icon(Icons.repeat),
-                title: Text(task.recurrence == null ? 'Wiederholung hinzufügen' : _recurrenceLabel(task.recurrence!)),
+                title: Text(task.recurrence == null ? tr('add_recurrence') : _recurrenceLabel(task.recurrence!)),
                 trailing: task.recurrence == null
                     ? null
                     : IconButton(
-                        tooltip: 'Wiederholung entfernen',
+                        tooltip: tr('remove_recurrence'),
                         icon: const Icon(Icons.close),
                         onPressed: () => _update({'recurrence': null}),
                       ),
@@ -464,10 +454,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                   minLines: 3,
                   maxLines: 12,
                   keyboardType: TextInputType.multiline,
-                  decoration: const InputDecoration(
-                    labelText: 'Notizen',
+                  decoration: InputDecoration(
+                    labelText: tr('notes'),
                     alignLabelWithHint: true,
-                    border: OutlineInputBorder(),
+                    border: const OutlineInputBorder(),
                   ),
                 ),
               ),
@@ -506,16 +496,16 @@ class _RecurrenceDialogState extends State<_RecurrenceDialog> {
 
   @override
   Widget build(BuildContext context) {
-    final (one, many) = _unitNames[_unit]!;
+    final (one, many) = _unitNames(_unit);
     return AlertDialog(
-      title: const Text('Wiederholung'),
+      title: Text(tr('recurrence')),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              const Text('Alle'),
+              Text(tr('every')),
               IconButton(
                 icon: const Icon(Icons.remove),
                 onPressed: _interval > 1 ? () => setState(() => _interval--) : null,
@@ -530,7 +520,7 @@ class _RecurrenceDialogState extends State<_RecurrenceDialog> {
                     for (final g in Granularity.values)
                       DropdownMenuItem(
                         value: g,
-                        child: Text(_interval == 1 ? _unitNames[g]!.$1 : _unitNames[g]!.$2),
+                        child: Text(_interval == 1 ? _unitNames(g).$1 : _unitNames(g).$2),
                       ),
                   ],
                   onChanged: (g) => setState(() => _unit = g ?? _unit),
@@ -540,7 +530,7 @@ class _RecurrenceDialogState extends State<_RecurrenceDialog> {
           ),
           if (_unit == Granularity.week) ...[
             const SizedBox(height: 8),
-            const Text('An'),
+            Text(tr('on_days')),
             const SizedBox(height: 4),
             Wrap(
               spacing: 4,
@@ -567,12 +557,12 @@ class _RecurrenceDialogState extends State<_RecurrenceDialog> {
         ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Abbrechen')),
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(tr('cancel'))),
         FilledButton(
           onPressed: () => Navigator.pop(context, _result),
           child: Text(_unit == Granularity.week && _weekdays.length > 1
               ? _recurrenceLabel(_result)
-              : 'Alle $_interval ${_interval == 1 ? one : many}'),
+              : tr('every_many', [_interval, _interval == 1 ? one : many])),
         ),
       ],
     );

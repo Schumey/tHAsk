@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'l10n.dart';
+
 /// Fehler beim Anmelden oder bei einem Befehl.
 class HaException implements Exception {
   HaException(this.message, {this.code});
@@ -14,16 +16,16 @@ class HaException implements Exception {
 }
 
 class HaAuthException extends HaException {
-  HaAuthException() : super('Das Zugriffstoken wurde abgelehnt.', code: 'auth_invalid');
+  HaAuthException() : super(tr('err_token'), code: 'auth_invalid');
 }
 
 /// Macht aus einer eingegebenen Adresse die WebSocket-URL von Home Assistant.
 Uri websocketUri(String address) {
   var text = address.trim();
-  if (text.isEmpty) throw HaException('Bitte die Adresse von Home Assistant eingeben.');
+  if (text.isEmpty) throw HaException(tr('err_address_missing'));
   if (!text.contains('://')) text = 'http://$text';
   final uri = Uri.parse(text);
-  if (uri.host.isEmpty) throw HaException('Die Adresse ist ungültig.');
+  if (uri.host.isEmpty) throw HaException(tr('err_address_invalid'));
   final secure = uri.scheme == 'https' || uri.scheme == 'wss';
   final base = uri.path.endsWith('/') ? uri.path.substring(0, uri.path.length - 1) : uri.path;
   return Uri(scheme: secure ? 'wss' : 'ws', host: uri.host, port: uri.hasPort ? uri.port : null, path: '$base/api/websocket');
@@ -57,18 +59,18 @@ class HaClient implements HaConnection {
     try {
       socket = await WebSocket.connect(uri.toString()).timeout(timeout);
     } on TimeoutException {
-      throw HaException('Home Assistant antwortet nicht.');
+      throw HaException(tr('err_no_answer'));
     } on SocketException catch (e) {
-      throw HaException('Keine Verbindung: ${e.message}');
+      throw HaException(tr('err_no_connection', [e.message]));
     } on WebSocketException catch (e) {
-      throw HaException('Keine Verbindung: ${e.message}');
+      throw HaException(tr('err_no_connection', [e.message]));
     }
     final client = HaClient._(socket);
     try {
       await client._authenticate(token).timeout(timeout);
     } on TimeoutException {
       await socket.close();
-      throw HaException('Home Assistant antwortet nicht.');
+      throw HaException(tr('err_no_answer'));
     } catch (_) {
       await socket.close();
       rethrow;
@@ -113,7 +115,7 @@ class HaClient implements HaConnection {
           completer.complete(msg['result']);
         } else {
           final error = msg['error'] as Map<String, dynamic>?;
-          completer.completeError(HaException(error?['message'] as String? ?? 'Unbekannter Fehler', code: error?['code'] as String?));
+          completer.completeError(HaException(error?['message'] as String? ?? tr('err_unknown'), code: error?['code'] as String?));
         }
       case 'event':
         _subscriptions[id]?.add(msg['event'] as Map<String, dynamic>);
@@ -122,9 +124,9 @@ class HaClient implements HaConnection {
 
   void _onDone() {
     final auth = _auth;
-    if (auth != null && !auth.isCompleted) auth.completeError(HaException('Die Verbindung wurde beendet.'));
+    if (auth != null && !auth.isCompleted) auth.completeError(HaException(tr('err_closed')));
     for (final completer in _pending.values) {
-      completer.completeError(HaException('Die Verbindung wurde beendet.'));
+      completer.completeError(HaException(tr('err_closed')));
     }
     _pending.clear();
     for (final controller in _subscriptions.values) {

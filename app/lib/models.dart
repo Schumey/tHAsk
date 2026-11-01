@@ -1,17 +1,9 @@
 /// Datenmodell der tHAsk-API (spiegelt `custom_components/thask/core/models.py`).
 library;
 
-enum Granularity { day, week, month, quarter, year }
+import 'l10n.dart';
 
-const _weekdays = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
-const _months = [
-  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
-  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember',
-];
-const _monthsShort = [
-  'Jan.', 'Feb.', 'März', 'Apr.', 'Mai', 'Juni',
-  'Juli', 'Aug.', 'Sept.', 'Okt.', 'Nov.', 'Dez.',
-];
+enum Granularity { day, week, month, quarter, year }
 
 DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
@@ -109,15 +101,15 @@ class Period {
     switch (granularity) {
       case Granularity.day:
         final days = start.difference(dateOnly(today)).inDays;
-        if (days == 0) return 'Heute';
-        if (days == 1) return 'Morgen';
-        text = '${_weekdays[start.weekday - 1]}, ${start.day}. ${_monthsShort[start.month - 1]}';
+        if (days == 0) return tr('today');
+        if (days == 1) return tr('tomorrow');
+        text = L10n.dayLabel(start);
         year = start.year;
       case Granularity.week:
-        text = 'KW ${isoWeekNumber(start)}';
+        text = L10n.weekLabel(isoWeekNumber(start));
         year = isoWeekYear(start);
       case Granularity.month:
-        text = _months[start.month - 1];
+        text = L10n.months[start.month - 1];
         year = start.year;
       case Granularity.quarter:
         text = 'Q${(start.month - 1) ~/ 3 + 1}';

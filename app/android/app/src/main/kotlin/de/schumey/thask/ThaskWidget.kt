@@ -169,7 +169,7 @@ class ThaskWidget : GlanceAppWidget() {
                     }
                     Image(
                         provider = ImageProvider(R.drawable.ic_widget_expand),
-                        contentDescription = "Ansicht wählen",
+                        contentDescription = context.getString(R.string.widget_pick_view),
                         colorFilter = ColorFilter.tint(accent),
                         modifier = GlanceModifier.size(20.dp),
                     )
@@ -180,7 +180,7 @@ class ThaskWidget : GlanceAppWidget() {
                 ) {
                     Image(
                         provider = ImageProvider(R.drawable.ic_widget_refresh),
-                        contentDescription = "Aktualisieren",
+                        contentDescription = context.getString(R.string.widget_refresh),
                         colorFilter = ColorFilter.tint(textSecondary),
                         modifier = GlanceModifier.size(20.dp),
                     )
@@ -193,7 +193,7 @@ class ThaskWidget : GlanceAppWidget() {
                 ) {
                     Image(
                         provider = ImageProvider(R.drawable.ic_widget_add),
-                        contentDescription = "Aufgabe hinzufügen",
+                        contentDescription = context.getString(R.string.widget_add),
                         colorFilter = ColorFilter.tint(onAccent),
                         modifier = GlanceModifier.size(22.dp),
                     )
@@ -201,7 +201,7 @@ class ThaskWidget : GlanceAppWidget() {
             }
             if (views.isEmpty()) {
                 Text(
-                    text = "tHAsk öffnen und anmelden",
+                    text = context.getString(R.string.widget_sign_in),
                     style = TextStyle(color = textSecondary, fontSize = 14.sp),
                     modifier = GlanceModifier.padding(12.dp).clickable(
                         actionStartActivity<MainActivity>(context, Uri.parse("thask://open")),
@@ -209,7 +209,7 @@ class ThaskWidget : GlanceAppWidget() {
                 )
             } else if (tasks.isEmpty()) {
                 Text(
-                    text = "Keine Aufgaben",
+                    text = context.getString(R.string.widget_empty),
                     style = TextStyle(color = textSecondary, fontSize = 14.sp),
                     modifier = GlanceModifier.padding(12.dp),
                 )

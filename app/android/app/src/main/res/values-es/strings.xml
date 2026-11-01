@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_description">Marcar y añadir tareas de tHAsk</string>
+    <string name="widget_pick_view">Elegir vista</string>
+    <string name="widget_refresh">Actualizar</string>
+    <string name="widget_add">Añadir tarea</string>
+    <string name="widget_sign_in">Abre tHAsk e inicia sesión</string>
+    <string name="widget_empty">No hay tareas</string>
+    <string name="widget_view">Vista</string>
+</resources>

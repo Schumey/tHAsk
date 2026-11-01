@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_description">Aufgaben aus tHAsk abhaken und hinzufügen</string>
+    <string name="widget_pick_view">Ansicht wählen</string>
+    <string name="widget_refresh">Aktualisieren</string>
+    <string name="widget_add">Aufgabe hinzufügen</string>
+    <string name="widget_sign_in">tHAsk öffnen und anmelden</string>
+    <string name="widget_empty">Keine Aufgaben</string>
+    <string name="widget_view">Ansicht</string>
+</resources>

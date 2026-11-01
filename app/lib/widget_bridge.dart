@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:home_widget/home_widget.dart';
 
 import 'credentials.dart';
+import 'l10n.dart';
 import 'models.dart';
 import 'snapshot_cache.dart';
 import 'store.dart';
@@ -106,6 +107,8 @@ class WidgetBridge {
 @pragma('vm:entry-point')
 Future<void> widgetBackgroundCallback(Uri? uri) async {
   if (uri == null) return;
+  // Eigener Isolate ohne main(): die Sprache für Ansichtsnamen und Fälligkeiten selbst setzen.
+  L10n.lang = L10n.resolve(PlatformDispatcher.instance.locale.languageCode);
   // Die Warteschlange arbeitet nur die App selbst ab, nicht dieser kurze Hintergrundlauf.
   final store = ThaskStore(SecureCredentialStore(), cache: PrefsSnapshotCache(), autoFlush: false);
   try {

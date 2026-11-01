@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 import 'ha_client.dart';
+import 'l10n.dart';
 import 'models.dart';
 import 'parser.dart';
 
@@ -421,7 +422,7 @@ class ThaskStore extends ChangeNotifier {
   Future<dynamic> _call(String type, Map<String, dynamic> payload) {
     final client = _client;
     if (client == null || connection != LinkState.connected) {
-      throw HaException('Keine Verbindung zu Home Assistant.');
+      throw HaException(tr('err_offline'));
     }
     return client.call(type, payload);
   }

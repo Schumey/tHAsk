@@ -23,7 +23,7 @@ class ViewPickerActivity : Activity() {
         val current = views.indexOfFirst { it.id == prefs.getString("view_$appWidgetId", null) }.coerceAtLeast(0)
         val labels = views.map { if (it.count > 0) "${it.title} (${it.count})" else it.title }.toTypedArray()
         AlertDialog.Builder(this, android.R.style.Theme_DeviceDefault_Dialog_Alert)
-            .setTitle("Ansicht")
+            .setTitle(getString(R.string.widget_view))
             .setSingleChoiceItems(labels, current) { dialog, which ->
                 prefs.edit().putString("view_$appWidgetId", views[which].id).apply()
                 dialog.dismiss()

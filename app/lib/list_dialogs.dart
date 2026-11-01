@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
 
+import 'l10n.dart';
 import 'store.dart';
 
 /// Sortierungen einer Liste, wie in der Integration (`TASK_SORTS`).
-const listSorts = {
-  'manual': 'Manuell',
-  'priority': 'Priorität',
-  'due': 'Fälligkeit',
-  'title': 'Alphabetisch',
-  'created': 'Erstellungsdatum',
-};
+const listSorts = ['manual', 'priority', 'due', 'title', 'created'];
 
 /// Ergebnis der Gruppenauswahl; [value] null heißt „Keine Gruppe“ (Abbrechen liefert gar kein Ergebnis).
 class GroupChoice {
@@ -28,12 +23,12 @@ Future<String?> showNameDialog(BuildContext context, {required String title, Str
         controller: controller,
         autofocus: true,
         textCapitalization: TextCapitalization.sentences,
-        decoration: InputDecoration(labelText: label ?? 'Name'),
+        decoration: InputDecoration(labelText: label ?? tr('name')),
         onSubmitted: (value) => Navigator.pop(context, value),
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Abbrechen')),
-        FilledButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text('OK')),
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(tr('cancel'))),
+        FilledButton(onPressed: () => Navigator.pop(context, controller.text), child: Text(tr('ok'))),
       ],
     ),
   );
@@ -51,7 +46,7 @@ Future<GroupChoice?> pickGroup(BuildContext context, ThaskStore store, {String? 
       child: ListView(
         shrinkWrap: true,
         children: [
-          const ListTile(title: Text('Gruppe')),
+          ListTile(title: Text(tr('group'))),
           for (final group in store.groups)
             ListTile(
               leading: Icon(group == current ? Icons.check : Icons.folder_outlined),
@@ -61,13 +56,13 @@ Future<GroupChoice?> pickGroup(BuildContext context, ThaskStore store, {String? 
             ),
           ListTile(
             leading: Icon(current == null ? Icons.check : Icons.folder_off_outlined),
-            title: const Text('Keine Gruppe'),
+            title: Text(tr('no_group')),
             selected: current == null,
             onTap: () => Navigator.pop(context, const GroupChoice(null)),
           ),
           ListTile(
             leading: const Icon(Icons.create_new_folder_outlined),
-            title: const Text('Neue Gruppe …'),
+            title: Text(tr('new_group_menu')),
             onTap: () => Navigator.pop(context, const GroupChoice(newGroup)),
           ),
         ],
@@ -76,7 +71,7 @@ Future<GroupChoice?> pickGroup(BuildContext context, ThaskStore store, {String? 
   );
   if (picked?.value != newGroup) return picked;
   if (!context.mounted) return null;
-  final name = await showNameDialog(context, title: 'Neue Gruppe', label: 'Name der Gruppe');
+  final name = await showNameDialog(context, title: tr('new_group'), label: tr('group_name'));
   return name == null ? null : GroupChoice(name);
 }
 
@@ -86,11 +81,11 @@ Future<String?> pickSort(BuildContext context, {required String current}) => sho
         child: ListView(
           shrinkWrap: true,
           children: [
-            const ListTile(title: Text('Sortieren nach')),
-            for (final MapEntry(:key, :value) in listSorts.entries)
+            ListTile(title: Text(tr('sort_by'))),
+            for (final key in listSorts)
               ListTile(
                 leading: Icon(key == current ? Icons.radio_button_checked : Icons.radio_button_unchecked),
-                title: Text(value),
+                title: Text(tr('sort_$key')),
                 selected: key == current,
                 onTap: () => Navigator.pop(context, key),
               ),
@@ -103,11 +98,11 @@ Future<bool> confirmDelete(BuildContext context, String name) async =>
     await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Liste löschen?'),
-        content: Text('„$name“ wird mit allen Aufgaben gelöscht.'),
+        title: Text(tr('delete_list_q')),
+        content: Text(tr('delete_list_text', [name])),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Abbrechen')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Löschen')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(tr('cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(tr('delete'))),
         ],
       ),
     ) ??
@@ -147,7 +142,7 @@ class _NewListDialogState extends State<_NewListDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Neue Liste'),
+      title: Text(tr('new_list')),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -155,14 +150,14 @@ class _NewListDialogState extends State<_NewListDialog> {
             controller: _name,
             autofocus: true,
             textCapitalization: TextCapitalization.sentences,
-            decoration: const InputDecoration(labelText: 'Name'),
+            decoration: InputDecoration(labelText: tr('name')),
             onSubmitted: (_) => _submit(),
           ),
           const SizedBox(height: 8),
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.folder_outlined),
-            title: Text(_group ?? 'Keine Gruppe'),
+            title: Text(_group ?? tr('no_group')),
             trailing: const Icon(Icons.arrow_drop_down),
             onTap: () async {
               final choice = await pickGroup(context, widget.store, current: _group);
@@ -172,8 +167,8 @@ class _NewListDialogState extends State<_NewListDialog> {
         ],
       ),
       actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Abbrechen')),
-        FilledButton(onPressed: _submit, child: const Text('Anlegen')),
+        TextButton(onPressed: () => Navigator.pop(context), child: Text(tr('cancel'))),
+        FilledButton(onPressed: _submit, child: Text(tr('create'))),
       ],
     );
   }

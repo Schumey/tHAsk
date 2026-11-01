@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_description">Taken uit tHAsk afvinken en toevoegen</string>
+    <string name="widget_pick_view">Weergave kiezen</string>
+    <string name="widget_refresh">Vernieuwen</string>
+    <string name="widget_add">Taak toevoegen</string>
+    <string name="widget_sign_in">Open tHAsk en meld je aan</string>
+    <string name="widget_empty">Geen taken</string>
+    <string name="widget_view">Weergave</string>
+</resources>

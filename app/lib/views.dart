@@ -1,3 +1,4 @@
+import 'l10n.dart';
 import 'models.dart';
 import 'store.dart';
 
@@ -41,7 +42,7 @@ class TodayView extends ViewRef {
   @override
   String get id => 'my_day';
   @override
-  String title(ThaskStore store) => 'Heute';
+  String title(ThaskStore store) => tr('view_today');
   @override
   List<Task> tasks(ThaskStore store) => store.dueToday;
 }
@@ -52,7 +53,7 @@ class OverdueView extends ViewRef {
   @override
   String get id => 'overdue';
   @override
-  String title(ThaskStore store) => 'Überfällig';
+  String title(ThaskStore store) => tr('view_overdue');
   @override
   List<Task> tasks(ThaskStore store) => store.overdue;
 }
@@ -62,7 +63,7 @@ class ThisWeekView extends ViewRef {
   @override
   String get id => 'this_week';
   @override
-  String title(ThaskStore store) => 'Diese Woche';
+  String title(ThaskStore store) => tr('view_this_week');
   @override
   List<Task> tasks(ThaskStore store) => store.thisWeek;
 }
@@ -72,7 +73,7 @@ class ThisMonthView extends ViewRef {
   @override
   String get id => 'this_month';
   @override
-  String title(ThaskStore store) => 'Diesen Monat';
+  String title(ThaskStore store) => tr('view_this_month');
   @override
   List<Task> tasks(ThaskStore store) => store.thisMonth;
 }
@@ -82,7 +83,7 @@ class ImportantView extends ViewRef {
   @override
   String get id => 'important';
   @override
-  String title(ThaskStore store) => 'Wichtig';
+  String title(ThaskStore store) => tr('view_important');
   @override
   List<Task> tasks(ThaskStore store) => store.important;
 }
@@ -92,7 +93,7 @@ class PlannedView extends ViewRef {
   @override
   String get id => 'planned';
   @override
-  String title(ThaskStore store) => 'Geplant';
+  String title(ThaskStore store) => tr('view_planned');
   @override
   List<Task> tasks(ThaskStore store) => store.planned;
 }
@@ -103,7 +104,7 @@ class ListRef extends ViewRef {
   @override
   String get id => 'list:$listId';
   @override
-  String title(ThaskStore store) => store.list(listId)?.name ?? 'Liste';
+  String title(ThaskStore store) => store.list(listId)?.name ?? tr('list');
   @override
   List<Task> tasks(ThaskStore store) => store.tasksOf(listId);
 }

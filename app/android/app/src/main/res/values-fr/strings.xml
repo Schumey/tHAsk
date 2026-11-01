@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_description">Cocher et ajouter des tâches tHAsk</string>
+    <string name="widget_pick_view">Choisir la vue</string>
+    <string name="widget_refresh">Actualiser</string>
+    <string name="widget_add">Ajouter une tâche</string>
+    <string name="widget_sign_in">Ouvrir tHAsk et se connecter</string>
+    <string name="widget_empty">Aucune tâche</string>
+    <string name="widget_view">Vue</string>
+</resources>

@@ -1,20 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import 'l10n.dart';
 import 'list_dialogs.dart';
 import 'models.dart';
 import 'priority.dart';
 import 'store.dart';
-import 'views.dart';
 import 'task_detail_screen.dart';
+import 'views.dart';
 
-const _rangeNames = {
-  'all': 'Alle',
-  'week': 'Bis Ende der Woche',
-  'month': 'Bis Ende des Monats',
-  'quarter': 'Bis Ende des Quartals',
-  'year': 'Bis Ende des Jahres',
-};
+const _ranges = ['all', 'week', 'month', 'quarter', 'year'];
 
 /// Ab dieser Breite stehen Navigation, Liste und Details nebeneinander (Windows, Tablet quer).
 const wideLayoutWidth = 900.0;
@@ -116,7 +111,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _listMenu(String action, TaskList list) async {
     switch (action) {
       case 'rename':
-        final name = await showNameDialog(context, title: 'Liste umbenennen', initial: list.name);
+        final name = await showNameDialog(context, title: tr('rename_list'), initial: list.name);
         if (name != null && name != list.name) await _guard(() => store.updateList(list.id, {'name': name}));
       case 'group':
         final group = await pickGroup(context, store, current: list.group);
@@ -185,18 +180,18 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           if (_view is ImportantView)
             PopupMenuButton<String>(
-              tooltip: 'Zeitraum',
+              tooltip: tr('range'),
               icon: const Icon(Icons.date_range_outlined),
               initialValue: store.importantRange,
               onSelected: store.setImportantRange,
               itemBuilder: (_) => [
-                for (final MapEntry(:key, :value) in _rangeNames.entries)
-                  CheckedPopupMenuItem(value: key, checked: key == store.importantRange, child: Text(value)),
+                for (final key in _ranges)
+                  CheckedPopupMenuItem(value: key, checked: key == store.importantRange, child: Text(tr('range_$key'))),
               ],
             ),
           if (listView)
             IconButton(
-              tooltip: 'Erledigte löschen',
+              tooltip: tr('clear_completed'),
               icon: const Icon(Icons.cleaning_services_outlined),
               onPressed: done.isEmpty
                   ? null
@@ -212,17 +207,17 @@ class _HomeScreenState extends State<HomeScreen> {
             },
             itemBuilder: (_) => [
               if (list != null) ...[
-                const PopupMenuItem(value: 'rename', child: Text('Umbenennen')),
-                const PopupMenuItem(value: 'group', child: Text('Gruppe …')),
-                const PopupMenuItem(value: 'sort', child: Text('Sortieren …')),
+                PopupMenuItem(value: 'rename', child: Text(tr('rename'))),
+                PopupMenuItem(value: 'group', child: Text(tr('group_menu'))),
+                PopupMenuItem(value: 'sort', child: Text(tr('sort_menu'))),
                 PopupMenuItem(
                   value: 'delete',
                   enabled: store.lists.length > 1,
-                  child: const Text('Liste löschen'),
+                  child: Text(tr('delete_list')),
                 ),
                 const PopupMenuDivider(),
               ],
-              const PopupMenuItem(value: 'logout', child: Text('Abmelden')),
+              PopupMenuItem(value: 'logout', child: Text(tr('logout'))),
             ],
           ),
         ],
@@ -235,7 +230,7 @@ class _HomeScreenState extends State<HomeScreen> {
             child: tasks.isEmpty
                 ? Center(
                     child: Text(
-                      store.connection == LinkState.connected ? 'Keine Aufgaben' : '',
+                      store.connection == LinkState.connected ? tr('no_tasks') : '',
                       style: Theme.of(context).textTheme.bodyLarge,
                     ),
                   )
@@ -249,7 +244,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         for (final task in open) tile(task),
                       if (done.isNotEmpty)
                         ExpansionTile(
-                          title: Text('Erledigt (${done.length})'),
+                          title: Text(tr('completed_n', [done.length])),
                           children: [for (final task in done) tile(task)],
                         ),
                     ],
@@ -288,16 +283,16 @@ class _HomeScreenState extends State<HomeScreen> {
     final today = store.today;
     final weekEnd = Period.containing(Granularity.week, today).end;
     final monthEnd = Period.containing(Granularity.month, today).end;
-    final sections = <String, List<Task>>{'Überfällig': [], 'Diese Woche': [], 'Diesen Monat': [], 'Später': []};
+    final sections = <String, List<Task>>{'view_overdue': [], 'view_this_week': [], 'view_this_month': [], 'later': []};
     for (final task in open) {
       final end = task.due!.end;
       final key = end.isBefore(today)
-          ? 'Überfällig'
+          ? 'view_overdue'
           : !end.isAfter(weekEnd)
-              ? 'Diese Woche'
+              ? 'view_this_week'
               : !end.isAfter(monthEnd)
-                  ? 'Diesen Monat'
-                  : 'Später';
+                  ? 'view_this_month'
+                  : 'later';
       sections[key]!.add(task);
     }
     final theme = Theme.of(context);
@@ -307,9 +302,9 @@ class _HomeScreenState extends State<HomeScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
             child: Text(
-              entry.key,
+              tr(entry.key),
               style: theme.textTheme.labelLarge?.copyWith(
-                color: entry.key == 'Überfällig' ? theme.colorScheme.error : null,
+                color: entry.key == 'view_overdue' ? theme.colorScheme.error : null,
               ),
             ),
           ),
@@ -332,13 +327,13 @@ class _HomeScreenState extends State<HomeScreen> {
         onExpansionChanged: (expanded) => store.setOverdueCollapsed(!expanded),
         textColor: theme.colorScheme.error,
         collapsedTextColor: theme.colorScheme.error,
-        title: Text('Überfällig (${overdue.length})'),
+        title: Text(tr('overdue_n', [overdue.length])),
         children: [for (final task in overdue) tile(task)],
       ),
       if (rest.isNotEmpty) ...[
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
-          child: Text('Heute (${rest.length})', style: theme.textTheme.labelLarge),
+          child: Text(tr('today_n', [rest.length]), style: theme.textTheme.labelLarge),
         ),
         for (final task in rest) tile(task),
       ],
@@ -357,7 +352,7 @@ class _HomeScreenState extends State<HomeScreen> {
           textInputAction: TextInputAction.send,
           onSubmitted: (_) => _submit(),
           decoration: InputDecoration(
-            hintText: 'Aufgabe hinzufügen, z. B. „Steuer KW 47 !“',
+            hintText: tr('entry_hint'),
             border: const OutlineInputBorder(),
             isDense: true,
             suffixIcon: IconButton(icon: const Icon(Icons.add), onPressed: _submit),
@@ -383,7 +378,7 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         ListTile(
           leading: const Icon(Icons.today_outlined),
-          title: const Text('Heute'),
+          title: Text(tr('view_today')),
           selected: _view is TodayView,
           trailing: _count(store.dueToday.where((t) => !t.completed).length),
           onTap: () => select(const TodayView()),
@@ -391,35 +386,35 @@ class _HomeScreenState extends State<HomeScreen> {
         if (store.overdueMode == 'separate')
           ListTile(
             leading: const Icon(Icons.event_busy_outlined),
-            title: const Text('Überfällig'),
+            title: Text(tr('view_overdue')),
             selected: _view is OverdueView,
             trailing: _count(store.overdue.length),
             onTap: () => select(const OverdueView()),
           ),
         ListTile(
           leading: const Icon(Icons.date_range_outlined),
-          title: const Text('Diese Woche'),
+          title: Text(tr('view_this_week')),
           selected: _view is ThisWeekView,
           trailing: _count(store.thisWeek.length),
           onTap: () => select(const ThisWeekView()),
         ),
         ListTile(
           leading: const Icon(Icons.calendar_today_outlined),
-          title: const Text('Diesen Monat'),
+          title: Text(tr('view_this_month')),
           selected: _view is ThisMonthView,
           trailing: _count(store.thisMonth.length),
           onTap: () => select(const ThisMonthView()),
         ),
         ListTile(
           leading: const Icon(Icons.flag_outlined),
-          title: const Text('Wichtig'),
+          title: Text(tr('view_important')),
           selected: _view is ImportantView,
           trailing: _count(store.important.where((t) => !t.completed).length),
           onTap: () => select(const ImportantView()),
         ),
         ListTile(
           leading: const Icon(Icons.calendar_month_outlined),
-          title: const Text('Geplant'),
+          title: Text(tr('view_planned')),
           selected: _view is PlannedView,
           trailing: _count(store.planned.where((t) => !t.completed).length),
           onTap: () => select(const PlannedView()),
@@ -442,7 +437,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
         ListTile(
           leading: const Icon(Icons.add),
-          title: const Text('Neue Liste'),
+          title: Text(tr('new_list')),
           enabled: store.connection == LinkState.connected,
           onTap: () {
             if (inDrawer) Navigator.pop(context);
@@ -467,12 +462,12 @@ class _ConnectionBanner extends StatelessWidget {
     final connecting = store.connection == LinkState.connecting;
     final syncing = store.connection == LinkState.connected;
     final pending = store.pendingCount;
-    final pendingText = pending == 0 ? '' : ' · $pending ${pending == 1 ? 'Änderung' : 'Änderungen'} vorgemerkt';
+    final pendingText = pending == 0 ? '' : tr('pending', [trPlural(pending, 'change')]);
     final message = syncing
-        ? 'Sende $pending ${pending == 1 ? 'Änderung' : 'Änderungen'} …'
+        ? tr('sending', [trPlural(pending, 'change')])
         : connecting
-            ? '${store.fromCache ? 'Verbinde … (letzter Stand)' : 'Verbinde …'}$pendingText'
-            : '${store.fromCache ? 'Offline – letzter Stand' : (store.error ?? 'Nicht verbunden')}$pendingText';
+            ? '${store.fromCache ? tr('connecting_cached') : tr('connecting')}$pendingText'
+            : '${store.fromCache ? tr('offline_cached') : (store.error ?? tr('not_connected'))}$pendingText';
     return Material(
       color: scheme.errorContainer,
       child: Padding(
@@ -487,7 +482,7 @@ class _ConnectionBanner extends StatelessWidget {
             Expanded(
               child: Text(message, style: TextStyle(color: scheme.onErrorContainer)),
             ),
-            if (!connecting && !syncing) TextButton(onPressed: store.resume, child: const Text('Erneut versuchen')),
+            if (!connecting && !syncing) TextButton(onPressed: store.resume, child: Text(tr('retry'))),
           ],
         ),
       ),
@@ -580,7 +575,7 @@ class DueChip extends StatelessWidget {
             : (scheme.surfaceContainerHighest, scheme.onSurfaceVariant);
     final fuzzy = due.granularity != Granularity.day;
     return Semantics(
-      label: '${fuzzy ? 'Fällig im Zeitraum' : 'Fällig'} $text${overdue ? ', überfällig' : ''}',
+      label: '${fuzzy ? tr('due_in_period') : tr('due')} $text${overdue ? tr('overdue_suffix') : ''}',
       excludeSemantics: true,
       child: DecoratedBox(
         decoration: BoxDecoration(
@@ -617,7 +612,7 @@ class _PriorityBar extends StatelessWidget {
     final color = priorityColor(priority);
     if (color == null) return child;
     return Semantics(
-      label: 'Priorität ${priorityName(priority)}',
+      label: tr('priority_x', [priorityName(priority)]),
       child: DecoratedBox(
         decoration: BoxDecoration(border: Border(left: BorderSide(color: color, width: priorityBarWidth(priority)))),
         child: child,

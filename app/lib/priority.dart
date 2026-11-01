@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 
+import 'l10n.dart';
+
 /// Bezeichnung einer Priorität (0 keine, 1 niedrig, 2 mittel, 3 hoch).
-String priorityName(int priority) => switch (priority) {
-      1 => 'Niedrig',
-      2 => 'Mittel',
-      3 => 'Hoch',
-      _ => 'Keine',
-    };
+String priorityName(int priority) => tr('priority_${priority.clamp(0, 3)}');
 
 /// Farbe einer Priorität wie in der Weboberfläche: Niedrig grün, Mittel orange (warning-color von HA), Hoch rot; ohne Priorität keine.
 Color? priorityColor(int priority) => switch (priority) {

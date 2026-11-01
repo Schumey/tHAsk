@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications_platform_interface/flutter_local_notifications_platform_interface.dart';
 import 'package:flutter_local_notifications_windows/flutter_local_notifications_windows.dart';
 
+import 'l10n.dart';
 import 'models.dart';
 import 'store.dart';
 
@@ -66,10 +67,10 @@ class DesktopBridge {
       // Die Kennung pro Aufgabe ersetzt eine ältere Benachrichtigung derselben Aufgabe.
       id: task.id.hashCode & 0x7fffffff,
       title: task.title,
-      body: list ?? 'Erinnerung',
+      body: list ?? tr('reminder'),
       payload: 'open:${task.id}',
       notificationDetails: WindowsNotificationDetails(
-        actions: [WindowsAction(content: 'Erledigt', arguments: 'done:${task.id}')],
+        actions: [WindowsAction(content: tr('done'), arguments: 'done:${task.id}')],
       ),
     );
   }

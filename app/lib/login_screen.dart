@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'l10n.dart';
 import 'store.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -54,7 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   Text('tHAsk', style: theme.textTheme.displaySmall, textAlign: TextAlign.center),
                   const SizedBox(height: 8),
                   Text(
-                    'Mit Home Assistant verbinden',
+                    tr('connect_title'),
                     style: theme.textTheme.bodyLarge,
                     textAlign: TextAlign.center,
                   ),
@@ -64,10 +65,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     keyboardType: TextInputType.url,
                     autocorrect: false,
                     enabled: !_busy,
-                    decoration: const InputDecoration(
-                      labelText: 'Adresse',
-                      hintText: 'https://home.example.com oder 192.168.1.5:8123',
-                      border: OutlineInputBorder(),
+                    decoration: InputDecoration(
+                      labelText: tr('address'),
+                      hintText: tr('address_hint'),
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                   const SizedBox(height: 16),
@@ -78,11 +79,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     enableSuggestions: false,
                     enabled: !_busy,
                     onSubmitted: (_) => _submit(),
-                    decoration: const InputDecoration(
-                      labelText: 'Langlebiges Zugriffstoken',
-                      helperText: 'In Home Assistant: Profil → Sicherheit → Langlebige Zugriffstoken',
+                    decoration: InputDecoration(
+                      labelText: tr('token'),
+                      helperText: tr('token_help'),
                       helperMaxLines: 2,
-                      border: OutlineInputBorder(),
+                      border: const OutlineInputBorder(),
                     ),
                   ),
                   if (_error != null) ...[
@@ -94,7 +95,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: _busy ? null : _submit,
                     child: _busy
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Text('Verbinden'),
+                        : Text(tr('connect')),
                   ),
                 ],
               ),
