@@ -14,10 +14,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
   if (::GetLastError() == ERROR_ALREADY_EXISTS) {
     HWND existing = ::FindWindowW(L"FLUTTER_RUNNER_WIN32_WINDOW", L"tHAsk");
     if (existing) {
-      if (::IsIconic(existing)) {
-        ::ShowWindow(existing, SW_RESTORE);
-      }
-      ::SetForegroundWindow(existing);
+      // Also when it is hidden in the notification area.
+      FlutterWindow::Restore(existing);
     }
     return EXIT_SUCCESS;
   }

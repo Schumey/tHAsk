@@ -605,6 +605,23 @@ void main() {
       await sub.cancel();
     });
 
+    test('Verpasste Erinnerungen: offen, nach dem letzten Lauf und nicht in der Zukunft', () {
+      Task task(String id, String? reminder, {bool completed = false}) =>
+          Task.fromJson({'id': id, 'list_id': 'l1', 'title': id, 'reminder': reminder, 'completed': completed});
+      final since = DateTime.utc(2026, 11, 1, 8);
+      final now = DateTime.utc(2026, 11, 1, 12);
+      final tasks = [
+        task('vorher', '2026-11-01T07:59:00Z'),
+        task('verpasst', '2026-11-01T09:00:00Z'),
+        task('später', '2026-11-01T11:30:00Z'),
+        task('erledigt', '2026-11-01T10:00:00Z', completed: true),
+        task('zukunft', '2026-11-01T13:00:00Z'),
+        task('ohne', null),
+      ];
+      expect([for (final t in missedReminders(tasks, since, now)) t.id], ['später', 'verpasst']);
+      expect(missedReminders(tasks, since, now, limit: 1).single.id, 'später');
+    });
+
     test('Zähler an der Taskleiste: offene Aufgaben bis heute, auch Überfälliges', () async {
       await signIn();
       connection.emit({

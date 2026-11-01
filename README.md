@@ -249,7 +249,9 @@ adb install -r build/app/outputs/flutter-apk/app-debug.apk
 
 Dieselbe App läuft auch unter Windows. Ab 900 px Fensterbreite stehen Navigation, Liste und Details nebeneinander. Strg+N springt in die Eingabe, Esc schließt die Details. Ein zweiter Start holt das laufende Fenster nach vorn.
 
-Solange die App läuft, zeigt sie Erinnerungen als Windows-Benachrichtigung (mit „Erledigt“) und an der Taskleiste die Zahl der offenen Aufgaben, die bis heute fällig sind (inklusive Überfälligem). Erinnerungen, die fällig wurden, während die App nicht lief, holt sie nicht nach.
+Solange die App läuft, zeigt sie Erinnerungen als Windows-Benachrichtigung (mit „Erledigt“) und an der Taskleiste die Zahl der offenen Aufgaben in „Heute“ (inklusive Überfälligem). Erinnerungen, die fällig wurden, während die App nicht lief, holt sie beim nächsten Start nach (höchstens fünf).
+
+Das Schließen-Kreuz blendet das Fenster nur aus; die App bleibt mit ihrem Symbol im Infobereich der Taskleiste und meldet weiter Erinnerungen. Ein Klick auf das Symbol holt das Fenster zurück, „Beenden“ im Kontextmenü schließt die App wirklich.
 
 Den Installer baut ein Skript. Es braucht Flutter mit den Visual Studio Build Tools (Desktopentwicklung mit C++, plus ATL) und [Inno Setup 6](https://jrsoftware.org/isinfo.php) (`winget install --id JRSoftware.InnoSetup --exact --scope user`):
 
@@ -257,7 +259,7 @@ Den Installer baut ein Skript. Es braucht Flutter mit den Visual Studio Build To
 app\windows\installer\build_installer.ps1   # -> app\build\installer\thask-setup-<Version>.exe
 ```
 
-Das Setup installiert ohne Adminrechte für den aktuellen Benutzer nach `%LOCALAPPDATA%\Programs\tHAsk`, mit Startmenü-Eintrag. Optional legt es eine Desktop-Verknüpfung an und startet die App beim Anmelden minimiert. Ein Update installiert man über das alte Setup drüber; eine laufende App wird dabei geschlossen. Anmeldung und zwischengespeicherte Daten liegen unter `%APPDATA%\de.schumey\tHAsk`, das Setup lässt sie auch beim Deinstallieren unangetastet. Deinstallieren geht über Windows-Einstellungen → Apps.
+Das Setup installiert ohne Adminrechte für den aktuellen Benutzer nach `%LOCALAPPDATA%\Programs\tHAsk`, mit Startmenü-Eintrag. Optional legt es eine Desktop-Verknüpfung an und startet die App beim Anmelden im Infobereich der Taskleiste. Ein Update installiert man über das alte Setup drüber; eine laufende App wird dabei geschlossen. Anmeldung und zwischengespeicherte Daten liegen unter `%APPDATA%\de.schumey\tHAsk`, das Setup lässt sie auch beim Deinstallieren unangetastet. Deinstallieren geht über Windows-Einstellungen → Apps.
 
 ## WebSocket-API
 

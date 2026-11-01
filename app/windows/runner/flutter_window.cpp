@@ -5,11 +5,32 @@
 #include <flutter/standard_method_codec.h>
 
 #include "flutter/generated_plugin_registrant.h"
+#include "resource.h"
+
+namespace {
+
+std::wstring Utf16FromUtf8(const std::string& text) {
+  if (text.empty()) return std::wstring();
+  const int length = ::MultiByteToWideChar(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), nullptr, 0);
+  std::wstring result(length, L'\0');
+  ::MultiByteToWideChar(CP_UTF8, 0, text.data(), static_cast<int>(text.size()), result.data(), length);
+  return result;
+}
+
+}  // namespace
 
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
     : project_(project) {}
 
 FlutterWindow::~FlutterWindow() {}
+
+void FlutterWindow::Restore(HWND window) {
+  ::ShowWindow(window, SW_SHOW);
+  if (::IsIconic(window)) {
+    ::ShowWindow(window, SW_RESTORE);
+  }
+  ::SetForegroundWindow(window);
+}
 
 bool FlutterWindow::OnCreate() {
   if (!Win32Window::OnCreate()) {
@@ -30,6 +51,7 @@ bool FlutterWindow::OnCreate() {
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
 
   badge_.Attach(GetHandle());
+  tray_.Add(GetHandle(), ::LoadIcon(::GetModuleHandle(nullptr), MAKEINTRESOURCE(IDI_APP_ICON)));
   taskbar_channel_ = std::make_unique<flutter::MethodChannel<flutter::EncodableValue>>(
       flutter_controller_->engine()->messenger(), "thask/taskbar",
       &flutter::StandardMethodCodec::GetInstance());
@@ -41,11 +63,18 @@ bool FlutterWindow::OnCreate() {
           badge_.Set(count ? *count : 0);
           result->Success();
         } else if (call.method_name() == "activate") {
-          HWND window = GetHandle();
-          if (::IsIconic(window)) {
-            ::ShowWindow(window, SW_RESTORE);
-          }
-          ::SetForegroundWindow(window);
+          Restore(GetHandle());
+          result->Success();
+        } else if (call.method_name() == "setTray") {
+          // {tooltip, open, quit} in the language of the app.
+          const auto* args = std::get_if<flutter::EncodableMap>(call.arguments());
+          auto text = [args](const char* key) {
+            if (!args) return std::wstring();
+            auto it = args->find(flutter::EncodableValue(key));
+            const auto* value = it == args->end() ? nullptr : std::get_if<std::string>(&it->second);
+            return value ? Utf16FromUtf8(*value) : std::wstring();
+          };
+          tray_.SetTexts(text("tooltip"), text("open"), text("quit"));
           result->Success();
         } else {
           result->NotImplemented();
@@ -53,9 +82,7 @@ bool FlutterWindow::OnCreate() {
       });
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
-    if (start_minimized_) {
-      ::ShowWindow(GetHandle(), SW_SHOWMINNOACTIVE);
-    } else {
+    if (!start_minimized_) {
       this->Show();
     }
   });
@@ -69,6 +96,7 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
+  tray_.Remove();
   taskbar_channel_ = nullptr;
   if (flutter_controller_) {
     flutter_controller_ = nullptr;
@@ -81,6 +109,37 @@ LRESULT
 FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
                               WPARAM const wparam,
                               LPARAM const lparam) noexcept {
+  // Closing only hides the window; reminders keep coming. "Quit" in the tray menu ends the app.
+  if (message == WM_CLOSE && !quitting_) {
+    ::ShowWindow(hwnd, SW_HIDE);
+    return 0;
+  }
+  if (message == TrayIcon::kCallbackMessage) {
+    switch (LOWORD(lparam)) {
+      case WM_LBUTTONUP:
+      case NIN_SELECT:
+      case NIN_KEYSELECT:
+        Restore(hwnd);
+        break;
+      case WM_RBUTTONUP:
+      case WM_CONTEXTMENU:
+        switch (tray_.ShowMenu()) {
+          case TrayIcon::kCommandOpen:
+            Restore(hwnd);
+            break;
+          case TrayIcon::kCommandQuit:
+            quitting_ = true;
+            ::PostMessage(hwnd, WM_CLOSE, 0, 0);
+            break;
+        }
+        break;
+    }
+    return 0;
+  }
+  if (message == TrayIcon::TaskbarCreatedMessage()) {
+    tray_.Readd();
+  }
+
   // Give Flutter, including plugins, an opportunity to handle window messages.
   if (flutter_controller_) {
     std::optional<LRESULT> result =

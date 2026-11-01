@@ -38,7 +38,7 @@ Name: "de"; MessagesFile: "compiler:Languages\German.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "autostart"; Description: "Beim Anmelden an Windows minimiert starten"; GroupDescription: "Autostart:"; Flags: unchecked
+Name: "autostart"; Description: "Beim Anmelden an Windows im Infobereich der Taskleiste starten"; GroupDescription: "Autostart:"; Flags: unchecked
 
 [Files]
 Source: "{#BuildDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs

@@ -9,6 +9,7 @@
 #include <memory>
 
 #include "taskbar_badge.h"
+#include "tray_icon.h"
 #include "win32_window.h"
 
 // A window that does nothing but host a Flutter view.
@@ -18,8 +19,11 @@ class FlutterWindow : public Win32Window {
   explicit FlutterWindow(const flutter::DartProject& project);
   virtual ~FlutterWindow();
 
-  // Show the window minimized after the first frame (autostart).
+  // Start hidden in the notification area (autostart).
   void SetStartMinimized(bool minimized) { start_minimized_ = minimized; }
+
+  // Show the window again, also when it is hidden in the notification area.
+  static void Restore(HWND window);
 
  protected:
   // Win32Window:
@@ -40,6 +44,10 @@ class FlutterWindow : public Win32Window {
   // "thask/taskbar" (lib/desktop_bridge.dart): setBadge(int), activate.
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> taskbar_channel_;
   TaskbarBadge badge_;
+
+  // Icon in the notification area; closing the window only hides it, "Quit" in its menu ends the app.
+  TrayIcon tray_;
+  bool quitting_ = false;
 };
 
 #endif  // RUNNER_FLUTTER_WINDOW_H_
