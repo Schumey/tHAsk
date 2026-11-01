@@ -305,7 +305,7 @@ class _Rule {
   final _Handler handler;
 }
 
-final _rules = [
+final _rules = _withOtherLanguages([
   _Rule(
     kindRecurrence,
     r'@B@(?:alle|every)\s+(?<n>\d+|zwei|drei|vier|two|three|four|other)\s+(?:wochen|weeks?)\s+(?:(?:am|an|on)\s+)?'
@@ -377,7 +377,230 @@ final _rules = [
   _Rule(kindDue, r'@B@@PREPREQ@(@MONTHSHORT@)\.?(?:\s+(\d{4}))?@E@', _month),
   _Rule(kindDue, r'@B@(?:@PREPREQ@|im\s+jahr\s+|jahr\s+)(\d{4})@E@', _year),
   _Rule(kindPriority, r'(?<!\S)!+(?!\S)', _priority),
+]);
+
+// -- Niederländisch, Französisch, Spanisch --------------------------------------------------------------------
+// Die häufigsten Wendungen, wie in parser.py. Wörter stehen ausdrücklich für Einheiten, denn die
+// Anfangsbuchstaben-Regel von _unit() passt hier nicht („jour“ ist ein Tag, „jaar“ ein Jahr).
+
+const _xUnits = {
+  Granularity.day: ['dag', 'dagen', 'jour', 'jours', 'día', 'dia', 'días', 'dias'],
+  Granularity.week: ['week', 'weken', 'semaine', 'semaines', 'semana', 'semanas'],
+  Granularity.month: ['maand', 'maanden', 'mois', 'mes', 'meses'],
+  Granularity.quarter: ['kwartaal', 'kwartalen', 'trimestre', 'trimestres'],
+  Granularity.year: ['jaar', 'jaren', 'an', 'ans', 'année', 'annee', 'années', 'annees', 'año', 'ano', 'años', 'anos'],
+};
+final _xUnit = ([for (final words in _xUnits.values) ...words]..sort((a, b) => b.length.compareTo(a.length))).join('|');
+
+const _xWeekdays = [
+  ['maandag', 'lundi', 'lunes'],
+  ['dinsdag', 'mardi', 'martes'],
+  ['woensdag', 'mercredi', 'miércoles', 'miercoles'],
+  ['donderdag', 'jeudi', 'jueves'],
+  ['vrijdag', 'vendredi', 'viernes'],
+  ['zaterdag', 'samedi', 'sábado', 'sabado'],
+  ['zondag', 'dimanche', 'domingo'],
 ];
+final _xWeekday = [for (final names in _xWeekdays) ...names].join('|');
+// Mehrzahl für Wiederholungen („tous les lundis“, „maandags“).
+final _xRecDay = '(?:$_xWeekday|${[for (final names in _xWeekdays) '${names[0]}s|${names[1]}s'].join('|')})';
+
+const _xMonths = [
+  ['januari', 'janvier', 'enero'],
+  ['februari', 'février', 'fevrier', 'febrero'],
+  ['maart', 'marzo'],
+  ['april', 'avril', 'abril'],
+  ['mei', 'mayo'],
+  ['juni', 'juin', 'junio'],
+  ['juli', 'juillet', 'julio'],
+  ['augustus', 'août', 'aout', 'agosto'],
+  ['september', 'septembre', 'septiembre', 'setiembre'],
+  ['oktober', 'octobre', 'octubre'],
+  ['november', 'novembre', 'noviembre'],
+  ['december', 'décembre', 'decembre', 'diciembre'],
+];
+// „mars“ (auch der Planet) und „mayo“ zählen nur nach einer Präposition.
+final _xMonth = [for (final names in _xMonths) ...names.where((n) => n != 'mayo')].join('|');
+const _xPrep = r'(?:(?:op|voor|tegen|uiterlijk|in|le|pour|d' "'" r'ici|avant|en|au|el|para|antes\s+del?|hasta\s+el)\s+)?';
+const _xMonthPrep = r'(?:in|en|au\s+mois\s+de|d' "'" r'ici|avant|pour|para|antes\s+de|hasta)\s+';
+const _xNext = r'(?:volgende|komende|prochaine?|próxim[oa]|proxim[oa])';
+const _xThis = r'(?:deze|dit|cette|cet|ce|esta|este)';
+const _xEvery = r'(?:elke|iedere|chaque|tous\s+les|toutes\s+les|cada|todos\s+los|todas\s+las)';
+const _xAnd = r'(?:\s*[,/&+]\s*|\s+(?:en|et|y|e)\s+)';
+const _xNumberWords = {
+  'een': 1, 'un': 1, 'une': 1, 'una': 1, 'uno': 1, 'twee': 2, 'deux': 2, 'dos': 2, 'drie': 3, 'trois': 3, 'tres': 3,
+};
+final _xNumber = '(?:\\d+|${_xNumberWords.keys.join('|')})';
+final _xRecDayPattern = _re('@B@$_xRecDay@E@');
+
+Granularity _xUnitOf(String word) {
+  final w = word.toLowerCase();
+  return _xUnits.entries.firstWhere((e) => e.value.contains(w)).key;
+}
+
+int _xNumberOf(String word) => int.tryParse(word) ?? _xNumberWords[word.toLowerCase()]!;
+
+/// Montag = 1, wie _weekdayIndex.
+int _xWeekdayIndex(String word) {
+  final w = word.toLowerCase();
+  return _xWeekdays.indexWhere(
+        (names) => names.contains(w) || (w.endsWith('s') && names.contains(w.substring(0, w.length - 1))),
+      ) +
+      1;
+}
+
+int _xMonthIndex(String word) {
+  final w = word.toLowerCase();
+  if (w == 'mars') return 3;
+  return _xMonths.indexWhere((names) => names.contains(w)) + 1;
+}
+
+_Fields _xRelativeDay(RegExpMatch m, DateTime today) {
+  final word = m[1]!.toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+  const offsets = {'vandaag': 0, "aujourd'hui": 0, 'hoy': 0, 'demain': 1, 'mañana': 1, 'manana': 1};
+  return {'due': Period.day(_plusDays(today, offsets[word] ?? 2))};
+}
+
+_Fields _xPeriod(RegExpMatch m, DateTime today) {
+  final next = m.namedGroup('next');
+  return {
+    'due': Period.containing(_xUnitOf(m.namedGroup('unit')!), today).shift(next != null && next.isNotEmpty ? 1 : 0),
+  };
+}
+
+_Fields _xInN(RegExpMatch m, DateTime today) {
+  final count = _xNumberOf(m[1]!);
+  return switch (_xUnitOf(m[2]!)) {
+    Granularity.day => {'due': Period.day(_plusDays(today, count))},
+    Granularity.week => {'due': Period.containing(Granularity.week, _plusDays(today, 7 * count))},
+    Granularity.month => {'due': Period.containing(Granularity.month, addMonths(today, count))},
+    Granularity.quarter => {'due': Period.containing(Granularity.quarter, addMonths(today, 3 * count))},
+    Granularity.year => {'due': Period.containing(Granularity.year, addMonths(today, 12 * count))},
+  };
+}
+
+_Fields _xEndOf(RegExpMatch m, DateTime today) {
+  final unit = m.namedGroup('unit') ?? m.namedGroup('unit2') ?? m.namedGroup('unit3')!;
+  final next = m.namedGroup('next') ?? m.namedGroup('next2') ?? m.namedGroup('next3');
+  return {'due': Period.containing(_xUnitOf(unit), today).shift(next != null ? 1 : 0)};
+}
+
+_Fields _xWeekdayDue(RegExpMatch m, DateTime today) =>
+    {'due': Period.day(_nextWeekday(today, _xWeekdayIndex(m[1]!), includeToday: false))};
+
+_Fields _xMonthDue(RegExpMatch m, DateTime today) {
+  final month = _xMonthIndex(m[1]!);
+  final year = m[2] != null ? int.parse(m[2]!) : today.year + (month < today.month ? 1 : 0);
+  return {'due': Period.month(year, month)};
+}
+
+_Fields _xRecurringWeekdays(RegExpMatch m, DateTime today) =>
+    _weeklyOn([for (final d in _xRecDayPattern.allMatches(m.namedGroup('days')!)) _xWeekdayIndex(d[0]!)], 1, today);
+
+_Fields _xRecurringUnit(RegExpMatch m, DateTime today) {
+  final adverb = m.namedGroup('adverb')?.toLowerCase();
+  final Granularity unit;
+  if (adverb != null) {
+    bool starts(List<String> stems) => stems.any(adverb.startsWith);
+    unit = starts(['dage', 'quotid', 'diari'])
+        ? Granularity.day
+        : starts(['weke', 'hebdo', 'seman'])
+            ? Granularity.week
+            : starts(['maand', 'mensu'])
+                ? Granularity.month
+                : Granularity.year;
+  } else {
+    unit = _xUnitOf(m.namedGroup('unit')!);
+  }
+  return {'recurrence': Recurrence(unit, 1), 'default_due': Period.containing(unit, today)};
+}
+
+_Fields _xRecurringEveryN(RegExpMatch m, DateTime today) {
+  final unit = _xUnitOf(m[2]!);
+  final interval = int.parse(m[1]!);
+  return {'recurrence': Recurrence(unit, interval < 1 ? 1 : interval), 'default_due': Period.containing(unit, today)};
+}
+
+_Fields? _xTime(RegExpMatch m, DateTime today) {
+  final hour = int.parse(m.namedGroup('hour')!);
+  final minute = int.parse(m.namedGroup('minute') ?? '0');
+  if (hour > 23 || minute > 59) return null;
+  return {'due_time': '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}'};
+}
+
+final _xRecurrenceRules = [
+  // Wochentage als Wiederholung brauchen „jede“: „elke maandag“, „chaque lundi“, „tous les lundis“, „cada lunes“.
+  _Rule(kindRecurrence, '@B@$_xEvery\\s+(?<days>$_xRecDay(?:$_xAnd(?:$_xEvery\\s+)?$_xRecDay)*)@E@', _xRecurringWeekdays),
+  _Rule(kindRecurrence, '@B@(?:om\\s+de|tous\\s+les|toutes\\s+les|cada)\\s+(\\d+)\\s+($_xUnit)@E@', _xRecurringEveryN),
+  _Rule(
+    kindRecurrence,
+    '@B@(?:$_xEvery\\s+(?<unit>$_xUnit)'
+        r'|(?<adverb>dagelijks|wekelijks|maandelijks|jaarlijks|quotidiennement|quotidien(?:ne)?|hebdomadaire'
+        r'|mensuel(?:le)?|annuel(?:le)?|diariamente|diario|semanal(?:mente)?|mensual(?:mente)?|anual(?:mente)?))@E@',
+    _xRecurringUnit,
+  ),
+];
+
+final _xTimeRules = [
+  // „om 9 uur“, „om 9:30“, „à 9h“, „14h30“, „à 9:30“, „a las 9“, „a las 9:30“.
+  _Rule(kindTime, r'@B@(?:om\s+)?(?<hour>\d{1,2})(?::(?<minute>\d{2}))?\s*uur@E@', _xTime),
+  _Rule(kindTime, r'@B@om\s+(?<hour>\d{1,2}):(?<minute>\d{2})@E@', _xTime),
+  // „9h“ allein könnte eine Dauer sein („2h lernen“); ohne „à“ nur mit Minuten.
+  _Rule(kindTime, r'@B@à\s+(?<hour>\d{1,2})\s*h(?:\s*(?<minute>\d{2}))?@E@', _xTime),
+  _Rule(kindTime, r'@B@(?<hour>\d{1,2})h(?<minute>\d{2})@E@', _xTime),
+  _Rule(kindTime, r'@B@à\s+(?<hour>\d{1,2}):(?<minute>\d{2})@E@', _xTime),
+  _Rule(kindTime, r'@B@a\s+las?\s+(?<hour>\d{1,2})(?::(?<minute>\d{2}))?@E@', _xTime),
+];
+
+final _xDueRules = [
+  _Rule(kindDue, '@B@(?:over|binnen|dans|en|dentro\\s+de)\\s+($_xNumber)\\s+($_xUnit)@E@', _xInN),
+  _Rule(
+    kindDue,
+    r'@B@(?:pour\s+|para\s+)?(vandaag|aujourd' "'" r'hui|hoy|overmorgen|après-demain|apres-demain|demain'
+        r'|pasado\s+mañana|pasado\s+manana|mañana|manana)@E@',
+    _xRelativeDay,
+  ),
+  _Rule(
+    kindDue,
+    r'@B@(?:eind(?:e)?\s+(?:van\s+)?(?:de\s+|het\s+)?(?<next>volgende\s+)?(?:deze\s+|dit\s+)?(?<unit>week|maand|kwartaal|jaar)'
+        r'|fin\s+(?:de\s+la\s+|du\s+|de\s+l' "'" r'|d' "'" r')(?<unit2>semaine|mois|trimestre|année|annee)(?<next2>\s+prochaine?)?'
+        r'|(?:a\s+)?finales?\s+de(?:l|\s+la)?\s+(?<unit3>semana|mes|trimestre|año|ano)(?<next3>\s+que\s+viene)?)@E@',
+    _xEndOf,
+  ),
+  _Rule(kindDue, '@B@$_xPrep(?:(?:la|le|l\'|el)\\s*)?(?<next>$_xNext)\\s+(?<unit>$_xUnit)@E@', _xPeriod),
+  _Rule(
+    kindDue,
+    '@B@$_xPrep(?:(?:la|le|l\'|el)\\s*)?(?<unit>semaine|mois|trimestre|année|annee|an|semana|mes|trimestre|año|ano)'
+        r'\s+(?<next>prochaine?|que\s+viene|próxim[oa]|proxim[oa])@E@',
+    _xPeriod,
+  ),
+  _Rule(kindDue, '@B@$_xPrep(?<next>)$_xThis\\s+(?<unit>$_xUnit)@E@', _xPeriod),
+  _Rule(
+    kindDue,
+    '@B@$_xPrep' r'(?:la\s+|en\s+la\s+)?(?:semaine|semana|sem\.?)\s*(\d{1,2})(?:\s*[/.]?\s*(\d{4}))?@E@',
+    _calendarWeek,
+  ),
+  _Rule(
+    kindDue,
+    '@B@$_xPrep' r'(?:(?:volgende|komende|el\s+próximo|el\s+proximo|el)\s+)?(' '$_xWeekday' r')(?:\s+prochain)?@E@',
+    _xWeekdayDue,
+  ),
+  _Rule(kindDue, '@B@$_xPrep($_xMonth)' r'(?:\s+(?:de\s+)?(\d{4}))?@E@', _xMonthDue),
+  _Rule(kindDue, '@B@$_xMonthPrep' r'(mars|mayo)(?:\s+(?:de\s+)?(\d{4}))?@E@', _xMonthDue),
+];
+
+/// Wiederholungen und Uhrzeiten vor der deutsch-englischen Uhrzeitregel, damit von „om 9:30“ kein „om“ im
+/// Titel bleibt; die übrigen Fälligkeiten zuletzt.
+List<_Rule> _withOtherLanguages(List<_Rule> rules) {
+  final firstTime = rules.indexWhere((rule) => rule.kind == kindTime);
+  return [
+    ...rules.sublist(0, firstTime),
+    ..._xRecurrenceRules,
+    ..._xTimeRules,
+    ...rules.sublist(firstTime),
+    ..._xDueRules,
+  ];
+}
 
 const _trimChars = ' ,;:-–';
 

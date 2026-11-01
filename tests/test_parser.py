@@ -149,3 +149,73 @@ def test_serialization():
     assert data["due"] == {"granularity": "week", "start": "2026-11-16"}
     assert data["due_label"] == "KW 47"
     assert data["priority"] == 1
+
+
+@pytest.mark.parametrize(
+    ("text", "title", "due", "due_time"),
+    [
+        # Dutch
+        ("Banden wisselen volgende maand", "Banden wisselen", Period.month(2026, 12), None),
+        ("Melk vandaag", "Melk", Period.day(TODAY), None),
+        ("Melk overmorgen", "Melk", Period.day(date(2026, 11, 5)), None),
+        ("Tandarts vrijdag", "Tandarts", Period.day(date(2026, 11, 6)), None),
+        ("Tandarts morgen om 9 uur", "Tandarts", Period.day(date(2026, 11, 4)), "09:00"),
+        ("Tandarts om 9:30", "Tandarts", Period.day(TODAY), "09:30"),
+        ("Rapport eind van de maand", "Rapport", Period.month(2026, 11), None),
+        ("Over 3 dagen bellen", "bellen", Period.day(date(2026, 11, 6)), None),
+        ("Tuin in maart", "Tuin", Period.month(2027, 3), None),
+        ("Belasting deze week", "Belasting", Period.iso_week(2026, 45), None),
+        # French
+        ("Changer les pneus le mois prochain", "Changer les pneus", Period.month(2026, 12), None),
+        ("Impôts semaine 47", "Impôts", Period.iso_week(2026, 47), None),
+        ("Lait aujourd'hui", "Lait", Period.day(TODAY), None),
+        ("Lait demain à 9h", "Lait", Period.day(date(2026, 11, 4)), "09:00"),
+        ("Réunion 14h30", "Réunion", Period.day(TODAY), "14:30"),
+        ("Dentiste vendredi", "Dentiste", Period.day(date(2026, 11, 6)), None),
+        ("Rapport fin du mois", "Rapport", Period.month(2026, 11), None),
+        ("Appeler dans 3 jours", "Appeler", Period.day(date(2026, 11, 6)), None),
+        ("Jardin en mars", "Jardin", Period.month(2027, 3), None),
+        ("Vacances l'année prochaine", "Vacances", Period.year(2027), None),
+        # Spanish
+        ("Cambiar neumáticos el próximo mes", "Cambiar neumáticos", Period.month(2026, 12), None),
+        ("Impuestos semana 47", "Impuestos", Period.iso_week(2026, 47), None),
+        ("Leche hoy", "Leche", Period.day(TODAY), None),
+        ("Leche mañana a las 9", "Leche", Period.day(date(2026, 11, 4)), "09:00"),
+        ("Leche pasado mañana", "Leche", Period.day(date(2026, 11, 5)), None),
+        ("Dentista el viernes", "Dentista", Period.day(date(2026, 11, 6)), None),
+        ("Informe a finales de mes", "Informe", Period.month(2026, 11), None),
+        ("Llamar en 3 días", "Llamar", Period.day(date(2026, 11, 6)), None),
+        ("Jardín en mayo", "Jardín", Period.month(2027, 5), None),
+        ("Comprar la semana que viene", "Comprar", Period.iso_week(2026, 46), None),
+    ],
+)
+def test_other_languages(text, title, due, due_time):
+    result = parse(text, TODAY)
+    assert (result.title, result.due, result.due_time) == (title, due, due_time)
+
+
+@pytest.mark.parametrize(
+    ("text", "unit", "weekdays"),
+    [
+        ("Bloemen elke woensdag en zaterdag", Granularity.WEEK, (2, 5)),
+        ("Planten dagelijks", Granularity.DAY, ()),
+        ("Arroser chaque mercredi et samedi", Granularity.WEEK, (2, 5)),
+        ("Arroser tous les jours", Granularity.DAY, ()),
+        ("Facture tous les mois", Granularity.MONTH, ()),
+        ("Regar cada miércoles y sábado", Granularity.WEEK, (2, 5)),
+        ("Regar todos los días", Granularity.DAY, ()),
+        ("Pagar mensualmente", Granularity.MONTH, ()),
+    ],
+)
+def test_other_languages_recurrence(text, unit, weekdays):
+    result = parse(text, TODAY)
+    assert (result.recurrence.unit, result.recurrence.weekdays) == (unit, weekdays)
+
+
+@pytest.mark.parametrize(
+    "text",
+    ["Mars Riegel kaufen", "Mayo kaufen", "Le Monde lesen", "En route", "2 h joggen", "Semaine des Kinos", "Morgenroutine"],
+)
+def test_other_languages_no_false_positives(text):
+    result = parse(text, TODAY)
+    assert (result.title, result.due, result.due_time) == (text, None, None)

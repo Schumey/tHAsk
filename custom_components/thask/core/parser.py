@@ -1,7 +1,7 @@
 """Quick entry: take due period, time, recurrence and priority out of a typed task title.
 
 "Reifen wechseln nächsten Monat !" -> title "Reifen wechseln", due November, low priority (! = low, !! = medium, !!! = high).
-German first, with the most common English phrases.
+German first, with the most common English, Dutch, French and Spanish phrases.
 """
 
 from __future__ import annotations
@@ -377,6 +377,252 @@ class _EndMatch(_TimeMatch):
         if key == "unit":
             return self._match["unit"] or self._match["unit3"]
         return self._match[key]
+
+
+# -- Dutch, French and Spanish -------------------------------------------------------------------------------
+# The most common phrases; German and English above stay the reference. Words map to units explicitly, since the
+# first-letter rule of _unit() does not fit these languages ("jour" is a day, "jaar" a year).
+
+_X_UNITS = {
+    Granularity.DAY: ("dag", "dagen", "jour", "jours", "día", "dia", "días", "dias"),
+    Granularity.WEEK: ("week", "weken", "semaine", "semaines", "semana", "semanas"),
+    Granularity.MONTH: ("maand", "maanden", "mois", "mes", "meses"),
+    Granularity.QUARTER: ("kwartaal", "kwartalen", "trimestre", "trimestres"),
+    Granularity.YEAR: ("jaar", "jaren", "an", "ans", "année", "annee", "années", "annees", "año", "ano", "años", "anos"),
+}
+_X_UNIT = "|".join(sorted((word for words in _X_UNITS.values() for word in words), key=len, reverse=True))
+_X_WEEKDAYS = [
+    ("maandag", "lundi", "lunes"),
+    ("dinsdag", "mardi", "martes"),
+    ("woensdag", "mercredi", "miércoles", "miercoles"),
+    ("donderdag", "jeudi", "jueves"),
+    ("vrijdag", "vendredi", "viernes"),
+    ("zaterdag", "samedi", "sábado", "sabado"),
+    ("zondag", "dimanche", "domingo"),
+]
+_X_WEEKDAY = "|".join(name for names in _X_WEEKDAYS for name in names)
+# Plural forms for recurrences ("tous les lundis", "todos los lunes", "maandags").
+_X_REC_DAY = r"(?:" + _X_WEEKDAY + "|" + "|".join(f"{names[0]}s|{names[1]}s" for names in _X_WEEKDAYS) + ")"
+_X_MONTHS = [
+    ("januari", "janvier", "enero"),
+    ("februari", "février", "fevrier", "febrero"),
+    ("maart", "marzo"),
+    ("april", "avril", "abril"),
+    ("mei", "mayo"),
+    ("juni", "juin", "junio"),
+    ("juli", "juillet", "julio"),
+    ("augustus", "août", "aout", "agosto"),
+    ("september", "septembre", "septiembre", "setiembre"),
+    ("oktober", "octobre", "octubre"),
+    ("november", "novembre", "noviembre"),
+    ("december", "décembre", "decembre", "diciembre"),
+]
+# "mars" (also the planet) and "mayo" only count after a preposition.
+_X_MONTH = "|".join(name for names in _X_MONTHS for name in names if name != "mayo")
+_X_PREP = (
+    r"(?:(?:op|voor|tegen|uiterlijk|in|le|pour|d'ici|avant|en|au|el|para|antes\s+del?|hasta\s+el)\s+)?"
+)
+_X_MONTH_PREP = r"(?:in|en|au\s+mois\s+de|d'ici|avant|pour|para|antes\s+de|hasta)\s+"
+_X_NEXT = r"(?:volgende|komende|prochaine?|próxim[oa]|proxim[oa])"
+_X_THIS = r"(?:deze|dit|cette|cet|ce|esta|este)"
+_X_EVERY = r"(?:elke|iedere|chaque|tous\s+les|toutes\s+les|cada|todos\s+los|todas\s+las)"
+_X_AND = r"(?:\s*[,/&+]\s*|\s+(?:en|et|y|e)\s+)"
+_X_NUMBER_WORDS = {"een": 1, "un": 1, "une": 1, "una": 1, "uno": 1, "twee": 2, "deux": 2, "dos": 2, "drie": 3, "trois": 3, "tres": 3}
+_X_NUMBER = r"(?:\d+|" + "|".join(_X_NUMBER_WORDS) + ")"
+_X_REC_DAY_PATTERN = re.compile(rf"{_B}{_X_REC_DAY}{_E}", re.IGNORECASE)
+
+
+def _x_unit(word: str) -> Granularity:
+    word = word.lower()
+    return next(unit for unit, words in _X_UNITS.items() if word in words)
+
+
+def _x_number(word: str) -> int:
+    return int(word) if word.isdigit() else _X_NUMBER_WORDS[word.lower()]
+
+
+def _x_weekday_index(word: str) -> int:
+    word = word.lower()
+    for index, names in enumerate(_X_WEEKDAYS):
+        if word in names or (word.endswith("s") and word[:-1] in names):
+            return index
+    raise ValueError(word)
+
+
+def _x_month_index(word: str) -> int:
+    word = word.lower()
+    if word == "mars":
+        return 3
+    return next(index + 1 for index, names in enumerate(_X_MONTHS) if word in names)
+
+
+def _x_relative_day(match: re.Match[str], today: date) -> dict[str, Any]:
+    word = re.sub(r"\s+", " ", match[1].lower())
+    offset = {"vandaag": 0, "aujourd'hui": 0, "hoy": 0, "demain": 1, "mañana": 1, "manana": 1}.get(word, 2)
+    return {"due": Period.day(today + timedelta(days=offset))}
+
+
+def _x_period(match: re.Match[str], today: date) -> dict[str, Any]:
+    """"volgende week", "la semaine prochaine", "el próximo mes", "este año"."""
+    return {"due": Period(_x_unit(match["unit"]), today).shift(1 if match["next"] else 0)}
+
+
+def _x_in_n(match: re.Match[str], today: date) -> dict[str, Any]:
+    count, unit = _x_number(match[1]), _x_unit(match[2])
+    match unit:
+        case Granularity.DAY:
+            return {"due": Period.day(today + timedelta(days=count))}
+        case Granularity.WEEK:
+            return {"due": Period(unit, today + timedelta(weeks=count))}
+        case Granularity.MONTH:
+            return {"due": Period(unit, add_months(today, count))}
+        case Granularity.QUARTER:
+            return {"due": Period(unit, add_months(today, 3 * count))}
+    return {"due": Period(Granularity.YEAR, add_months(today, 12 * count))}
+
+
+def _x_end_of(match: re.Match[str], today: date) -> dict[str, Any]:
+    return {"due": Period(_x_unit(match["unit"]), today).shift(1 if match["next"] else 0)}
+
+
+def _x_weekday(match: re.Match[str], today: date) -> dict[str, Any]:
+    return {"due": Period.day(_next_weekday(today, _x_weekday_index(match[1]), include_today=False))}
+
+
+def _x_month(match: re.Match[str], today: date) -> dict[str, Any]:
+    month = _x_month_index(match[1])
+    year = int(match[2]) if match[2] else today.year + (month < today.month)
+    return {"due": Period.month(year, month)}
+
+
+def _x_recurring_weekdays(match: re.Match[str], today: date) -> dict[str, Any]:
+    days = [_x_weekday_index(day[0]) for day in _X_REC_DAY_PATTERN.finditer(match["days"])]
+    return _weekly_on(days, 1, today)
+
+
+def _x_recurring_unit(match: re.Match[str], today: date) -> dict[str, Any]:
+    word = (match["unit"] or match["adverb"]).lower()
+    if match["adverb"]:
+        unit = next(
+            unit
+            for unit, stems in (
+                (Granularity.DAY, ("dage", "quotid", "diari")),
+                (Granularity.WEEK, ("weke", "hebdo", "seman")),
+                (Granularity.MONTH, ("maand", "mensu")),
+                (Granularity.YEAR, ("jaar", "annu", "anua")),
+            )
+            if word.startswith(stems)
+        )
+    else:
+        unit = _x_unit(word)
+    return {"recurrence": Recurrence(unit), "default_due": Period(unit, today)}
+
+
+def _x_recurring_every_n(match: re.Match[str], today: date) -> dict[str, Any]:
+    unit = _x_unit(match[2])
+    return {"recurrence": Recurrence(unit, max(1, int(match[1]))), "default_due": Period(unit, today)}
+
+
+def _x_time(match: re.Match[str], today: date) -> dict[str, Any] | None:
+    hour, minute = int(match["hour"]), int(match["minute"] or 0)
+    if hour > 23 or minute > 59:
+        return None
+    return {"due_time": f"{hour:02d}:{minute:02d}"}
+
+
+# Weekdays as a recurrence need "every" (or a plural): "elke maandag", "chaque lundi", "tous les lundis", "cada lunes".
+_X_RECURRENCE_RULES = [
+    _rule(
+        KIND_RECURRENCE,
+        rf"{_B}{_X_EVERY}\s+(?P<days>{_X_REC_DAY}(?:{_X_AND}(?:{_X_EVERY}\s+)?{_X_REC_DAY})*){_E}",
+        _x_recurring_weekdays,
+    ),
+    _rule(
+        KIND_RECURRENCE,
+        rf"{_B}(?:om\s+de|tous\s+les|toutes\s+les|cada)\s+(\d+)\s+({_X_UNIT}){_E}",
+        _x_recurring_every_n,
+    ),
+    _rule(
+        KIND_RECURRENCE,
+        rf"{_B}(?:{_X_EVERY}\s+(?P<unit>{_X_UNIT})"
+        rf"|(?P<adverb>dagelijks|wekelijks|maandelijks|jaarlijks|quotidiennement|quotidien(?:ne)?|hebdomadaire"
+        rf"|mensuel(?:le)?|annuel(?:le)?|diariamente|diario|semanal(?:mente)?|mensual(?:mente)?|anual(?:mente)?)){_E}",
+        _x_recurring_unit,
+    ),
+]
+_X_TIME_RULES = [
+    # "om 9 uur", "om 9:30", "à 9h", "9h30", "à 9:30", "a las 9", "a las 9:30".
+    _rule(KIND_TIME, rf"{_B}(?:om\s+)?(?P<hour>\d{{1,2}})(?::(?P<minute>\d{{2}}))?\s*uur{_E}", _x_time),
+    _rule(KIND_TIME, rf"{_B}om\s+(?P<hour>\d{{1,2}}):(?P<minute>\d{{2}}){_E}", _x_time),
+    # "9h" alone could be a duration ("2h lernen"); without "à" only with minutes.
+    _rule(KIND_TIME, rf"{_B}à\s+(?P<hour>\d{{1,2}})\s*h(?:\s*(?P<minute>\d{{2}}))?{_E}", _x_time),
+    _rule(KIND_TIME, rf"{_B}(?P<hour>\d{{1,2}})h(?P<minute>\d{{2}}){_E}", _x_time),
+    _rule(KIND_TIME, rf"{_B}à\s+(?P<hour>\d{{1,2}}):(?P<minute>\d{{2}}){_E}", _x_time),
+    _rule(KIND_TIME, rf"{_B}a\s+las?\s+(?P<hour>\d{{1,2}})(?::(?P<minute>\d{{2}}))?{_E}", _x_time),
+]
+_X_DUE_RULES = [
+    _rule(
+        KIND_DUE,
+        rf"{_B}(?:over|binnen|dans|en|dentro\s+de)\s+({_X_NUMBER})\s+({_X_UNIT}){_E}",
+        _x_in_n,
+    ),
+    _rule(
+        KIND_DUE,
+        rf"{_B}(?:pour\s+|para\s+)?(vandaag|aujourd'hui|hoy|overmorgen|après-demain|apres-demain|demain"
+        rf"|pasado\s+mañana|pasado\s+manana|mañana|manana){_E}",
+        _x_relative_day,
+    ),
+    _rule(
+        KIND_DUE,
+        rf"{_B}(?:eind(?:e)?\s+(?:van\s+)?(?:de\s+|het\s+)?(?P<next>volgende\s+)?(?:deze\s+|dit\s+)?(?P<unit>week|maand|kwartaal|jaar)"
+        rf"|fin\s+(?:de\s+la\s+|du\s+|de\s+l'|d')(?P<unit2>semaine|mois|trimestre|année|annee)(?P<next2>\s+prochaine?)?"
+        rf"|(?:a\s+)?finales?\s+de(?:l|\s+la)?\s+(?P<unit3>semana|mes|trimestre|año|ano)(?P<next3>\s+que\s+viene)?){_E}",
+        lambda match, today: _x_end_of(_XEndMatch(match), today),
+    ),
+    _rule(
+        KIND_DUE,
+        rf"{_B}{_X_PREP}(?:(?:la|le|l'|el)\s*)?(?P<next>{_X_NEXT})\s+(?P<unit>{_X_UNIT}){_E}",
+        _x_period,
+    ),
+    _rule(
+        KIND_DUE,
+        rf"{_B}{_X_PREP}(?:(?:la|le|l'|el)\s*)?(?P<unit>semaine|mois|trimestre|année|annee|an|semana|mes|trimestre|año|ano)"
+        rf"\s+(?P<next>prochaine?|que\s+viene|próxim[oa]|proxim[oa]){_E}",
+        _x_period,
+    ),
+    _rule(KIND_DUE, rf"{_B}{_X_PREP}(?P<next>){_X_THIS}\s+(?P<unit>{_X_UNIT}){_E}", _x_period),
+    _rule(
+        KIND_DUE,
+        rf"{_B}{_X_PREP}(?:la\s+|en\s+la\s+)?(?:semaine|semana|sem\.?)\s*(\d{{1,2}})(?:\s*[/.]?\s*(\d{{4}}))?{_E}",
+        _calendar_week,
+    ),
+    _rule(
+        KIND_DUE,
+        rf"{_B}{_X_PREP}(?:(?:volgende|komende|el\s+próximo|el\s+proximo|el)\s+)?({_X_WEEKDAY})(?:\s+prochain)?{_E}",
+        _x_weekday,
+    ),
+    _rule(KIND_DUE, rf"{_B}{_X_PREP}({_X_MONTH})(?:\s+(?:de\s+)?(\d{{4}}))?{_E}", _x_month),
+    _rule(KIND_DUE, rf"{_B}{_X_MONTH_PREP}(mars|mayo)(?:\s+(?:de\s+)?(\d{{4}}))?{_E}", _x_month),
+]
+
+
+class _XEndMatch:
+    def __init__(self, match: re.Match[str]) -> None:
+        self._match = match
+
+    def __getitem__(self, key: str) -> str | None:
+        m = self._match
+        if key == "unit":
+            return m["unit"] or m["unit2"] or m["unit3"]
+        if key == "next":
+            return m["next"] or m["next2"] or m["next3"]
+        return m[key]
+
+
+# Recurrences and times go before the German/English time rule, so "om 9:30" does not leave "om" in the title.
+_first_time = next(index for index, (kind, _, _) in enumerate(_RULES) if kind == KIND_TIME)
+_RULES[_first_time:_first_time] = _X_RECURRENCE_RULES + _X_TIME_RULES
+_RULES.extend(_X_DUE_RULES)
 
 
 def parse(text: str, today: date, disabled: Container[str] = ()) -> ParseResult:

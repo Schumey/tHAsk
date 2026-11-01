@@ -20,10 +20,23 @@ Aktueller Stand: **0.9.1** (siehe [Releases](https://github.com/Schumey/tHAsk/re
 
 - Fälligkeit als Tag, Woche, Monat, Quartal oder Jahr, optional mit Uhrzeit; Wiederholungen (auch an mehreren Wochentagen); Erinnerungen; Schritte; Notizen; Priorität (Niedrig, Mittel, Hoch); Kategorien.
 - Intelligente Listen: **Heute**, **Überfällig** (optional), **Wichtig**, **Geplant**, **Diese Woche**, **Diesen Monat**, dazu eigene Listen mit Gruppen.
-- **Schnelleingabe mit Erkennung**: „Steuer KW 47 !!!“, „Blumen gießen jeden Mi und Sa“, „Zahnarzt morgen um 9:30“.
+- **Schnelleingabe mit Erkennung**: „Steuer KW 47 !!!“, „Blumen gießen jeden Mi und Sa“, „Zahnarzt morgen um 9:30“ – auch auf Englisch, Niederländisch, Französisch und Spanisch („Dentist next Friday“, „Tandarts morgen om 9 uur“, „Impôts semaine 47“, „Leche mañana a las 9“).
+- **Sprachen**: Deutsch, Englisch, Niederländisch, Französisch und Spanisch. Weboberfläche und Karte folgen der Sprache in Home Assistant, die Apps der des Geräts.
 - **Erinnerungen** als Push (Companion-App, mit Knopf „Erledigt“), in der HA-Glocke und als Windows-Benachrichtigung.
 - **Trigger**: legen Aufgaben automatisch an, wenn in HA etwas zutrifft (z. B. ein Kalendertermin morgen).
 - **Import** aus Microsoft To Do, Todoist, Google Tasks, TickTick, iCalendar und CSV.
+
+## Sprachen
+
+| | Deutsch | Englisch | Niederländisch | Französisch | Spanisch |
+|---|---|---|---|---|---|
+| Integration (Einrichtung, Optionen, Services), Weboberfläche, Karte | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Android-App, Widget, Windows-App | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Schnelleingabe | ✓ | ✓ | häufige Wendungen | häufige Wendungen | häufige Wendungen |
+
+Die Schnelleingabe versteht alle Sprachen gleichzeitig, unabhängig von der eingestellten. Auf Niederländisch, Französisch und Spanisch erkennt sie u. a.: heute/morgen/übermorgen, diese/nächste Woche, Monat und Jahr, Wochentage, Monatsnamen, Kalenderwoche, „in 3 Tagen“, Monatsende, Uhrzeiten („om 9 uur“, „à 9h“, „14h30“, „a las 9“) und Wiederholungen („elke maandag“, „tous les jours“, „cada miércoles y sábado“).
+
+Eine neue Sprache braucht: `translations/<sprache>.json`, die Texte in `www/thask-panel.js` und `www/thask-card.js`, Monats- und Wochentagsnamen in `core/period.py` und `www/thask-common.js`, in der App `lib/l10n.dart` und `android/app/src/main/res/values-<sprache>/strings.xml`.
 
 ## Installation
 
