@@ -276,8 +276,11 @@ class ThaskCard extends HTMLElement {
       rollingWeek: this._options.week_mode === "rolling", importantMedium: this._options.important_priority === "medium",
     };
     const minPriority = Number(this._config.min_priority) || 0;
+    // Smart views only show lists for everyone or with me among the members (like the web interface).
+    const me = this._hass?.user?.id;
+    const mine = new Set(this._lists.filter((l) => !l.members?.length || !me || l.members.includes(me)).map((l) => l.id));
     const tasks = [...this._tasks.values()].filter((task) =>
-      (view.type === "list" ? task.list_id === view.listId : matchesSmart(task, view.key, ctx))
+      (view.type === "list" ? task.list_id === view.listId : mine.has(task.list_id) && matchesSmart(task, view.key, ctx))
       && task.priority >= minPriority && !skip?.has(task.id)
     );
     if (view.type === "list") {

@@ -71,7 +71,7 @@ Nach dem Einrichten erscheint **tHAsk** in der HA-Seitenleiste:
   - **Wichtig**: Priorität Hoch. Der Zeitraum oben rechts ist wählbar: alle oder fällig bis Ende der Woche, des Monats, des Quartals oder des Jahres; jedes Gerät merkt sich die Wahl.
   - **Geplant**: gruppiert nach Überfällig, Diese Woche, Diesen Monat und Später.
   - **Diese Woche** und **Diesen Monat**: alles, was bis Sonntag bzw. Monatsende fällig ist, inklusive Überfälligem.
-  - Darunter die eigenen Listen, mit Gruppen.
+  - Darunter die eigenen Listen, mit Gruppen; Listen für andere Personen sind ausgeblendet (siehe [Listen für bestimmte Personen](#listen-für-bestimmte-personen)).
 - **Schnelleingabe** mit Erkennung, z. B. „Reifen wechseln nächsten Monat !“, „Steuer KW 47“, „Rechnungen ablegen jeden Monat“, „Training alle 2 Wochen Mo und Do“, „Zeitung werktags“. Erkanntes erscheint als Chip; ein Klick auf den Chip nimmt die Erkennung zurück.
 - **Detailbereich**: Schritte, Priorität, Fälligkeit als Tag/Woche/Monat/Quartal/Jahr mit Vor-/Zurück-Pfeilen, Erinnerung, Wiederholung (wöchentlich auch an mehreren Wochentagen), Liste, Notizen.
 - Aufgaben per Drag & Drop sortieren oder auf eine andere Liste in der Seitenleiste ziehen.
@@ -81,6 +81,14 @@ Nach dem Einrichten erscheint **tHAsk** in der HA-Seitenleiste:
 - **Erledigte löschen** (Besen-Symbol im Listenkopf).
 - **Trigger** (unten in der Seitenleiste, nur für Administratoren), siehe [Trigger](#trigger).
 - **Einstellungen** (darunter, nur für Administratoren): die [Optionen](#optionen) der Integration.
+
+### Listen für bestimmte Personen
+
+Jede Liste kann für bestimmte HA-Benutzer sein (Personen-Symbol im Listenkopf, in der App „Für wen …“ im Listenmenü), z. B. „Büro“ nur für dich, „Einkauf“ für alle. Ohne Auswahl ist sie für alle.
+
+- Eine Liste für andere fehlt in deiner Navigation und in den intelligenten Ansichten (Heute, Diese Woche …). Gleiches gilt für Karte, Widget, Taskleisten-Zähler und Assist, wenn Assist weiß, wer fragt.
+- Unten in der Navigation blendet **„Listen anderer zeigen“** sie wieder ein; jedes Gerät merkt sich das.
+- Es geht nur um Übersicht, nicht um Schutz: Alle können die Listen einblenden, und die Entities in Home Assistant gibt es weiterhin für alle Listen.
 
 ### Priorität
 
@@ -288,7 +296,8 @@ Die Apps, die Weboberfläche und die Karte nutzen diese Befehle über die normal
 | `thask/info` | – |
 | `thask/data` | – (alle Listen und Aufgaben) |
 | `thask/subscribe` | – (Snapshot mit `options`, danach jede Änderung als Event; `options` nach einer Änderung der Optionen; `reminder` mit der Aufgabe zum Erinnerungszeitpunkt) |
-| `thask/list/create`, `thask/list/update`, `thask/list/delete` | `name`, `group`, `color`, `icon`, `position`, `sort` (`manual`, `priority`, `due`, `title`, `created`) / `list_id` |
+| `thask/list/create`, `thask/list/update`, `thask/list/delete` | `name`, `group`, `color`, `icon`, `position`, `sort` (`manual`, `priority`, `due`, `title`, `created`), `members` (HA-Benutzer-IDs, leer = alle) / `list_id` |
+| `thask/users` | – (aktive HA-Benutzer `{id, name}` und `me`, für die Auswahl „Für wen“) |
 | `thask/list/move` | `list_id`, `previous_id` |
 | `thask/list/clear_completed` | `list_id` (leer = alle), `older_than_days` |
 | `thask/task/create`, `thask/task/update`, `thask/task/delete` | siehe unten / `task_id` |

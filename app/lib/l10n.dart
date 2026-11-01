@@ -136,6 +136,7 @@ const _strings = <String, Map<String, String>>{
     'opt_important_priority': "„Wichtig“ zeigt", 'important_priority_high': "Nur Priorität Hoch", 'important_priority_medium': "Priorität Mittel und Hoch",
     'tray_open': 'Öffnen', 'tray_quit': 'Beenden',
     'empty_title': "Alles erledigt", 'empty_text': "Hier ist gerade nichts zu tun.", 'empty_hint': "Neue Aufgaben unten eingeben, z. B. „Steuer KW 47“.",
+    'members_menu': "Für wen …", 'members': "Für wen", 'members_all': "Alle", 'show_other_lists': "Listen anderer zeigen ({0})", 'only_my_lists': "Nur meine Listen", 'members_hint': "Die Liste steht nur bei diesen Personen in der Übersicht. Die anderen können sie trotzdem einblenden.",
   },
   'en': {
     'today': 'Today', 'tomorrow': 'Tomorrow', 'week_label': 'Week',
@@ -179,6 +180,7 @@ const _strings = <String, Map<String, String>>{
     'opt_important_priority': "“Important” shows", 'important_priority_high': "High priority only", 'important_priority_medium': "Medium and high priority",
     'tray_open': 'Open', 'tray_quit': 'Quit',
     'empty_title': "All done", 'empty_text': "Nothing to do here right now.", 'empty_hint': "Add tasks below, e.g. “Taxes week 47”.",
+    'members_menu': "Who is it for …", 'members': "Who is it for", 'members_all': "Everyone", 'show_other_lists': "Show others' lists ({0})", 'only_my_lists': "Only my lists", 'members_hint': "Only these people see the list in their overview. Others can still show it.",
   },
   'nl': {
     'today': 'Vandaag', 'tomorrow': 'Morgen', 'week_label': 'Week',
@@ -222,6 +224,7 @@ const _strings = <String, Map<String, String>>{
     'opt_important_priority': "„Belangrijk” toont", 'important_priority_high': "Alleen prioriteit hoog", 'important_priority_medium': "Prioriteit gemiddeld en hoog",
     'tray_open': 'Openen', 'tray_quit': 'Afsluiten',
     'empty_title': "Alles klaar", 'empty_text': "Hier is nu niets te doen.", 'empty_hint': "Voeg hieronder taken toe, bijv. „Belasting week 47”.",
+    'members_menu': "Voor wie …", 'members': "Voor wie", 'members_all': "Iedereen", 'show_other_lists': "Lijsten van anderen tonen ({0})", 'only_my_lists': "Alleen mijn lijsten", 'members_hint': "Alleen deze personen zien de lijst in hun overzicht. Anderen kunnen hem toch tonen.",
   },
   'fr': {
     'today': "Aujourd'hui", 'tomorrow': 'Demain', 'week_label': 'Semaine',
@@ -265,6 +268,7 @@ const _strings = <String, Map<String, String>>{
     'opt_important_priority': "« Important » affiche", 'important_priority_high': "Priorité haute uniquement", 'important_priority_medium': "Priorités moyenne et haute",
     'tray_open': 'Ouvrir', 'tray_quit': 'Quitter',
     'empty_title': "Tout est fait", 'empty_text': "Rien à faire ici pour le moment.", 'empty_hint': "Ajoutez des tâches ci-dessous, p. ex. « Impôts semaine 47 ».",
+    'members_menu': "Pour qui …", 'members': "Pour qui", 'members_all': "Tout le monde", 'show_other_lists': "Afficher les listes des autres ({0})", 'only_my_lists': "Seulement mes listes", 'members_hint': "Seules ces personnes voient la liste dans leur aperçu. Les autres peuvent quand même l'afficher.",
   },
   'es': {
     'today': 'Hoy', 'tomorrow': 'Mañana', 'week_label': 'Semana',
@@ -308,5 +312,6 @@ const _strings = <String, Map<String, String>>{
     'opt_important_priority': "«Importante» muestra", 'important_priority_high': "Solo prioridad alta", 'important_priority_medium': "Prioridad media y alta",
     'tray_open': 'Abrir', 'tray_quit': 'Salir',
     'empty_title': "Todo hecho", 'empty_text': "No hay nada que hacer aquí ahora.", 'empty_hint': "Añade tareas abajo, p. ej. «Impuestos semana 47».",
+    'members_menu': "Para quién …", 'members': "Para quién", 'members_all': "Todos", 'show_other_lists': "Mostrar listas de otros ({0})", 'only_my_lists': "Solo mis listas", 'members_hint': "Solo estas personas ven la lista en su resumen. Los demás pueden mostrarla igualmente.",
   },
 };

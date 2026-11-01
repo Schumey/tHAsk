@@ -82,6 +82,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
         ws_trigger_undo,
         ws_options_get,
         ws_options_update,
+        ws_users,
     ):
         websocket_api.async_register_command(hass, command)
 
@@ -105,9 +106,11 @@ def _patch(msg: dict[str, Any], fields: tuple[str, ...]) -> dict[str, Any]:
     return {key: value for key, value in msg.items() if key in fields}
 
 
-def _snapshot(data: ThaskData) -> dict[str, Any]:
+def _snapshot(data: ThaskData, connection: websocket_api.ActiveConnection) -> dict[str, Any]:
     return {
         "today": data.today.isoformat(),
+        # Lists with members are only in the overview of those users.
+        "me": connection.user.id if connection.user else None,
         "options": data.options,
         "lists": [task_list.as_dict() for task_list in data.collection.sorted_lists()],
         "tasks": [task.as_dict() for task in data.collection.tasks.values()],
@@ -126,7 +129,7 @@ def ws_info(hass, connection, msg, data: ThaskData) -> None:
 @websocket_api.websocket_command({vol.Required("type"): "thask/data"})
 @_with_data
 def ws_data(hass, connection, msg, data: ThaskData) -> None:
-    connection.send_result(msg["id"], _snapshot(data))
+    connection.send_result(msg["id"], _snapshot(data, connection))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "thask/subscribe"})
@@ -167,7 +170,7 @@ def ws_subscribe(hass, connection, msg, data: ThaskData) -> None:
 
     connection.subscriptions[msg["id"]] = unsubscribe
     connection.send_result(msg["id"])
-    connection.send_message(websocket_api.event_message(msg["id"], {"type": "snapshot", **_snapshot(data)}))
+    connection.send_message(websocket_api.event_message(msg["id"], {"type": "snapshot", **_snapshot(data, connection)}))
 
 
 @websocket_api.websocket_command(
@@ -401,6 +404,19 @@ def ws_trigger_undo(hass, connection, msg, data: ThaskData) -> None:
 def _notify_services(hass: HomeAssistant) -> list[str]:
     """Legacy notify services for reminders, as in the options flow (notify.send_message needs an entity)."""
     return sorted(service for service in hass.services.async_services_for_domain("notify") if service != "send_message")
+
+
+@websocket_api.websocket_command({vol.Required("type"): "thask/users"})
+@websocket_api.async_response
+async def ws_users(hass, connection, msg) -> None:
+    """The people a list can be for: active HA users that are not system users."""
+    users = [
+        {"id": user.id, "name": user.name or user.id}
+        for user in await hass.auth.async_get_users()
+        if user.is_active and not user.system_generated
+    ]
+    users.sort(key=lambda user: user["name"].casefold())
+    connection.send_result(msg["id"], {"me": connection.user.id if connection.user else None, "users": users})
 
 
 @websocket_api.websocket_command({vol.Required("type"): "thask/options/get"})

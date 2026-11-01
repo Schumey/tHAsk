@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'l10n.dart';
+import 'models.dart';
 import 'store.dart';
 
 /// Sortierungen einer Liste, wie in der Integration (`TASK_SORTS`).
@@ -93,6 +94,58 @@ Future<String?> pickSort(BuildContext context, {required String current}) => sho
         ),
       ),
     );
+
+/// Für wen eine Liste ist: Personen ankreuzen, keine = alle. Liefert die Auswahl oder null bei Abbruch.
+Future<List<String>?> pickMembers(BuildContext context, ThaskStore store, TaskList list) async {
+  final List<({String id, String name})> users;
+  try {
+    users = await store.loadUsers();
+  } on Exception catch (e) {
+    if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
+    return null;
+  }
+  if (!context.mounted) return null;
+  final chosen = <String>{...list.members};
+  return showDialog<List<String>>(
+    context: context,
+    builder: (context) => StatefulBuilder(
+      builder: (context, setState) => AlertDialog(
+        title: Text(tr('members')),
+        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CheckboxListTile(
+                value: chosen.isEmpty,
+                title: Text(tr('members_all')),
+                onChanged: (_) => setState(chosen.clear),
+              ),
+              const Divider(),
+              for (final user in users)
+                CheckboxListTile(
+                  value: chosen.contains(user.id),
+                  title: Text(user.name),
+                  onChanged: (on) => setState(() => on! ? chosen.add(user.id) : chosen.remove(user.id)),
+                ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 8, 24, 0),
+                child: Text(tr('members_hint'), style: Theme.of(context).textTheme.bodySmall),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(tr('cancel'))),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, [for (final u in users) if (chosen.contains(u.id)) u.id]),
+            child: Text(tr('ok')),
+          ),
+        ],
+      ),
+    ),
+  );
+}
 
 Future<bool> confirmDelete(BuildContext context, String name) async =>
     await showDialog<bool>(

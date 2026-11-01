@@ -17,7 +17,7 @@ const _taskbar = MethodChannel('thask/taskbar');
 
 /// Zähler an der Taskleiste: offene Aufgaben in „Heute“, Überfälliges eingeschlossen.
 int taskbarCount(ThaskStore store) =>
-    [for (final list in store.lists) ...store.tasksOf(list.id)].where((t) => !t.completed && store.inTodayView(t)).length;
+    [for (final list in store.visibleLists) ...store.tasksOf(list.id)].where((t) => !t.completed && store.inTodayView(t)).length;
 
 /// Offene Aufgaben, deren Erinnerung nach [since] und spätestens [now] fällig wurde: verpasst, weil die App nicht lief.
 /// Höchstens [limit], die neuesten zuerst.

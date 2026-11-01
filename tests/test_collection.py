@@ -3,7 +3,7 @@ from datetime import date, datetime, timezone
 import pytest
 
 from core.collection import NotFoundError, TaskCollection
-from core.models import Task
+from core.models import Task, TaskList
 from core.period import Granularity, Period
 
 TODAY = date(2026, 11, 3)
@@ -275,3 +275,18 @@ def test_this_week_as_next_seven_days():
     assert monday.in_this_month(sunday, utc, separate=True)
     assert not monday.in_this_month(sunday, utc, separate=True, rolling=True)
     assert far.in_this_month(sunday, utc, separate=True, rolling=True)
+
+
+def test_list_members_for_the_overview() -> None:
+    collection = TaskCollection()
+    task_list = collection.create_list("Büro", members=["anna", "anna", "ben"])
+    assert task_list.members == ["anna", "ben"]
+    assert task_list.visible_to("anna") and not task_list.visible_to("carla")
+    assert task_list.visible_to(None), "unknown users see everything"
+    assert TaskList.from_dict(task_list.as_dict()).members == ["anna", "ben"]
+    collection.update_list(task_list.id, {"members": []})
+    assert task_list.visible_to("carla")
+    # Lists stored before members existed are for everyone.
+    old = task_list.as_dict()
+    del old["members"]
+    assert TaskList.from_dict(old).visible_to("carla")

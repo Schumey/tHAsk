@@ -123,17 +123,25 @@ class TaskList:
     sort: str = "manual"
     # Id in the system the list was imported from.
     external_id: str | None = None
+    # HA user ids the list is for; empty = everyone. Only for the overview, not access control: the others
+    # can still show it (and Home Assistant's todo entities are not per user anyway).
+    members: list[str] = field(default_factory=list)
     created: str = field(default_factory=utc_now_iso)
     modified: str = field(default_factory=utc_now_iso)
 
-    EDITABLE = ("name", "group", "color", "icon", "position", "sort")
+    EDITABLE = ("name", "group", "color", "icon", "position", "sort", "members")
 
     def apply(self, patch: dict[str, Any]) -> None:
         for key in self.EDITABLE:
             if key in patch:
                 setattr(self, key, patch[key])
         self.sort = normalize_sort(self.sort)
+        self.members = list(dict.fromkeys(self.members or []))
         self.modified = utc_now_iso()
+
+    def visible_to(self, user_id: str | None) -> bool:
+        """Whether the list belongs in the overview of `user_id` (unknown users see everything)."""
+        return not self.members or user_id is None or user_id in self.members
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -144,6 +152,7 @@ class TaskList:
             "icon": self.icon,
             "position": self.position,
             "sort": self.sort,
+            "members": list(self.members),
             "external_id": self.external_id,
             "created": self.created,
             "modified": self.modified,

@@ -82,7 +82,7 @@ PAGE = """<!doctype html>
   window.fakeHass = {
     // ?lang=fr shows another language.
     language: new URLSearchParams(location.search).get("lang") || "de",
-    user: { is_admin: true },
+    user: { id: "u-max", is_admin: true },
     states: Object.fromEntries([
       state("calendar.arbeit", "off", "Arbeit"),
       state("calendar.familie", "off", "Familie"),
@@ -205,6 +205,7 @@ class Backend:
             case "thask/data" | "thask/subscribe":
                 return {
                     "today": today.isoformat(),
+                    "me": "u-max",
                     "options": self.options,
                     "lists": [item.as_dict() for item in collection.sorted_lists()],
                     "tasks": [task.as_dict() for task in collection.tasks.values()],
@@ -212,6 +213,8 @@ class Backend:
             case "dev/options" | "thask/options/update":
                 self.options.update({key: value for key, value in msg.items() if key not in ("type", "id")})
                 return {"options": self.options}
+            case "thask/users":
+                return {"me": "u-max", "users": [{"id": "u-anna", "name": "Anna"}, {"id": "u-max", "name": "Max"}]}
             case "thask/options/get":
                 return {"options": self.options, "notify_services": ["mobile_app_pixel_7", "persistent_notification"]}
             case "thask/parse":

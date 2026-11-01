@@ -106,6 +106,38 @@ class ThaskStore extends ChangeNotifier {
 
   List<TaskList> get lists => _lists.values.toList()..sort((a, b) => a.position.compareTo(b.position));
 
+  /// Angemeldeter HA-Benutzer (aus dem Stand des Servers): Listen mit Personen stehen nur in deren Übersicht.
+  String? me;
+
+  /// Auch die Listen anderer in Navigation und intelligenten Ansichten zeigen (pro Gerät).
+  bool showAllLists = false;
+
+  void setShowAllLists(bool value) {
+    showAllLists = value;
+    _cache?.saveSetting('show_all_lists', value ? '1' : '0');
+    notifyListeners();
+  }
+
+  /// Listen für alle oder für mich; mit [showAllLists] alle.
+  List<TaskList> get visibleLists => showAllLists ? lists : [for (final l in lists) if (l.isFor(me)) l];
+
+  /// Wie viele Listen nur anderen gehören.
+  int get otherListCount => _lists.values.where((l) => !l.isFor(me)).length;
+
+  /// Aufgaben der sichtbaren Listen, Grundlage der intelligenten Ansichten.
+  Iterable<Task> get _visibleTasks {
+    final ids = {for (final l in visibleLists) l.id};
+    return _tasks.values.where((t) => ids.contains(t.listId));
+  }
+
+  /// Wer für eine Liste infrage kommt: aktive HA-Benutzer, `[(id, name)]`. Braucht eine Verbindung.
+  Future<List<({String id, String name})>> loadUsers() async {
+    final result = await _call('thask/users', {}) as Map;
+    return [
+      for (final u in result['users'] as List) (id: (u as Map)['id'] as String, name: u['name'] as String),
+    ];
+  }
+
   TaskList? list(String id) => _lists[id];
 
   List<Task> tasksOf(String listId) {
@@ -148,12 +180,12 @@ class ThaskStore extends ChangeNotifier {
   /// „Heute“: alles, was bis heute fällig ist, und was heute erledigt wurde.
   /// Überfälliges nur, wenn es keine eigene Ansicht hat.
   List<Task> get dueToday => sortTasks(
-        _tasks.values.where((t) => inTodayView(t) && (overdueMode != 'separate' || !t.isOverdue(today))),
+        _visibleTasks.where((t) => inTodayView(t) && (overdueMode != 'separate' || !t.isOverdue(today))),
         'due',
       );
 
   /// Offene Aufgaben, deren Fälligkeit vor heute endete.
-  List<Task> get overdue => sortTasks(_tasks.values.where((t) => t.isOverdue(today)), 'due');
+  List<Task> get overdue => sortTasks(_visibleTasks.where((t) => t.isOverdue(today)), 'due');
 
   /// Ob der Abschnitt „Überfällig“ in „Heute“ zugeklappt ist (pro Gerät).
   bool overdueCollapsed = false;
@@ -170,7 +202,7 @@ class ThaskStore extends ChangeNotifier {
     final day = dateOnly(today);
     bool inToday(Task t) => t.due!.end.isBefore(day) || (t.due!.granularity == Granularity.day && t.due!.end == day);
     return sortTasks(
-      _tasks.values.where(
+      _visibleTasks.where(
         (t) => !t.completed && t.due != null && !t.due!.end.isAfter(weekEnd) && !(separateWeek && inToday(t)),
       ),
       'due',
@@ -182,7 +214,7 @@ class ThaskStore extends ChangeNotifier {
     final monthEnd = Period.containing(Granularity.month, today).end;
     final weekEnd = thisWeekEnd;
     return sortTasks(
-      _tasks.values.where(
+      _visibleTasks.where(
         (t) =>
             !t.completed &&
             t.due != null &&
@@ -209,13 +241,13 @@ class ThaskStore extends ChangeNotifier {
     final unit = Granularity.values.where((g) => g.name == importantRange).firstOrNull;
     final end = unit == null ? null : Period.containing(unit, today).end;
     return sortTasks(
-      _tasks.values.where((t) => t.priority >= (importantPriority == 'medium' ? 2 : 3) && (end == null || (t.due != null && !t.due!.end.isAfter(end)))),
+      _visibleTasks.where((t) => t.priority >= (importantPriority == 'medium' ? 2 : 3) && (end == null || (t.due != null && !t.due!.end.isAfter(end)))),
       'due',
     );
   }
 
   /// Alle Aufgaben mit Fälligkeit, nach Ende des Zeitraums.
-  List<Task> get planned => sortTasks(_tasks.values.where((t) => t.due != null), 'due');
+  List<Task> get planned => sortTasks(_visibleTasks.where((t) => t.due != null), 'due');
 
   int openCount(String listId) => _tasks.values.where((t) => t.listId == listId && !t.completed).length;
 
@@ -241,6 +273,7 @@ class ThaskStore extends ChangeNotifier {
     final range = await _cache?.loadSetting('important_range');
     if (range != null && importantRanges.contains(range)) importantRange = range;
     overdueCollapsed = await _cache?.loadSetting('overdue_collapsed') == '1';
+    showAllLists = await _cache?.loadSetting('show_all_lists') == '1';
     final pending = await _cache?.loadOutbox();
     if (pending != null) {
       try {
@@ -267,6 +300,7 @@ class ThaskStore extends ChangeNotifier {
     _saveTimer = Timer(const Duration(seconds: 2), () {
       _cache.save(jsonEncode({
         'today': isoDate(today),
+        'me': me,
         'options': {
           'overdue_in_today': overdueMode,
           'separate_week': separateWeek,
@@ -437,6 +471,7 @@ class ThaskStore extends ChangeNotifier {
           ..clear()
           ..addEntries([for (final e in _rawTasks.entries) MapEntry(e.key, Task.fromJson(e.value))]);
         today = dateOnly(DateTime.parse(event['today'] as String));
+        me = event['me'] as String? ?? me;
         _applyOptions((event['options'] as Map?)?.cast<String, dynamic>() ?? const {});
         // Noch nicht gesendete Änderungen bleiben sichtbar, bis der Server sie bestätigt.
         for (final op in _outbox) {

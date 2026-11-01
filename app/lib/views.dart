@@ -30,7 +30,7 @@ sealed class ViewRef {
         if (store.overdueMode == 'separate') const OverdueView(),
         for (final view in const [ThisWeekView(), ThisMonthView(), ImportantView(), PlannedView()])
           if (!store.hiddenViews.contains(view.id)) view,
-        for (final list in store.lists) ListRef(list.id),
+        for (final list in store.visibleLists) ListRef(list.id),
       ];
 }
 

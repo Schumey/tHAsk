@@ -72,7 +72,7 @@ class _HomeScreenState extends State<HomeScreen> {
   /// Liste, in die neue Aufgaben kommen: die gewählte, sonst die erste.
   String? get _targetList => switch (_view) {
         ListRef(:final listId) => listId,
-        _ => store.lists.isEmpty ? null : store.lists.first.id,
+        _ => (store.visibleLists.firstOrNull ?? store.lists.firstOrNull)?.id,
       };
 
   /// Führt eine Aktion aus und zeigt einen Fehler als Hinweis; true, wenn sie gelang.
@@ -122,6 +122,9 @@ class _HomeScreenState extends State<HomeScreen> {
       case 'sort':
         final sort = await pickSort(context, current: list.sort);
         if (sort != null && sort != list.sort) await _guard(() => store.updateList(list.id, {'sort': sort}));
+      case 'members':
+        final members = await pickMembers(context, store, list);
+        if (members != null) await _guard(() => store.updateList(list.id, {'members': members}));
       case 'delete':
         if (store.lists.length == 1) return;
         final confirmed = await confirmDelete(context, list.name);
@@ -230,6 +233,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 PopupMenuItem(value: 'rename', child: Text(tr('rename'))),
                 PopupMenuItem(value: 'group', child: Text(tr('group_menu'))),
                 PopupMenuItem(value: 'sort', child: Text(tr('sort_menu'))),
+                PopupMenuItem(
+                  value: 'members',
+                  enabled: store.connection == LinkState.connected,
+                  child: Text(tr('members_menu')),
+                ),
                 PopupMenuItem(
                   value: 'delete',
                   enabled: store.lists.length > 1,
@@ -405,7 +413,8 @@ class _HomeScreenState extends State<HomeScreen> {
       if (inDrawer) Navigator.pop(context);
     }
 
-    final lists = store.lists;
+    final lists = store.visibleLists;
+    final others = store.otherListCount;
     final groups = <String?>[];
     for (final list in lists) {
       if (!groups.contains(list.group)) groups.add(list.group);
@@ -475,6 +484,14 @@ class _HomeScreenState extends State<HomeScreen> {
               onTap: () => select(ListRef(list.id)),
             ),
         ],
+        if (others > 0)
+          ListTile(
+            leading: Icon(store.showAllLists ? Icons.person_outline : Icons.people_outline),
+            title: Text(store.showAllLists ? tr('only_my_lists') : tr('show_other_lists', [others])),
+            textColor: Theme.of(context).colorScheme.onSurfaceVariant,
+            iconColor: Theme.of(context).colorScheme.onSurfaceVariant,
+            onTap: () => store.setShowAllLists(!store.showAllLists),
+          ),
         ListTile(
           leading: const Icon(Icons.add),
           title: Text(tr('new_list')),

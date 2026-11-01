@@ -20,14 +20,20 @@ from .core.assist import (
     due_tasks,
     split_list,
 )
+from .core.models import TaskList
 from .core.parser import parse
-from .data import async_get_data
+from .data import ThaskData, async_get_data
 
 
 @callback
 def async_register_intents(hass: HomeAssistant) -> None:
     intent.async_register(hass, DueTasksIntent())
     intent.async_register(hass, AddTaskIntent())
+
+
+def _visible_lists(data: ThaskData, intent_obj: intent.Intent) -> list[TaskList]:
+    user_id = intent_obj.context.user_id if intent_obj.context else None
+    return [task_list for task_list in data.collection.sorted_lists() if task_list.visible_to(user_id)]
 
 
 class DueTasksIntent(intent.IntentHandler):
@@ -39,7 +45,14 @@ class DueTasksIntent(intent.IntentHandler):
         slots = self.async_validate_slots(intent_obj.slots)
         period = slots["period"]["value"]
         data = async_get_data(intent_obj.hass)
-        tasks = due_tasks(data.collection.tasks.values(), period, data.today, rolling=data.week_mode == "rolling")
+        # Only the lists of the person asking, if Assist knows who it is.
+        mine = _visible_lists(data, intent_obj)
+        tasks = due_tasks(
+            (task for task in data.collection.tasks.values() if task.list_id in {item.id for item in mine}),
+            period,
+            data.today,
+            rolling=data.week_mode == "rolling",
+        )
         response = intent_obj.create_response()
         response.response_type = intent.IntentResponseType.QUERY_ANSWER
         response.async_set_speech(due_answer(intent_obj.language, period, tasks))
@@ -57,8 +70,11 @@ class AddTaskIntent(intent.IntentHandler):
     async def async_handle(self, intent_obj: intent.Intent) -> intent.IntentResponse:
         slots = self.async_validate_slots(intent_obj.slots)
         data = async_get_data(intent_obj.hass)
+        mine = _visible_lists(data, intent_obj)
         text, task_list = split_list(intent_obj.language, slots["task"]["value"], data.collection.lists.values())
-        if task_list is None and (task_list := data.collection.default_list()) is None:
+        if task_list is None:
+            task_list = mine[0] if mine else data.collection.default_list()
+        if task_list is None:
             raise intent.IntentHandleError("There is no task list to add the task to")
         result = parse(text, data.today)
         fields = {"priority": result.priority}

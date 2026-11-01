@@ -3,6 +3,7 @@
 
 const STRINGS = {
   de: {
+    members: "Für wen", members_all: "Alle", show_other_lists: "Listen anderer zeigen ({0})", only_my_lists: "Nur meine Listen",
     my_day: "Heute", important: "Wichtig", planned: "Geplant", this_week: "Diese Woche",
     lists: "Listen", add_task: "Aufgabe hinzufügen", quick_hint: "z. B. „Reifen wechseln nächsten Monat !“",
     new_list: "Neue Liste", completed: "Erledigt", steps: "Schritte", add_step: "Nächster Schritt",
@@ -44,6 +45,7 @@ const STRINGS = {
     settings: "Einstellungen", saved: "Gespeichert", opt_overdue_in_today: "Überfällige Aufgaben in „Heute“", overdue_in_today_section: "Oben in einem eigenen Abschnitt „Überfällig“", overdue_in_today_mixed: "Zwischen den heutigen Aufgaben", overdue_in_today_separate: "Nicht in „Heute“, sondern in einer eigenen Ansicht „Überfällig“", opt_week_mode: "„Diese Woche“", week_mode_calendar: "Kalenderwoche (Montag bis Sonntag)", week_mode_rolling: "Heute und die nächsten 7 Tage", opt_views_apart: "Ansichten trennen", opt_separate_week: "„Heute“ und „Diese Woche“ trennen", opt_separate_week_hint: "„Heute“ zeigt nur Aufgaben mit einem festen Tag (und Überfälliges); Zeiträume wie „KW 44“ stehen in „Diese Woche“, das nichts zeigt, was schon in „Heute“ steht.", opt_separate_month: "„Diesen Monat“ trennen", opt_separate_month_hint: "„Diesen Monat“ zeigt nur, was nach dieser Woche bis Monatsende fällig ist.", opt_reminder_targets: "Erinnerungen senden an", opt_reminder_targets_hint: "Push über die Companion-App (mit Knopf „Erledigt“) oder persistent_notification für die Glocke in Home Assistant. Die Windows-App zeigt Erinnerungen selbst, solange sie läuft.", no_notify: "Keine Benachrichtigungsdienste gefunden.",
   },
   en: {
+    members: "Who is it for", members_all: "Everyone", show_other_lists: "Show others' lists ({0})", only_my_lists: "Only my lists",
     my_day: "Today", important: "Important", planned: "Planned", this_week: "This week",
     lists: "Lists", add_task: "Add a task", quick_hint: "e.g. “Change tyres next month !”",
     new_list: "New list", completed: "Completed", steps: "Steps", add_step: "Next step",
@@ -85,6 +87,7 @@ const STRINGS = {
     settings: "Settings", saved: "Saved", opt_overdue_in_today: "Overdue tasks in “Today”", overdue_in_today_section: "At the top in a section “Overdue”", overdue_in_today_mixed: "Among today's tasks", overdue_in_today_separate: "Not in “Today” but in a view “Overdue” of their own", opt_week_mode: "“This week”", week_mode_calendar: "Calendar week (Monday to Sunday)", week_mode_rolling: "Today and the next 7 days", opt_views_apart: "Keep views apart", opt_separate_week: "Keep “Today” and “This week” apart", opt_separate_week_hint: "“Today” only shows tasks due on a specific day (and overdue ones); periods such as “week 44” are in “This week”, which leaves out what “Today” shows.", opt_separate_month: "Keep “This month” apart", opt_separate_month_hint: "“This month” only shows what is due after this week until the end of the month.", opt_reminder_targets: "Send reminders to", opt_reminder_targets_hint: "Push via the companion app (with a “Done” button) or persistent_notification for the bell in Home Assistant. The Windows app shows reminders on its own while it is running.", no_notify: "No notify services found.",
   },
   nl: {
+    members: "Voor wie", members_all: "Iedereen", show_other_lists: "Lijsten van anderen tonen ({0})", only_my_lists: "Alleen mijn lijsten",
     my_day: "Vandaag", important: "Belangrijk", planned: "Gepland", this_week: "Deze week",
     lists: "Lijsten", add_task: "Taak toevoegen", quick_hint: "bijv. „Banden wisselen volgende maand !”",
     new_list: "Nieuwe lijst", completed: "Voltooid", steps: "Stappen", add_step: "Volgende stap",
@@ -126,6 +129,7 @@ const STRINGS = {
     settings: "Instellingen", saved: "Opgeslagen", opt_overdue_in_today: "Te late taken in „Vandaag”", overdue_in_today_section: "Bovenaan in een sectie „Te laat”", overdue_in_today_mixed: "Tussen de taken van vandaag", overdue_in_today_separate: "Niet in „Vandaag”, maar in een eigen weergave „Te laat”", opt_week_mode: "„Deze week”", week_mode_calendar: "Kalenderweek (maandag tot zondag)", week_mode_rolling: "Vandaag en de komende 7 dagen", opt_views_apart: "Weergaven scheiden", opt_separate_week: "„Vandaag” en „Deze week” scheiden", opt_separate_week_hint: "„Vandaag” toont alleen taken op een vaste dag (en te late); periodes zoals „week 44” staan in „Deze week”, die niets toont wat al in „Vandaag” staat.", opt_separate_month: "„Deze maand” scheiden", opt_separate_month_hint: "„Deze maand” toont alleen wat na deze week tot het einde van de maand moet.", opt_reminder_targets: "Herinneringen sturen naar", opt_reminder_targets_hint: "Push via de Companion-app (met een knop „Klaar”) of persistent_notification voor de bel in Home Assistant. De Windows-app toont herinneringen zelf zolang hij draait.", no_notify: "Geen meldingsdiensten gevonden.",
   },
   fr: {
+    members: "Pour qui", members_all: "Tout le monde", show_other_lists: "Afficher les listes des autres ({0})", only_my_lists: "Seulement mes listes",
     my_day: "Aujourd'hui", important: "Important", planned: "Planifié", this_week: "Cette semaine",
     lists: "Listes", add_task: "Ajouter une tâche", quick_hint: "p. ex. « Changer les pneus le mois prochain ! »",
     new_list: "Nouvelle liste", completed: "Terminées", steps: "Étapes", add_step: "Étape suivante",
@@ -167,6 +171,7 @@ const STRINGS = {
     settings: "Paramètres", saved: "Enregistré", opt_overdue_in_today: "Tâches en retard dans « Aujourd'hui »", overdue_in_today_section: "En haut, dans une section « En retard »", overdue_in_today_mixed: "Parmi les tâches du jour", overdue_in_today_separate: "Pas dans « Aujourd'hui », mais dans une vue « En retard » à part", opt_week_mode: "« Cette semaine »", week_mode_calendar: "Semaine calendaire (lundi à dimanche)", week_mode_rolling: "Aujourd'hui et les 7 prochains jours", opt_views_apart: "Séparer les vues", opt_separate_week: "Séparer « Aujourd'hui » et « Cette semaine »", opt_separate_week_hint: "« Aujourd'hui » n'affiche que les tâches d'un jour précis (et celles en retard) ; les périodes comme « semaine 44 » sont dans « Cette semaine », qui n'affiche pas ce qui est déjà dans « Aujourd'hui ».", opt_separate_month: "Séparer « Ce mois-ci »", opt_separate_month_hint: "« Ce mois-ci » n'affiche que ce qui est à faire après cette semaine jusqu'à la fin du mois.", opt_reminder_targets: "Envoyer les rappels à", opt_reminder_targets_hint: "Push via l'application Companion (avec un bouton « Terminé ») ou persistent_notification pour la cloche de Home Assistant. L'application Windows affiche elle-même les rappels tant qu'elle est ouverte.", no_notify: "Aucun service de notification trouvé.",
   },
   es: {
+    members: "Para quién", members_all: "Todos", show_other_lists: "Mostrar listas de otros ({0})", only_my_lists: "Solo mis listas",
     my_day: "Hoy", important: "Importante", planned: "Planificado", this_week: "Esta semana",
     lists: "Listas", add_task: "Añadir una tarea", quick_hint: "p. ej. «Cambiar neumáticos el próximo mes !»",
     new_list: "Nueva lista", completed: "Completadas", steps: "Pasos", add_step: "Siguiente paso",
@@ -213,6 +218,7 @@ const TASK_SORTS = ["manual", "priority", "due", "title", "created"];
 // Period of the "Important" view: everything, or what is due by the end of this week, month …
 const IMPORTANT_RANGES = ["all", "week", "month", "quarter", "year"];
 const RANGE_STORAGE_KEY = "thask.importantRange";
+const ALL_LISTS_KEY = "thask.showAllLists";
 const OVERDUE_COLLAPSED_KEY = "thask.overdueCollapsed";
 // The integration appends its version to the module URL (cache busting), so the panel can show it.
 const VERSION = new URL(import.meta.url).searchParams.get("v") || "";
@@ -252,7 +258,15 @@ class ThaskPanel extends HTMLElement {
     this._selectedTask = null;
     this._showCompleted = false;
     this._search = "";
-    this._groupMenu = null; // null | "pick" | "new"
+    this._groupMenu = null; // null | "pick" | "new" | "members"
+    this._me = null; // HA user id from the snapshot; lists with members are only in their overview
+    this._users = null; // [{id, name}] for the "Who is it for" menu, loaded when opened
+    this._showAllLists = false;
+    try {
+      this._showAllLists = localStorage.getItem(ALL_LISTS_KEY) === "1";
+    } catch {
+      // storage blocked: only my lists
+    }
     this._overdueMode = "section"; // option of the integration: section | mixed | separate
     this._separateWeek = false; // options of the integration: keep the smart views apart
     this._separateMonth = false;
@@ -345,6 +359,7 @@ class ThaskPanel extends HTMLElement {
     if (event.type === "snapshot") {
       this._today = parseISO(event.today);
       this._lists = event.lists;
+      this._me = event.me ?? this._hass?.user?.id ?? null;
       this._tasks = new Map(event.tasks.map((task) => [task.id, task]));
       this._setOptions(event.options || {});
       this._loaded = true;
@@ -457,12 +472,22 @@ class ThaskPanel extends HTMLElement {
     return query.split(/\s+/).every((word) => haystack.some((text) => (text || "").toLowerCase().includes(word)));
   }
 
+  /** Lists for everyone or with me among the members; with "show others' lists" all of them. */
+  _isMine(list) {
+    return !list.members?.length || !this._me || list.members.includes(this._me);
+  }
+
+  _visibleLists() {
+    return this._showAllLists ? this._lists : this._lists.filter((l) => this._isMine(l));
+  }
+
   _viewTasks(view = this._view) {
     // An active search looks through all lists; the sidebar counts (explicit view) stay unaffected.
     const searching = view === this._view && this._search.trim();
+    const visible = new Set(this._visibleLists().map((l) => l.id));
     const tasks = [...this._tasks.values()].filter((task) =>
-      searching ? this._matchesSearch(task)
-        : view.type === "list" ? task.list_id === view.id : this._matchesSmart(task, view.key)
+      view.type === "list" && !searching ? task.list_id === view.id
+        : visible.has(task.list_id) && (searching ? this._matchesSearch(task) : this._matchesSmart(task, view.key))
     );
     return splitDone(view.type === "list" && !searching ? sortTasks(tasks, this._listSort(view.id)) : sortByDue(tasks));
   }
@@ -609,7 +634,7 @@ class ThaskPanel extends HTMLElement {
 
     let html = `<div class="search"><ha-icon icon="mdi:magnify"></ha-icon><input class="search-input" type="search" placeholder="${esc(this.t("search"))}" autocomplete="off"></div><div class="nav-section">${SMART_VIEWS.filter((v) => (v.key !== "overdue" || this._overdueMode === "separate") && !this._hiddenViews.includes(v.key)).map((v) => item({ type: "smart", key: v.key }, v.icon, this.t(v.key))).join("")}</div><div class="divider"></div><div class="nav-section lists">`;
     let group = null;
-    for (const list of this._lists) {
+    for (const list of this._visibleLists()) {
       if ((list.group || null) !== group) {
         // Ungrouped lists after a group get a divider so they don't look like part of it.
         html += list.group ? `<div class="group">${esc(list.group)}</div>` : `<div class="divider"></div>`;
@@ -618,6 +643,12 @@ class ThaskPanel extends HTMLElement {
       html += item({ type: "list", id: list.id }, list.icon || "mdi:format-list-bulleted", list.name);
     }
     html += `<div class="drop-end" data-drop="list-end"></div></div>`;
+    const others = this._lists.filter((l) => !this._isMine(l)).length;
+    if (others) {
+      html += `<button class="nav-item other-lists" data-action="toggle-all-lists">
+        <ha-icon icon="${this._showAllLists ? "mdi:account-outline" : "mdi:account-multiple-outline"}"></ha-icon>
+        <span class="nav-label">${esc(this._showAllLists ? this.t("only_my_lists") : this.t("show_other_lists", others))}</span></button>`;
+    }
     if (this._hass.user?.is_admin) {
       html += `<div class="divider"></div><button class="nav-item ${this._view.type === "triggers" ? "active" : ""}" data-action="view" data-view-type="triggers" data-view="triggers">
         <ha-icon icon="mdi:lightning-bolt-outline"></ha-icon><span class="nav-label">${esc(this.t("triggers"))}</span>
@@ -661,6 +692,7 @@ class ThaskPanel extends HTMLElement {
           <select data-field="list-sort">${TASK_SORTS.map((mode) => `<option value="${mode}" ${mode === sort ? "selected" : ""}>${esc(this.t(`sort_${mode}`))}</option>`).join("")}</select></label>
         <button class="icon-button" data-action="list-clear-completed" title="${esc(this.t("clear_completed"))}" ${doneCount ? "" : "disabled"}><ha-icon icon="mdi:broom"></ha-icon></button>
         <button class="icon-button" data-action="list-group" title="${esc(this.t("group"))}"><ha-icon icon="mdi:folder-outline"></ha-icon></button>
+        <button class="icon-button" data-action="list-members" title="${esc(this.t("members"))}"><ha-icon icon="${this._lists.find((l) => l.id === this._view.id)?.members?.length ? "mdi:account-multiple-check-outline" : "mdi:account-multiple-outline"}"></ha-icon></button>
         <button class="icon-button" data-action="list-delete" title="${esc(this.t("delete"))}"><ha-icon icon="mdi:delete-outline"></ha-icon></button>`;
     } else {
       const sub = this._view.key === "my_day" && !this._search.trim()
@@ -683,7 +715,7 @@ class ThaskPanel extends HTMLElement {
       menu.dataset.state = "";
       return;
     }
-    if (menu.dataset.state === this._groupMenu && !menu.hidden) return; // keep the typed name while other data changes
+    if (menu.dataset.state === this._groupMenu && !menu.hidden && this._groupMenu !== "members") return; // keep the typed name while other data changes
     menu.dataset.state = this._groupMenu;
     menu.hidden = false;
     if (this._groupMenu === "new") {
@@ -691,9 +723,20 @@ class ThaskPanel extends HTMLElement {
       menu.querySelector(".group-input").focus();
       return;
     }
-    const groups = [...new Set(this._lists.map((l) => l.group).filter(Boolean))].sort((a, b) => a.localeCompare(b));
     const item = (label, icon, attrs, on) => `<button class="menu-item ${on ? "on" : ""}" ${attrs}>
       <ha-icon icon="${icon}"></ha-icon><span>${esc(label)}</span></button>`;
+    if (this._groupMenu === "members") {
+      const members = list.members || [];
+      menu.dataset.state = `members:${members.join(",")}:${this._users ? this._users.length : "-"}`;
+      menu.innerHTML = [
+        `<div class="menu-title">${esc(this.t("members"))}</div>`,
+        item(this.t("members_all"), !members.length ? "mdi:check" : "mdi:account-group-outline", 'data-action="members-all"', !members.length),
+        ...(this._users || []).map((u) => item(u.name, members.includes(u.id) ? "mdi:checkbox-marked-outline" : "mdi:checkbox-blank-outline",
+          `data-action="member-toggle" data-user="${esc(u.id)}"`, members.includes(u.id))),
+      ].join("");
+      return;
+    }
+    const groups = [...new Set(this._lists.map((l) => l.group).filter(Boolean))].sort((a, b) => a.localeCompare(b));
     menu.innerHTML = [
       ...groups.map((g) => item(g, g === list.group ? "mdi:check" : "mdi:folder-outline", `data-action="group-set" data-group="${esc(g)}"`, g === list.group)),
       item(this.t("no_group"), !list.group ? "mdi:check" : "mdi:folder-off-outline", 'data-action="group-set" data-group=""', !list.group),
@@ -1375,7 +1418,7 @@ class ThaskPanel extends HTMLElement {
   }
 
   _onClick(ev) {
-    if (this._groupMenu && !ev.target.closest(".group-menu, [data-action='list-group']")) {
+    if (this._groupMenu && !ev.target.closest(".group-menu, [data-action='list-group'], [data-action='list-members']")) {
       this._groupMenu = null;
       this._render();
     }
@@ -1516,6 +1559,37 @@ class ThaskPanel extends HTMLElement {
         break;
       case "group-new":
         this._groupMenu = "new";
+        this._render();
+        break;
+      case "list-members":
+        this._groupMenu = this._groupMenu === "members" ? null : "members";
+        this._render();
+        if (this._groupMenu && !this._users) {
+          this._call("thask/users").then((result) => {
+            this._users = result?.users || [];
+            this._render();
+          });
+        }
+        break;
+      case "members-all":
+      case "member-toggle": {
+        const list = this._lists.find((l) => l.id === this._view.id);
+        if (!list) break;
+        const user = target.dataset.user;
+        const current = list.members || [];
+        const members = action === "members-all" ? [] : current.includes(user) ? current.filter((id) => id !== user) : [...current, user];
+        this._lists = this._lists.map((l) => (l.id === list.id ? { ...l, members } : l));
+        this._render();
+        this._call("thask/list/update", { list_id: list.id, members });
+        break;
+      }
+      case "toggle-all-lists":
+        this._showAllLists = !this._showAllLists;
+        try {
+          localStorage.setItem(ALL_LISTS_KEY, this._showAllLists ? "1" : "0");
+        } catch {
+          // storage blocked: only for this visit
+        }
         this._render();
         break;
     }
@@ -1756,6 +1830,8 @@ const STYLE = `
   .menu-item { display: flex; align-items: center; gap: 12px; width: 100%; padding: 8px 16px; text-align: left; color: var(--thask-text); }
   .menu-item:hover { background: color-mix(in srgb, var(--thask-text) 14%, transparent); }
   .menu-item.on { color: var(--thask-accent); }
+  .menu-title { padding: 6px 16px 4px; font-size: 12px; color: var(--thask-muted); }
+  .nav-item.other-lists { color: var(--thask-muted); }
   .group-input { box-sizing: border-box; width: calc(100% - 24px); margin: 4px 12px; padding: 8px; border: 1px solid var(--thask-accent); border-radius: 6px; background: none; outline: none; color: var(--thask-text); }
   .view-actions { display: flex; gap: 4px; align-items: center; }
   .sort { display: inline-flex; align-items: center; gap: 4px; color: var(--thask-muted); padding: 0 4px; }

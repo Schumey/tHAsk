@@ -182,6 +182,7 @@ class TaskList {
     this.icon,
     this.position = 0,
     this.sort = 'manual',
+    this.members = const [],
   });
 
   final String id;
@@ -192,6 +193,12 @@ class TaskList {
   final double position;
   final String sort;
 
+  /// HA-Benutzer, für die die Liste ist; leer = alle. Nur für die Übersicht, kein Zugriffsschutz.
+  final List<String> members;
+
+  /// Ob die Liste in die Übersicht von [userId] gehört (ohne bekannten Benutzer: alle).
+  bool isFor(String? userId) => members.isEmpty || userId == null || members.contains(userId);
+
   factory TaskList.fromJson(Map<String, dynamic> json) => TaskList(
         id: json['id'] as String,
         name: json['name'] as String,
@@ -200,6 +207,7 @@ class TaskList {
         icon: json['icon'] as String?,
         position: (json['position'] as num?)?.toDouble() ?? 0,
         sort: json['sort'] as String? ?? 'manual',
+        members: [for (final id in json['members'] as List? ?? const []) id as String],
       );
 }
 

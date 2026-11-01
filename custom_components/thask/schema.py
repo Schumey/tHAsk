@@ -75,6 +75,7 @@ LIST_FIELDS = {
     vol.Optional("icon"): vol.Any(None, str),
     vol.Optional("position"): vol.Coerce(float),
     vol.Optional("sort"): vol.In((*TASK_SORTS, "important")),
+    vol.Optional("members"): [str],
 }
 
 

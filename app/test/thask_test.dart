@@ -610,6 +610,30 @@ void main() {
       expect({for (final t in store.important) t.id}, {'hoch', 'mittel'});
     });
 
+    test('Listen für bestimmte Personen: nur in deren Übersicht, auf Wunsch alle', () async {
+      await signIn();
+      connection.emit({
+        ..._snapshot,
+        'me': 'max',
+        'lists': [
+          {'id': 'l1', 'name': 'Alle', 'position': 1},
+          {'id': 'l2', 'name': 'Max', 'position': 2, 'members': ['max']},
+          {'id': 'l3', 'name': 'Anna', 'position': 3, 'members': ['anna']},
+        ],
+        'tasks': [
+          for (final l in ['l1', 'l2', 'l3'])
+            {'id': 't$l', 'list_id': l, 'title': l, 'due': {'granularity': 'day', 'start': '2026-10-30'}},
+        ],
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect([for (final l in store.visibleLists) l.id], ['l1', 'l2']);
+      expect(store.otherListCount, 1);
+      expect({for (final t in store.dueToday) t.listId}, {'l1', 'l2'});
+      expect(store.tasksOf('l3'), hasLength(1), reason: 'die Liste selbst bleibt erreichbar');
+      store.setShowAllLists(true);
+      expect({for (final t in store.dueToday) t.listId}, {'l1', 'l2', 'l3'});
+    });
+
     test('Einstellungen: Optionen laden und ändern', () async {
       await signIn();
       connection.results['thask/options/get'] = {
