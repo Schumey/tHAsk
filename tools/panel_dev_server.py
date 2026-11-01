@@ -137,7 +137,7 @@ def seed(collection: TaskCollection, today: date) -> None:
     shopping = collection.create_list("Einkauf")
     house = collection.create_list("Haus", group="Zuhause")
     week = Period(Granularity.WEEK, today)
-    collection.create_task(tasks.id, "Reifen wechseln", due=week.shift(1).as_dict(), priority=3)
+    collection.create_task(tasks.id, "Reifen wechseln", due=week.shift(1).as_dict(), priority=3, categories=["Auto"])
     collection.create_task(tasks.id, "Belege sortieren", due=week.as_dict())
     collection.create_task(
         tasks.id,
@@ -146,7 +146,7 @@ def seed(collection: TaskCollection, today: date) -> None:
         notes="Belege aus dem Ordner sammeln",
         steps=[{"title": "Belege scannen", "completed": True}, {"title": "Elster ausfüllen"}],
     )
-    collection.create_task(tasks.id, "Zahnarzt anrufen", due=Period.day(today).as_dict(), due_time="09:30")
+    collection.create_task(tasks.id, "Zahnarzt anrufen", due=Period.day(today).as_dict(), due_time="09:30", categories=["Anrufe"])
     collection.create_task(tasks.id, "Rechnungen ablegen", due=Period(Granularity.MONTH, today).as_dict(),
                            recurrence={"unit": "month", "interval": 1})
     collection.create_task(tasks.id, "Paket zurückschicken", due=Period.day(today - timedelta(days=2)).as_dict())
@@ -298,6 +298,9 @@ CARD_PAGE = PAGE.replace("<thask-panel></thask-panel>", """<div class="cards">
   <thask-card data-config='{"view": "this_week", "compact": true, "show_entry": false, "title": "Woche kompakt"}'></thask-card>
   <thask-card data-config='{"views": ["my_day", "this_week"]}'></thask-card>
   <thask-card data-config='{"views": ["my_day", "this_week", "important"], "tabs": true}'></thask-card>
+  <thask-card data-config='{"view": "list:first", "show_completed": true}'></thask-card>
+  <thask-card data-config='{"view": "this_week", "categories": ["Anrufe"], "title": "Anrufe"}'></thask-card>
+  <thask-card data-config='{"view": "overdue", "hide_if_empty": true, "title": "Überfällig (verschwindet, wenn leer)"}'></thask-card>
 </div>
 <style>.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; padding: 12px; }
   ha-card { display: block; background: var(--card-background-color, #fff); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.2); }</style>""").replace(
@@ -312,7 +315,10 @@ CARD_PAGE = PAGE.replace("<thask-panel></thask-panel>", """<div class="cards">
   await customElements.whenDefined("thask-card");
   if (!customElements.get("ha-card")) customElements.define("ha-card", class extends HTMLElement {});
   for (const card of document.querySelectorAll("thask-card")) {
-    card.setConfig(JSON.parse(card.dataset.config));
+    // "list:first" stands for the first list of the sample data, whose id changes with every start.
+    const config = JSON.parse(card.dataset.config);
+    if (config.view === "list:first") config.view = `list:${(await window.fakeHass.callWS({ type: "thask/data" })).lists[0].id}`;
+    card.setConfig(config);
     card.hass = window.fakeHass;
   }""",
 )

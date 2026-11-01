@@ -122,11 +122,18 @@ show_list: true         # bei intelligenten Ansichten die Liste jeder Aufgabe ze
 min_priority: 0         # 1–3: nur Aufgaben ab dieser Priorität
 max_items: 0            # höchstens so viele offene Aufgaben, 0 = alle
 compact: false          # nur Titel, ohne Fälligkeit und Liste
+lists: []               # intelligente Ansichten nur aus diesen Listen (Listen-IDs)
+categories: []          # nur Aufgaben mit einer dieser Kategorien
+hide_if_empty: false    # Karte ausblenden, wenn nichts offen ist (im Karteneditor bleibt sie sichtbar)
 ```
 
 Mehrere Ansichten stehen untereinander, jede mit eigener Überschrift (z. B. „Heute“ und darunter „Diese Woche“ ohne die heutigen Aufgaben), oder als Reiter. Die Schnelleingabe legt in der ersten bzw. der gezeigten Ansicht an.
 
 Zeiträume erscheinen als Chips (KW 46, November, Q4), Überfälliges rot; „Heute“ folgt der Option für Überfälliges, „Geplant“ ist gruppiert. Ein Klick auf eine Aufgabe klappt Schritte und Notizen auf (Schritte abhaken und hinzufügen), der Kreis hakt sie ab, die Überschrift öffnet die tHAsk-Seite.
+
+Die drei Punkte rechts an einer Aufgabe (mit Maus beim Darüberfahren, auf Touch-Geräten immer sichtbar) öffnen Aktionen: auf heute, morgen, nächste Woche oder nächsten Monat schieben, Datum entfernen, Priorität setzen und löschen. Nach dem Löschen bleibt einige Sekunden „Rückgängig“; erst danach wird die Aufgabe wirklich gelöscht. In eigenen Listen mit manueller Sortierung lassen sich offene Aufgaben am Griff neben den Punkten verschieben, auch per Touch.
+
+Mit `lists` und `categories` wird die Karte enger: z. B. „Heute“ nur aus der Liste „Zuhause“ oder „Diese Woche“ nur mit der Kategorie „Anrufe“. Die Schnelleingabe legt dann in der ersten gewählten Liste an und gibt der Aufgabe die erste gewählte Kategorie, damit sie in der Karte bleibt.
 
 ## Erinnerungen
 

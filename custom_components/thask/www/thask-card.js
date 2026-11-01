@@ -22,6 +22,10 @@ const STRINGS = {
     show_completed: "Erledigte zeigen", show_list: "Liste bei jeder Aufgabe zeigen",
     min_priority: "Mindestens Priorität", max_items: "Höchstens so viele Aufgaben (0 = alle)", compact: "Kompakt",
     priority_0: "Alle", priority_1: "Niedrig", priority_2: "Mittel", priority_3: "Hoch",
+    menu: "Aktionen", due_today: "Heute", due_tomorrow: "Morgen", next_week: "Nächste Woche",
+    next_month: "Nächsten Monat", no_date: "Ohne Datum", delete: "Löschen", deleted: "„{0}“ gelöscht",
+    undo: "Rückgängig", drag: "Ziehen zum Sortieren", prio_none: "Keine", priority: "Priorität",
+    lists: "Nur aus diesen Listen (intelligente Ansichten)", categories: "Nur mit diesen Kategorien", hide_if_empty: "Ausblenden, wenn nichts offen ist",
     card_description: "Eine tHAsk-Ansicht oder -Liste mit Zeiträumen, Schnelleingabe und Schritten.",
   },
   en: {
@@ -35,6 +39,10 @@ const STRINGS = {
     show_completed: "Show completed", show_list: "Show the list of each task",
     min_priority: "At least priority", max_items: "At most this many tasks (0 = all)", compact: "Compact",
     priority_0: "All", priority_1: "Low", priority_2: "Medium", priority_3: "High",
+    menu: "Actions", due_today: "Today", due_tomorrow: "Tomorrow", next_week: "Next week",
+    next_month: "Next month", no_date: "No date", delete: "Delete", deleted: "“{0}” deleted",
+    undo: "Undo", drag: "Drag to reorder", prio_none: "None", priority: "Priority",
+    lists: "Only from these lists (smart views)", categories: "Only with these categories", hide_if_empty: "Hide when nothing is open",
     card_description: "A tHAsk view or list with fuzzy due dates, quick add and steps.",
   },
   nl: {
@@ -48,6 +56,10 @@ const STRINGS = {
     show_completed: "Voltooide tonen", show_list: "Lijst bij elke taak tonen",
     min_priority: "Minstens prioriteit", max_items: "Hoogstens zoveel taken (0 = alle)", compact: "Compact",
     priority_0: "Alle", priority_1: "Laag", priority_2: "Gemiddeld", priority_3: "Hoog",
+    menu: "Acties", due_today: "Vandaag", due_tomorrow: "Morgen", next_week: "Volgende week",
+    next_month: "Volgende maand", no_date: "Geen datum", delete: "Verwijderen", deleted: "„{0}” verwijderd",
+    undo: "Ongedaan maken", drag: "Slepen om te sorteren", prio_none: "Geen", priority: "Prioriteit",
+    lists: "Alleen uit deze lijsten (slimme weergaven)", categories: "Alleen met deze categorieën", hide_if_empty: "Verbergen als er niets open is",
     card_description: "Een tHAsk-weergave of -lijst met vage vervaldatums, snel toevoegen en stappen.",
   },
   fr: {
@@ -61,6 +73,10 @@ const STRINGS = {
     show_completed: "Afficher les terminées", show_list: "Afficher la liste de chaque tâche",
     min_priority: "Priorité minimale", max_items: "Au plus ce nombre de tâches (0 = toutes)", compact: "Compact",
     priority_0: "Toutes", priority_1: "Basse", priority_2: "Moyenne", priority_3: "Haute",
+    menu: "Actions", due_today: "Aujourd'hui", due_tomorrow: "Demain", next_week: "Semaine prochaine",
+    next_month: "Mois prochain", no_date: "Sans date", delete: "Supprimer", deleted: "« {0} » supprimée",
+    undo: "Annuler", drag: "Glisser pour trier", prio_none: "Aucune", priority: "Priorité",
+    lists: "Seulement de ces listes (vues intelligentes)", categories: "Seulement avec ces catégories", hide_if_empty: "Masquer s'il n'y a rien à faire",
     card_description: "Une vue ou une liste tHAsk avec échéances souples, saisie rapide et étapes.",
   },
   es: {
@@ -74,6 +90,10 @@ const STRINGS = {
     show_completed: "Mostrar completadas", show_list: "Mostrar la lista de cada tarea",
     min_priority: "Prioridad mínima", max_items: "Como máximo tantas tareas (0 = todas)", compact: "Compacto",
     priority_0: "Todas", priority_1: "Baja", priority_2: "Media", priority_3: "Alta",
+    menu: "Acciones", due_today: "Hoy", due_tomorrow: "Mañana", next_week: "La próxima semana",
+    next_month: "El próximo mes", no_date: "Sin fecha", delete: "Eliminar", deleted: "«{0}» eliminada",
+    undo: "Deshacer", drag: "Arrastrar para ordenar", prio_none: "Ninguna", priority: "Prioridad",
+    lists: "Solo de estas listas (vistas inteligentes)", categories: "Solo con estas categorías", hide_if_empty: "Ocultar si no hay nada pendiente",
     card_description: "Una vista o lista de tHAsk con vencimientos flexibles, entrada rápida y pasos.",
   },
 };
@@ -85,8 +105,9 @@ const VIEW_ICONS = {
 };
 const DEFAULTS = {
   view: "my_day", tabs: false, hide_duplicates: true, show_entry: true, show_completed: false, show_list: true,
-  min_priority: 0, max_items: 0, compact: false,
+  min_priority: 0, max_items: 0, compact: false, lists: [], categories: [], hide_if_empty: false,
 };
+const UNDO_MS = 5000;
 
 const parseView = (id) => (id.startsWith("list:") ? { id, type: "list", listId: id.slice(5) } : { id, type: "smart", key: id });
 // Shared with the panel: whether the "Overdue" section in Today is folded (per device).
@@ -123,6 +144,9 @@ class ThaskCard extends HTMLElement {
     this._overdueCollapsed = readStorage(OVERDUE_COLLAPSED_KEY) === "1";
     this._parseTimer = null;
     this._parsed = null;
+    this._menu = null; // id of the task whose actions (postpone, priority, delete) are open
+    this._deleting = null; // { task, timer }: deleted, but still undoable
+    this._drag = null;
     // Like the panel: a hass set before the element was defined would hide the setter.
     if (Object.prototype.hasOwnProperty.call(this, "hass")) {
       const hass = this.hass;
@@ -158,7 +182,13 @@ class ThaskCard extends HTMLElement {
     this._subscribe();
   }
 
+  // Hidden by hide_if_empty, the card must stay connected to notice new tasks (read by hui-card).
+  get connectedWhileHidden() {
+    return true;
+  }
+
   disconnectedCallback() {
+    this._commitDelete();
     // Unsubscribe while the dashboard isn't shown; the next connect gets a fresh snapshot.
     this._unsub?.then((unsub) => unsub()).catch(() => {});
     this._unsub = null;
@@ -279,9 +309,15 @@ class ThaskCard extends HTMLElement {
     // Smart views only show lists for everyone or with me among the members (like the web interface).
     const me = this._hass?.user?.id;
     const mine = new Set(this._lists.filter((l) => !l.members?.length || !me || l.members.includes(me)).map((l) => l.id));
+    // Optional filters: smart views only from some lists, every view only with some categories.
+    const lists = this._config.lists || [];
+    const categories = this._config.categories || [];
+    const deleting = this._deleting?.task.id;
     const tasks = [...this._tasks.values()].filter((task) =>
-      (view.type === "list" ? task.list_id === view.listId : mine.has(task.list_id) && matchesSmart(task, view.key, ctx))
-      && task.priority >= minPriority && !skip?.has(task.id)
+      (view.type === "list" ? task.list_id === view.listId
+        : mine.has(task.list_id) && (!lists.length || lists.includes(task.list_id)) && matchesSmart(task, view.key, ctx))
+      && (!categories.length || (task.categories || []).some((c) => categories.includes(c)))
+      && task.priority >= minPriority && !skip?.has(task.id) && task.id !== deleting
     );
     if (view.type === "list") {
       const sort = this._lists.find((l) => l.id === view.listId)?.sort || "manual";
@@ -292,7 +328,17 @@ class ThaskCard extends HTMLElement {
 
   _listId() {
     const view = this._active();
-    return view.type === "list" ? view.listId : this._lists[0]?.id;
+    if (view.type === "list") return view.listId;
+    // The first of the filtered lists, otherwise the first list for me.
+    const me = this._hass?.user?.id;
+    const mine = this._lists.filter((l) => !l.members?.length || !me || l.members.includes(me));
+    const filtered = (this._config.lists || []).map((id) => mine.find((l) => l.id === id)).find(Boolean);
+    return (filtered || mine[0] || this._lists[0])?.id;
+  }
+
+  // In a list with manual order, open tasks can be dragged into place.
+  _reorderable(view) {
+    return view.type === "list" && (this._lists.find((l) => l.id === view.listId)?.sort || "manual") === "manual";
   }
 
   // ---- Rendering --------------------------------------------------------------------------
@@ -300,6 +346,11 @@ class ThaskCard extends HTMLElement {
   _render() {
     // Without hass the language is unknown; Home Assistant sets it right after the config.
     if (!this._config || !this._hass) return;
+    if (this._drag) {
+      // Rebuilding the rows would drop the dragged one; render once the drag ends.
+      this._drag.renderPending = true;
+      return;
+    }
     if (!this.shadowRoot.querySelector("ha-card")) this._buildSkeleton();
     const root = this.shadowRoot;
     const card = root.querySelector("ha-card");
@@ -346,6 +397,21 @@ class ThaskCard extends HTMLElement {
     root.querySelector(".error").textContent = this._error || "";
     root.querySelector(".error").hidden = !this._error;
     root.querySelector(".tasks").innerHTML = body;
+    const toast = root.querySelector(".toast");
+    toast.hidden = !this._deleting;
+    if (this._deleting) {
+      toast.innerHTML = `<span>${esc(this.t("deleted", this._deleting.task.title))}</span>
+        <button data-action="undo">${esc(this.t("undo"))}</button>`;
+    }
+    // Not in the editor's preview, where hui-card would otherwise hide the card being edited.
+    const empty = this._loaded && !this._error && !this._deleting && views.every((view) => !this._visible(view).open.length);
+    this._setHidden(!!this._config.hide_if_empty && empty && !this.preview && !this.editMode);
+  }
+
+  _setHidden(hidden) {
+    if (this.hidden === hidden) return;
+    this.hidden = hidden;
+    this.dispatchEvent(new CustomEvent("card-visibility-changed", { detail: { value: !hidden } }));
   }
 
   _buildSkeleton() {
@@ -359,6 +425,7 @@ class ThaskCard extends HTMLElement {
         </div>
         <div class="error" hidden></div>
         <div class="tasks"></div>
+        <div class="toast" hidden></div>
       </ha-card>`;
     const input = this.shadowRoot.querySelector(".quick");
     input.addEventListener("keydown", (ev) => {
@@ -370,6 +437,10 @@ class ThaskCard extends HTMLElement {
       this._parseTimer = setTimeout(() => this._runParse(), 150);
     });
     this.shadowRoot.addEventListener("click", (ev) => this._onClick(ev));
+    this.shadowRoot.addEventListener("pointerdown", (ev) => this._onPointerDown(ev));
+    this.shadowRoot.addEventListener("pointermove", (ev) => this._onPointerMove(ev));
+    this.shadowRoot.addEventListener("pointerup", (ev) => this._onPointerUp(ev));
+    this.shadowRoot.addEventListener("pointercancel", (ev) => this._onPointerUp(ev, true));
     this.shadowRoot.addEventListener("keydown", (ev) => {
       if (ev.key === "Enter" && ev.target.classList?.contains("step-input")) this._addStep(ev.target);
     });
@@ -441,15 +512,44 @@ class ThaskCard extends HTMLElement {
     if (task.notes) meta.push(`<span class="meta"><ha-icon icon="mdi:note-text-outline"></ha-icon></span>`);
     if (task.attachments?.length) meta.push(`<span class="meta"><ha-icon icon="mdi:paperclip"></ha-icon>${task.attachments.length}</span>`);
     const expanded = this._expanded === task.id;
+    const menu = this._menu === task.id;
+    const drag = !task.completed && this._reorderable(view)
+      ? `<span class="drag" data-drag="${esc(task.id)}" title="${esc(this.t("drag"))}"><ha-icon icon="mdi:drag-vertical"></ha-icon></span>` : "";
     return `
-      <div class="task prio-${task.priority || 0} ${task.completed ? "completed" : ""} ${expanded ? "expanded" : ""}" data-action="expand" data-id="${esc(task.id)}">
+      <div class="task prio-${task.priority || 0} ${task.completed ? "completed" : ""} ${expanded ? "expanded" : ""}" data-action="expand" data-id="${esc(task.id)}" data-view="${esc(view.id)}">
         <button class="check" data-action="complete" data-id="${esc(task.id)}" title="${esc(this.t("complete"))}"><ha-icon icon="mdi:check"></ha-icon></button>
         <div class="body">
           <div class="title">${esc(task.title)}</div>
           ${meta.length && !this._config.compact ? `<div class="metas">${meta.join("")}</div>` : ""}
+          ${menu ? this._actions(task) : ""}
           ${expanded ? this._details(task) : ""}
         </div>
+        ${drag}
+        <button class="menu-button ${menu ? "on" : ""}" data-action="menu" data-id="${esc(task.id)}" title="${esc(this.t("menu"))}"><ha-icon icon="mdi:dots-vertical"></ha-icon></button>
       </div>`;
+  }
+
+  // Postpone, priority and delete, below the title; big enough for a wall tablet.
+  _actions(task) {
+    const due = (key, icon) => `<button class="chip" data-action="due" data-due="${key}" data-id="${esc(task.id)}"><ha-icon icon="${icon}"></ha-icon>${esc(this.t(key))}</button>`;
+    const prio = [0, 1, 2, 3].map((p) => `<button class="chip prio p${p} ${(task.priority || 0) === p ? "on" : ""}" data-action="priority" data-priority="${p}" data-id="${esc(task.id)}"
+      title="${esc(this.t("priority"))}: ${esc(this.t(p ? `priority_${p}` : "prio_none"))}"><ha-icon icon="${p ? "mdi:flag" : "mdi:flag-off-outline"}"></ha-icon></button>`).join("");
+    return `<div class="actions">
+      ${task.completed ? "" : `${due("due_today", "mdi:calendar-today")}${due("due_tomorrow", "mdi:calendar-arrow-right")}${due("next_week", "mdi:calendar-week")}${due("next_month", "mdi:calendar-month")}${task.due ? due("no_date", "mdi:calendar-remove-outline") : ""}`}
+      <span class="prios">${prio}</span>
+      <button class="chip danger" data-action="delete" data-id="${esc(task.id)}"><ha-icon icon="mdi:delete-outline"></ha-icon>${esc(this.t("delete"))}</button>
+    </div>`;
+  }
+
+  _duePeriod(key) {
+    const t = this._today;
+    switch (key) {
+      case "due_today": return makePeriod("day", t);
+      case "due_tomorrow": return makePeriod("day", new Date(t.getFullYear(), t.getMonth(), t.getDate() + 1));
+      case "next_week": return makePeriod("week", new Date(t.getFullYear(), t.getMonth(), t.getDate() + 7));
+      case "next_month": return makePeriod("month", new Date(t.getFullYear(), t.getMonth() + 1, 1));
+      default: return null;
+    }
   }
 
   _details(task) {
@@ -469,9 +569,34 @@ class ThaskCard extends HTMLElement {
 
   _onClick(ev) {
     const target = ev.target.closest("[data-action]");
+    if (ev.target.closest(".drag")) return;
     if (!target || target.classList.contains("step-input")) return;
     const task = this._tasks.get(target.dataset.id);
     switch (target.dataset.action) {
+      case "menu":
+        ev.stopPropagation();
+        this._menu = this._menu === target.dataset.id ? null : target.dataset.id;
+        this._render();
+        break;
+      case "due":
+        ev.stopPropagation();
+        this._menu = null;
+        if (task) this._update(task, { due: this._duePeriod(target.dataset.due), ...(target.dataset.due === "no_date" ? { due_time: null } : {}) });
+        break;
+      case "priority":
+        ev.stopPropagation();
+        this._menu = null;
+        if (task) this._update(task, { priority: Number(target.dataset.priority) });
+        break;
+      case "delete":
+        ev.stopPropagation();
+        if (task) this._delete(task);
+        break;
+      case "undo":
+        clearTimeout(this._deleting?.timer);
+        this._deleting = null;
+        this._render();
+        break;
       case "complete":
         ev.stopPropagation();
         if (task) this._update(task, { completed: !task.completed });
@@ -484,7 +609,7 @@ class ThaskCard extends HTMLElement {
         break;
       }
       case "expand":
-        if (ev.target.closest(".details")) break;
+        if (ev.target.closest(".details, .actions")) break;
         this._expanded = this._expanded === target.dataset.id ? null : target.dataset.id;
         this._render();
         break;
@@ -511,6 +636,88 @@ class ThaskCard extends HTMLElement {
         window.dispatchEvent(new CustomEvent("location-changed", { detail: { replace: false } }));
         break;
     }
+  }
+
+  // Deleting waits a few seconds for "Undo"; the server deletes attachments with the task.
+  _delete(task) {
+    this._commitDelete();
+    this._menu = null;
+    if (this._expanded === task.id) this._expanded = null;
+    this._deleting = { task, timer: setTimeout(() => this._commitDelete(), UNDO_MS) };
+    this._render();
+  }
+
+  _commitDelete() {
+    const pending = this._deleting;
+    if (!pending) return;
+    clearTimeout(pending.timer);
+    this._deleting = null;
+    this._tasks.delete(pending.task.id);
+    this._call("thask/task/delete", { task_id: pending.task.id }).catch(() => {
+      this._tasks.set(pending.task.id, pending.task);
+      this._render();
+    });
+    this._render();
+  }
+
+  // ---- Drag & drop (mouse and touch, via the handle) ----------------------------------------
+
+  _onPointerDown(ev) {
+    const handle = ev.target.closest?.(".drag");
+    if (!handle || ev.button > 0) return;
+    const row = handle.closest(".task");
+    const rows = [...this.shadowRoot.querySelectorAll(`.task[data-view="${CSS.escape(row.dataset.view)}"]:not(.completed)`)];
+    ev.preventDefault();
+    try {
+      handle.setPointerCapture(ev.pointerId); // keeps the moves coming when the pointer leaves the handle
+    } catch {
+      // pointer already gone
+    }
+    this._drag = {
+      id: row.dataset.id, row, rows, index: rows.indexOf(row), target: rows.indexOf(row), startY: ev.clientY,
+      rects: rows.map((r) => r.getBoundingClientRect()), renderPending: false,
+    };
+    row.classList.add("dragging");
+  }
+
+  _onPointerMove(ev) {
+    const drag = this._drag;
+    if (!drag) return;
+    const dy = ev.clientY - drag.startY;
+    const own = drag.rects[drag.index];
+    const center = own.top + own.height / 2 + dy;
+    // The new place: before the first other row whose middle lies below the dragged row's middle.
+    let target = drag.rects.findIndex((r, i) => i !== drag.index && center < r.top + r.height / 2);
+    if (target === -1) target = drag.rows.length;
+    if (target > drag.index) target -= 1;
+    drag.target = target;
+    drag.rows.forEach((r, i) => {
+      if (i === drag.index) r.style.transform = `translateY(${dy}px)`;
+      else if (drag.index < target && i > drag.index && i <= target) r.style.transform = `translateY(${-own.height}px)`;
+      else if (target < drag.index && i >= target && i < drag.index) r.style.transform = `translateY(${own.height}px)`;
+      else r.style.transform = "";
+    });
+  }
+
+  _onPointerUp(ev, cancelled = false) {
+    const drag = this._drag;
+    if (!drag) return;
+    this._drag = null;
+    drag.rows.forEach((r) => { r.style.transform = ""; });
+    drag.row.classList.remove("dragging");
+    if (!cancelled && drag.target !== drag.index) {
+      const order = drag.rows.map((r) => r.dataset.id);
+      order.splice(drag.target, 0, ...order.splice(drag.index, 1));
+      const previous = drag.target === 0 ? null : order[drag.target - 1];
+      // Show the new order at once: a position between the new neighbours.
+      const task = this._tasks.get(drag.id);
+      const before = this._tasks.get(previous)?.position;
+      const after = this._tasks.get(order[drag.target + 1])?.position;
+      const position = before == null ? (after ?? 0) - 1 : after == null ? before + 1 : (before + after) / 2;
+      if (task) this._tasks.set(task.id, { ...task, position });
+      this._call("thask/task/move", { task_id: drag.id, previous_id: previous }).catch(() => {});
+    }
+    this._render();
   }
 
   _addStep(input) {
@@ -548,6 +755,8 @@ class ThaskCard extends HTMLElement {
     if (parsed.due) data.due = parsed.due;
     if (parsed.due_time) data.due_time = parsed.due_time;
     if (parsed.recurrence) data.recurrence = parsed.recurrence;
+    // With a category filter, the new task gets the first category, so it stays in the card.
+    if (this._config.categories?.length) data.categories = [this._config.categories[0]];
     // A new task should show up in the view it was typed into.
     const view = this._active();
     if (view.type === "smart") {
@@ -581,6 +790,7 @@ class ThaskCardEditor extends HTMLElement {
     if (first) {
       hass.callWS({ type: "thask/data" }).then((data) => {
         this._lists = data.lists;
+        this._categories = [...new Set(data.tasks.flatMap((t) => t.categories || []))].sort((a, b) => a.localeCompare(b));
         this._render();
       }).catch(() => {});
     }
@@ -589,10 +799,12 @@ class ThaskCardEditor extends HTMLElement {
 
   _schema() {
     const t = (key) => translate(this._hass, key);
+    const listLabel = (l) => (l.group ? `${l.group} › ${l.name}` : l.name);
     const views = [
       ...SMART_VIEWS.map((key) => ({ value: key, label: t(key) })),
-      ...(this._lists || []).map((l) => ({ value: `list:${l.id}`, label: l.group ? `${l.group} › ${l.name}` : l.name })),
+      ...(this._lists || []).map((l) => ({ value: `list:${l.id}`, label: listLabel(l) })),
     ];
+    const categories = [...new Set([...(this._categories || []), ...(this._config.categories || [])])];
     return [
       { name: "views", selector: { select: { options: views, multiple: true, mode: "dropdown" } } },
       { name: "title", selector: { text: {} } },
@@ -604,8 +816,11 @@ class ThaskCardEditor extends HTMLElement {
           { name: "show_completed", selector: { boolean: {} } },
           { name: "show_list", selector: { boolean: {} } },
           { name: "compact", selector: { boolean: {} } },
+          { name: "hide_if_empty", selector: { boolean: {} } },
         ],
       },
+      { name: "lists", selector: { select: { options: (this._lists || []).map((l) => ({ value: l.id, label: listLabel(l) })), multiple: true, mode: "dropdown" } } },
+      { name: "categories", selector: { select: { options: categories, multiple: true, custom_value: true, mode: "dropdown" } } },
       {
         name: "min_priority",
         selector: { select: { mode: "dropdown", options: [0, 1, 2, 3].map((p) => ({ value: String(p), label: t(`priority_${p}`) })) } },
@@ -637,6 +852,7 @@ class ThaskCardEditor extends HTMLElement {
         }
         // Leave out what equals the default, so the YAML stays short.
         for (const [key, value] of Object.entries(DEFAULTS)) {
+          if (Array.isArray(value) && !config[key]?.length) delete config[key];
           if (key !== "view" && config[key] === value) delete config[key];
           if (key === "view" && config.views) delete config.view;
         }
@@ -726,6 +942,35 @@ const STYLE = `
   .more { display: block; padding: 6px 16px 6px 24px; font-size: 13px; color: var(--thask-accent); }
   .empty { padding: 12px 16px 12px 24px; color: var(--thask-muted); }
   ha-card.compact .task { padding-top: 4px; padding-bottom: 4px; }
+  .menu-button, .drag { flex: none; width: 28px; height: 28px; margin: -3px -4px -3px 0; border-radius: 50%; display: inline-flex;
+    align-items: center; justify-content: center; color: var(--thask-muted); }
+  .menu-button ha-icon, .drag ha-icon { --mdc-icon-size: 20px; }
+  .menu-button.on { color: var(--thask-accent); background: color-mix(in srgb, var(--thask-accent) 14%, transparent); }
+  /* Without a mouse there is no hover, so the buttons stay visible; with one they appear on hover. */
+  @media (hover: hover) {
+    .task:not(:hover) .menu-button:not(.on), .task:not(:hover) .drag { opacity: 0; }
+  }
+  .drag { cursor: grab; touch-action: none; }
+  .task.dragging { z-index: 1; background: var(--card-background-color, #fff); box-shadow: 0 2px 8px rgba(0, 0, 0, .25); cursor: grabbing; }
+  .tasks .task { transition: transform .15s; }
+  .tasks .task.dragging { transition: none; }
+  .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; cursor: default; }
+  .chip { display: inline-flex; align-items: center; gap: 4px; padding: 5px 10px; border-radius: 16px; font-size: 13px;
+    background: color-mix(in srgb, var(--primary-text-color, #212121) 8%, transparent); }
+  .chip ha-icon { --mdc-icon-size: 16px; }
+  .chip:hover { background: color-mix(in srgb, var(--thask-accent) 18%, transparent); }
+  .prios { display: inline-flex; gap: 2px; }
+  .chip.prio { padding: 5px 7px; color: var(--thask-muted); }
+  .chip.prio.p1 { color: var(--thask-prio-1); }
+  .chip.prio.p2 { color: var(--thask-prio-2); }
+  .chip.prio.p3 { color: var(--thask-prio-3); }
+  .chip.prio.on { box-shadow: inset 0 0 0 2px currentColor; }
+  .chip.danger { color: var(--thask-danger); }
+  .toast { display: flex; align-items: center; gap: 12px; margin: 6px 12px 0 20px; padding: 8px 12px; border-radius: 8px; font-size: 14px;
+    background: var(--primary-text-color, #212121); color: var(--card-background-color, #fff); }
+  .toast[hidden] { display: none; }
+  .toast span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .toast button { font-weight: 500; color: var(--thask-accent); text-transform: uppercase; font-size: 13px; }
 `;
 
 if (!customElements.get("thask-card")) customElements.define("thask-card", ThaskCard);
