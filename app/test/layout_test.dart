@@ -57,6 +57,41 @@ void main() {
     expect(find.text('Aufgaben'), findsNWidgets(2));
   });
 
+  testWidgets('Suche zeigt Treffer aus allen Ansichten, Zurück beendet sie', (tester) async {
+    await pumpHome(tester, const Size(400, 800));
+    await tester.tap(find.byTooltip('Suchen'));
+    await tester.pump();
+    await tester.enterText(find.byType(TextField).first, 'alt');
+    await tester.pump();
+    expect(find.text('Alt'), findsOneWidget);
+    expect(find.text('Steuer'), findsNothing);
+    await tester.enterText(find.byType(TextField).first, 'xyz');
+    await tester.pump();
+    expect(find.text('Nichts gefunden für „xyz“'), findsOneWidget);
+    await tester.tap(find.byTooltip('Schließen'));
+    await tester.pump();
+    expect(find.text('Steuer'), findsOneWidget);
+  });
+
+  testWidgets('Wischen löscht erst, wenn der Hinweis ohne „Rückgängig“ abläuft', (tester) async {
+    await pumpHome(tester, const Size(400, 800));
+    await tester.drag(find.text('Steuer'), const Offset(-500, 0));
+    await tester.pumpAndSettle();
+    expect(find.text('Steuer'), findsNothing);
+    await tester.tap(find.text('Rückgängig'));
+    await tester.pumpAndSettle();
+    expect(find.text('Steuer'), findsOneWidget);
+    expect(store.task('t1'), isNotNull);
+
+    await tester.drag(find.text('Steuer'), const Offset(-500, 0));
+    await tester.pumpAndSettle();
+    expect(store.task('t1'), isNotNull, reason: 'noch nicht gelöscht');
+    await tester.pump(const Duration(seconds: 5));
+    await tester.pumpAndSettle();
+    expect(store.task('t1'), isNull);
+    expect(find.text('Steuer'), findsNothing);
+  });
+
   testWidgets('Schmales Fenster: Details als eigene Seite', (tester) async {
     await pumpHome(tester, const Size(400, 800));
     expect(find.text('Wichtig'), findsNothing);

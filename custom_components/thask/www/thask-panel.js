@@ -536,7 +536,7 @@ class ThaskPanel extends HTMLElement {
     this.shadowRoot.innerHTML = `
       <style>${STYLE}</style>
       <div class="app">
-        <nav class="sidebar"></nav>
+        <nav class="sidebar"><div class="search"><ha-icon icon="mdi:magnify"></ha-icon><input class="search-input" type="search" autocomplete="off" enterkeyhint="search"></div><div class="nav-content"></div></nav>
         <main class="main">
           <header class="toolbar">
             <span class="menu-slot"></span>
@@ -577,7 +577,8 @@ class ThaskPanel extends HTMLElement {
       this._search = ev.target.value;
       if (this._view.type === "triggers" || this._view.type === "settings") this._view = { type: "smart", key: "my_day" };
       this._selectedTask = null;
-      this._pane = "list";
+      // On a phone the results replace the sidebar with the search field, so they only open with Enter.
+      if (!this._narrow) this._pane = "list";
       this._render();
     });
     root.addEventListener("input", (ev) => {
@@ -653,7 +654,7 @@ class ThaskPanel extends HTMLElement {
         <span class="count">${count(view) || ""}</span>
       </button>`;
 
-    let html = `<div class="search"><ha-icon icon="mdi:magnify"></ha-icon><input class="search-input" type="search" placeholder="${esc(this.t("search"))}" autocomplete="off"></div><div class="nav-section">${SMART_VIEWS.filter((v) => (v.key !== "overdue" || this._overdueMode === "separate") && !this._hiddenViews.includes(v.key)).map((v) => item({ type: "smart", key: v.key }, v.icon, this.t(v.key))).join("")}</div><div class="divider"></div><div class="nav-section lists">`;
+    let html = `<div class="nav-section">${SMART_VIEWS.filter((v) => (v.key !== "overdue" || this._overdueMode === "separate") && !this._hiddenViews.includes(v.key)).map((v) => item({ type: "smart", key: v.key }, v.icon, this.t(v.key))).join("")}</div><div class="divider"></div><div class="nav-section lists">`;
     let group = null;
     for (const list of this._visibleLists()) {
       if ((list.group || null) !== group) {
@@ -678,17 +679,17 @@ class ThaskPanel extends HTMLElement {
         <ha-icon icon="mdi:cog-outline"></ha-icon><span class="nav-label">${esc(this.t("settings"))}</span></button>`;
     }
     html += `<div class="new-list"><ha-icon icon="mdi:plus"></ha-icon><input class="new-list-input" placeholder="${esc(this.t("new_list"))}"></div>${VERSION ? `<div class="version">tHAsk v${esc(VERSION)}</div>` : ""}`;
-    const sidebar = this.shadowRoot.querySelector(".sidebar");
+    const sidebar = this.shadowRoot.querySelector(".nav-content");
     const focused = this.shadowRoot.activeElement?.classList.contains("new-list-input");
     const pending = sidebar.querySelector(".new-list-input")?.value || "";
-    const searchFocused = this.shadowRoot.activeElement?.classList.contains("search-input");
     sidebar.innerHTML = html;
     const input = sidebar.querySelector(".new-list-input");
     input.value = pending;
     if (focused) input.focus();
-    const searchInput = sidebar.querySelector(".search-input");
-    searchInput.value = this._search;
-    if (searchFocused) searchInput.focus();
+    // The search field stays in place while typing (rebuilding it breaks the keyboard's word composition on Android).
+    const searchInput = this.shadowRoot.querySelector(".search-input");
+    searchInput.placeholder = this.t("search");
+    if (searchInput.value !== this._search) searchInput.value = this._search;
   }
 
   _renderHeader() {
@@ -1744,6 +1745,14 @@ class ThaskPanel extends HTMLElement {
 
   _onKeyDown(ev) {
     const target = ev.target;
+    if (target.matches?.(".search-input")) {
+      if (ev.key === "Enter" && this._narrow && this._search.trim()) {
+        target.blur();
+        this._pane = "list";
+        this._render();
+      }
+      return;
+    }
     if (target.matches?.(".group-input")) {
       if (ev.key === "Enter" && target.value.trim()) this._setGroup(target.value.trim());
       if (ev.key === "Escape") {
@@ -1918,6 +1927,7 @@ const STYLE = `
   .app { display: grid; grid-template-columns: 260px 1fr; height: calc(100vh - var(--xp-taskbar-height, 0px)); overflow: hidden; }
   .app.has-detail { grid-template-columns: 260px 1fr 360px; }
   .sidebar { background: var(--thask-sidebar); border-right: 1px solid var(--thask-divider); overflow-y: auto; padding: 8px 0; display: flex; flex-direction: column; }
+  .nav-content { display: contents; }
   .search { display: flex; align-items: center; gap: 8px; margin: 8px 12px; padding: 0 10px; border-radius: 8px; background: color-mix(in srgb, var(--thask-text) 12%, transparent); color: var(--thask-muted); }
   .search-input { flex: 1; min-width: 0; border: none; background: none; outline: none; padding: 8px 0; font-size: 14px; color: var(--thask-text); }
   .nav-section { display: flex; flex-direction: column; }

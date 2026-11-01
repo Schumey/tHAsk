@@ -250,6 +250,18 @@ class ThaskStore extends ChangeNotifier {
   /// Alle Aufgaben mit Fälligkeit, nach Ende des Zeitraums.
   List<Task> get planned => sortTasks(_visibleTasks.where((t) => t.due != null), 'due');
 
+  /// Suche über alle sichtbaren Listen wie in der Weboberfläche: jedes Wort muss in Titel, Notizen,
+  /// einem Schritt oder einer Kategorie vorkommen.
+  List<Task> search(String query) {
+    final words = query.trim().toLowerCase().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).toList();
+    if (words.isEmpty) return const [];
+    bool matches(Task t) {
+      final haystack = [t.title, t.notes, for (final s in t.steps) s.title, ...t.categories].map((s) => s.toLowerCase());
+      return words.every((w) => haystack.any((text) => text.contains(w)));
+    }
+    return sortTasks(_visibleTasks.where(matches), 'due');
+  }
+
   int openCount(String listId) => _tasks.values.where((t) => t.listId == listId && !t.completed).length;
 
   // -- Verbindung ----------------------------------------------------------

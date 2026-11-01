@@ -39,6 +39,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   final _entryFocus = FocusNode();
 
+  /// Suchbegriff; null, solange keine Suche offen ist.
+  String? _query;
+  final _search = TextEditingController();
+
+  /// Per Wischen gelöschte Aufgaben, die noch rückgängig gemacht werden können.
+  final _deleting = <String>{};
+
   @override
   void initState() {
     super.initState();
@@ -62,12 +69,49 @@ class _HomeScreenState extends State<HomeScreen> {
     widget.launch?.removeListener(_handleLaunch);
     _entryFocus.dispose();
     _entry.dispose();
+    _search.dispose();
     super.dispose();
   }
 
   String get _title => _view.title(store);
 
-  List<Task> get _tasks => _view.tasks(store);
+  List<Task> get _tasks => [
+        for (final task in _query != null ? store.search(_query!) : _view.tasks(store))
+          if (!_deleting.contains(task.id)) task,
+      ];
+
+  void _openSearch() => setState(() => _query ??= '');
+
+  void _closeSearch() {
+    _search.clear();
+    setState(() => _query = null);
+  }
+
+  /// Gewischt: sofort ausblenden, aber erst löschen, wenn der Hinweis ohne „Rückgängig“ abläuft.
+  /// Anhänge löscht der Server mit der Aufgabe, deshalb nicht löschen und wiederherstellen.
+  void _swipeDelete(Task task) {
+    setState(() {
+      _deleting.add(task.id);
+      if (_selected == task.id) _selected = null;
+    });
+    final messenger = ScaffoldMessenger.of(context)..hideCurrentSnackBar();
+    messenger
+        .showSnackBar(SnackBar(
+          content: Text(tr('task_deleted', [task.title])),
+          persist: false,
+          action: SnackBarAction(label: tr('undo'), onPressed: () {}),
+        ))
+        .closed
+        .then((reason) {
+      if (reason == SnackBarClosedReason.action) {
+        if (mounted) setState(() => _deleting.remove(task.id));
+        return;
+      }
+      _guard(() => store.deleteTask(task)).whenComplete(() {
+        if (mounted) setState(() => _deleting.remove(task.id));
+      });
+    });
+  }
 
   /// Liste, in die neue Aufgaben kommen: die gewählte, sonst die erste.
   String? get _targetList => switch (_view) {
@@ -145,7 +189,13 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  void _selectView(ViewRef view) => setState(() => _view = view);
+  void _selectView(ViewRef view) {
+    _search.clear();
+    setState(() {
+      _view = view;
+      _query = null;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -153,8 +203,13 @@ class _HomeScreenState extends State<HomeScreen> {
     return CallbackShortcuts(
       bindings: {
         const SingleActivator(LogicalKeyboardKey.keyN, control: true): _entryFocus.requestFocus,
+        const SingleActivator(LogicalKeyboardKey.keyF, control: true): _openSearch,
         const SingleActivator(LogicalKeyboardKey.escape): () {
-          if (_selected != null) setState(() => _selected = null);
+          if (_selected != null) {
+            setState(() => _selected = null);
+          } else if (_query != null) {
+            _closeSearch();
+          }
         },
       },
       child: ListenableBuilder(listenable: store, builder: (context, _) => _buildScreen(context, wide)),
@@ -169,7 +224,8 @@ class _HomeScreenState extends State<HomeScreen> {
     final tasks = _tasks;
     final open = tasks.where((t) => !t.completed).toList();
     final done = tasks.where((t) => t.completed).toList();
-    final listView = _view is ListRef;
+    final searching = _query != null;
+    final listView = _view is ListRef && !searching;
     final list = listView ? store.list((_view as ListRef).listId) : null;
     Widget tile(Task task) => _TaskTile(
           task: task,
@@ -178,10 +234,11 @@ class _HomeScreenState extends State<HomeScreen> {
           guard: _guard,
           selected: wide && task.id == _selected,
           onOpen: () => _openTask(task, wide),
+          onDelete: () => _swipeDelete(task),
         );
     final selected = wide && _selected != null ? store.task(_selected!) : null;
     final page = Scaffold(
-      appBar: AppBar(
+      appBar: searching ? _searchBar(context) : AppBar(
         automaticallyImplyLeading: !wide,
         title: _view is TodayView
             ? Column(
@@ -199,6 +256,7 @@ class _HomeScreenState extends State<HomeScreen> {
               )
             : Text(_title),
         actions: [
+          IconButton(tooltip: tr('search'), icon: const Icon(Icons.search), onPressed: _openSearch),
           if (_view is ImportantView)
             PopupMenuButton<String>(
               tooltip: tr('range'),
@@ -260,13 +318,17 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           if (store.connection != LinkState.connected || store.pendingCount > 0) _ConnectionBanner(store: store),
           Expanded(
-            child: tasks.isEmpty
+            child: tasks.isEmpty && searching
+                ? _NoResults(query: _query!)
+                : tasks.isEmpty
                 ? _EmptyView(visible: store.connection == LinkState.connected || store.fromCache)
                 : list != null && list.sort == 'manual'
                     ? _reorderableList(open, done, tile)
                     : ListView(
                     children: [
-                      if (_view is PlannedView)
+                      if (searching)
+                        for (final task in open) tile(task)
+                      else if (_view is PlannedView)
                         ..._plannedSections(context, open, tile)
                       else if (_view is TodayView && store.overdueMode == 'section' && open.any(_isOverdue))
                         ..._todaySections(context, open, tile)
@@ -280,7 +342,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ],
                   ),
           ),
-          if (_targetList != null) _buildEntry(context),
+          if (_targetList != null && !searching) _buildEntry(context),
         ],
       ),
     );
@@ -305,6 +367,31 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ],
       ),
+    );
+  }
+
+  /// Kopfzeile während der Suche: Eingabefeld, Zurück schließt die Suche.
+  PreferredSizeWidget _searchBar(BuildContext context) {
+    return AppBar(
+      leading: IconButton(tooltip: tr('close'), icon: const Icon(Icons.arrow_back), onPressed: _closeSearch),
+      title: TextField(
+        controller: _search,
+        autofocus: true,
+        textInputAction: TextInputAction.search,
+        decoration: InputDecoration(hintText: tr('search_hint'), border: InputBorder.none),
+        onChanged: (value) => setState(() => _query = value),
+      ),
+      actions: [
+        if (_search.text.isNotEmpty)
+          IconButton(
+            tooltip: tr('clear'),
+            icon: const Icon(Icons.close),
+            onPressed: () {
+              _search.clear();
+              setState(() => _query = '');
+            },
+          ),
+      ],
     );
   }
 
@@ -552,6 +639,7 @@ class _TaskTile extends StatelessWidget {
     required this.store,
     required this.guard,
     required this.onOpen,
+    required this.onDelete,
     this.selected = false,
     this.showList = false,
   });
@@ -563,6 +651,7 @@ class _TaskTile extends StatelessWidget {
   final bool showList;
   final Future<void> Function(Future<void> Function()) guard;
   final VoidCallback onOpen;
+  final VoidCallback onDelete;
   final bool selected;
 
   @override
@@ -581,7 +670,7 @@ class _TaskTile extends StatelessWidget {
         padding: const EdgeInsets.only(right: 20),
         child: Icon(Icons.delete_outline, color: theme.colorScheme.onError),
       ),
-      onDismissed: (_) => guard(() => store.deleteTask(task)),
+      onDismissed: (_) => onDelete(),
       child: _PriorityBar(
         priority: task.priority,
         child: ListTile(
@@ -731,6 +820,29 @@ class _SectionHeader extends StatelessWidget {
           const SizedBox(width: 8),
           Text('$count', style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
         ],
+      ),
+    );
+  }
+}
+
+/// Suche ohne Treffer; ohne Suchbegriff bleibt die Fläche leer.
+class _NoResults extends StatelessWidget {
+  const _NoResults({required this.query});
+
+  final String query;
+
+  @override
+  Widget build(BuildContext context) {
+    if (query.trim().isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Text(
+          tr('no_results', [query.trim()]),
+          style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          textAlign: TextAlign.center,
+        ),
       ),
     );
   }

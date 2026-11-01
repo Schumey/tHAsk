@@ -365,6 +365,32 @@ void main() {
       expect(store.dueToday, isEmpty);
     });
 
+    test('Suche über alle Listen: jedes Wort in Titel, Notizen oder Schritten', () async {
+      await signIn();
+      connection.emit({
+        'type': 'change',
+        'action': 'created',
+        'kind': 'task',
+        'id': 't2',
+        'list_id': 'l2',
+        'item': {
+          'id': 't2',
+          'list_id': 'l2',
+          'title': 'Milch',
+          'notes': 'Hafer, nicht Soja',
+          'steps': [
+            {'id': 's1', 'title': 'Bio-Laden'},
+          ],
+        },
+      });
+      await Future<void>.delayed(Duration.zero);
+      expect(store.search('milch').map((t) => t.title), ['Milch']);
+      expect(store.search(' HAFER  bio ').map((t) => t.title), ['Milch']);
+      expect(store.search('milch soja steuer'), isEmpty);
+      expect(store.search('st').map((t) => t.title), ['Steuer']);
+      expect(store.search('   '), isEmpty);
+    });
+
     test('addQuick erkennt Fälligkeit und Priorität auf dem Gerät', () async {
       await signIn();
       await store.addQuick('l1', 'Steuer KW 47 !');
