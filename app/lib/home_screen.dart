@@ -171,6 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
     Widget tile(Task task) => _TaskTile(
           task: task,
           store: store,
+          showList: !listView,
           guard: _guard,
           selected: wide && task.id == _selected,
           onOpen: () => _openTask(task, wide),
@@ -535,10 +536,14 @@ class _TaskTile extends StatelessWidget {
     required this.guard,
     required this.onOpen,
     this.selected = false,
+    this.showList = false,
   });
 
   final Task task;
   final ThaskStore store;
+
+  /// In Ansichten wie „Heute“: hinter der Fälligkeit steht, aus welcher Liste die Aufgabe kommt.
+  final bool showList;
   final Future<void> Function(Future<void> Function()) guard;
   final VoidCallback onOpen;
   final bool selected;
@@ -549,6 +554,7 @@ class _TaskTile extends StatelessWidget {
     final due = task.due;
     final dueText = due == null ? null : '${due.label(store.today)}${task.dueTime != null ? ', ${task.dueTime}' : ''}';
     final steps = task.steps.isEmpty ? null : '${task.steps.where((s) => s.completed).length}/${task.steps.length}';
+    final listName = showList ? store.list(task.listId)?.name : null;
     return Dismissible(
       key: ValueKey(task.id),
       direction: DismissDirection.endToStart,
@@ -573,7 +579,7 @@ class _TaskTile extends StatelessWidget {
           task.title,
           style: task.completed ? const TextStyle(decoration: TextDecoration.lineThrough) : null,
         ),
-        subtitle: (dueText ?? steps) == null
+        subtitle: (dueText ?? listName ?? steps) == null
             ? null
             : Wrap(
                 spacing: 12,
@@ -581,12 +587,36 @@ class _TaskTile extends StatelessWidget {
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
                   if (dueText != null) DueChip(task: task, today: store.today, text: dueText),
+                  if (listName != null) _ListOrigin(listName),
                   if (task.recurrence != null) const Icon(Icons.repeat, size: 14),
                   if (steps != null) Text(steps),
                 ],
               ),
         ),
       ),
+    );
+  }
+}
+
+/// Name der Liste, aus der eine Aufgabe kommt, in Ansichten wie „Heute“.
+class _ListOrigin extends StatelessWidget {
+  const _ListOrigin(this.name);
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = theme.colorScheme.onSurfaceVariant;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.checklist, size: 14, color: color),
+        const SizedBox(width: 4),
+        Flexible(
+          child: Text(name, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodySmall?.copyWith(color: color)),
+        ),
+      ],
     );
   }
 }

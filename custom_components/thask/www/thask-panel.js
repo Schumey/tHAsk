@@ -766,15 +766,16 @@ class ThaskPanel extends HTMLElement {
 
   _taskRow(task, draggable) {
     const meta = [];
+    if (task.due) meta.push(this._dueChip(task));
+    // In smart views: which list the task comes from, right after the due date.
     if (this._view.type === "smart") {
       const list = this._lists.find((l) => l.id === task.list_id);
-      if (list) meta.push(`<span class="meta">${esc(list.name)}</span>`);
+      if (list) meta.push(`<span class="meta list"><ha-icon icon="mdi:format-list-checks"></ha-icon>${esc(list.name)}</span>`);
     }
     if (task.steps.length) {
       const doneSteps = task.steps.filter((s) => s.completed).length;
       meta.push(`<span class="meta">${esc(this.t("steps_of", doneSteps, task.steps.length))}</span>`);
     }
-    if (task.due) meta.push(this._dueChip(task));
     if (task.recurrence) meta.push(`<span class="meta" title="${esc(this._recurrenceLabel(task.recurrence))}"><ha-icon icon="mdi:repeat"></ha-icon></span>`);
     if (task.reminder && !task.completed) meta.push(`<span class="meta"><ha-icon icon="mdi:bell-outline"></ha-icon></span>`);
     if (task.notes) meta.push(`<span class="meta"><ha-icon icon="mdi:note-text-outline"></ha-icon></span>`);

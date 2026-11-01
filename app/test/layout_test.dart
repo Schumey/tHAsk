@@ -52,6 +52,11 @@ void main() {
     expect(store.overdueCollapsed, isTrue);
   });
 
+  testWidgets('„Heute“ zeigt hinter der Fälligkeit die Liste jeder Aufgabe', (tester) async {
+    await pumpHome(tester, const Size(400, 800));
+    expect(find.text('Aufgaben'), findsNWidgets(2));
+  });
+
   testWidgets('Schmales Fenster: Details als eigene Seite', (tester) async {
     await pumpHome(tester, const Size(400, 800));
     expect(find.text('Wichtig'), findsNothing);

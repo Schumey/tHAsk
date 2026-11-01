@@ -427,11 +427,12 @@ class ThaskCard extends HTMLElement {
 
   _row(task, view) {
     const meta = [];
+    if (task.due) meta.push(this._dueChip(task));
+    // In smart views: which list the task comes from, right after the due date.
     if (view.type === "smart" && this._config.show_list) {
       const list = this._lists.find((l) => l.id === task.list_id);
-      if (list) meta.push(`<span class="meta">${esc(list.name)}</span>`);
+      if (list) meta.push(`<span class="meta list"><ha-icon icon="mdi:format-list-checks"></ha-icon>${esc(list.name)}</span>`);
     }
-    if (task.due) meta.push(this._dueChip(task));
     if (task.steps?.length) meta.push(`<span class="meta"><ha-icon icon="mdi:format-list-bulleted"></ha-icon>${task.steps.filter((s) => s.completed).length}/${task.steps.length}</span>`);
     if (task.recurrence) meta.push(`<span class="meta"><ha-icon icon="mdi:repeat"></ha-icon></span>`);
     if (task.notes) meta.push(`<span class="meta"><ha-icon icon="mdi:note-text-outline"></ha-icon></span>`);
