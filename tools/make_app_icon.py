@@ -10,6 +10,7 @@ Schreibt:
 - app/android/app/src/main/res/mipmap-*/ic_launcher.png (ältere Launcher)
 - app/android/app/src/main/res/drawable/ic_launcher_foreground.xml (Vektor für das adaptive Symbol)
 - app/android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+- custom_components/thask/brand/icon.png und icon@2x.png (Symbol der Integration in HA, ab 2026.3)
 """
 
 from __future__ import annotations
@@ -140,6 +141,10 @@ def main() -> None:
     (RES / "mipmap-anydpi-v26").mkdir(exist_ok=True)
     (RES / "mipmap-anydpi-v26" / "ic_launcher.xml").write_text(ADAPTIVE, encoding="utf-8")
     (RES / "values" / "ic_launcher_colors.xml").write_text(COLORS, encoding="utf-8")
+    brand = ROOT / "custom_components" / "thask" / "brand"
+    brand.mkdir(exist_ok=True)
+    render(256).save(brand / "icon.png")
+    render(512).save(brand / "icon@2x.png")
     print("Symbole geschrieben.")
 
 
