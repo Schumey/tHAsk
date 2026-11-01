@@ -61,7 +61,7 @@ private val chipText = ColorProvider(day = Color(0xFF455A64), night = Color(0xFF
 private val chipTodayText = ColorProvider(day = Color(0xFF01579B), night = Color(0xFFB3E5FC))
 private val danger = ColorProvider(day = Color(0xFFB3261E), night = Color(0xFFF2B8B5))
 private val priorityLow = ColorProvider(day = Color(0xFF43A047), night = Color(0xFF66BB6A))
-private val priorityMedium = ColorProvider(day = Color(0xFFF9A825), night = Color(0xFFFDD835))
+private val priorityMedium = ColorProvider(day = Color(0xFFF57C00), night = Color(0xFFFFA600))
 private val priorityHigh = ColorProvider(day = Color(0xFFE53935), night = Color(0xFFEF5350))
 
 internal const val PREFS = "HomeWidgetPreferences"

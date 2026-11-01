@@ -63,7 +63,7 @@ Nach dem Einrichten erscheint **tHAsk** in der HA-Seitenleiste:
 
 ### Priorität
 
-Jede Aufgabe hat eine Priorität von 0 bis 3, angezeigt als farbiger Balken an der Zeile: Niedrig grün, Mittel orange (in den Apps gelb), Hoch rot; je höher, desto breiter der Balken. Weboberfläche und Karte nehmen die Farben aus dem HA-Theme (`--success-color`, `--warning-color`, `--error-color`). In der Schnelleingabe setzen `!`, `!!` und `!!!` Niedrig, Mittel und Hoch.
+Jede Aufgabe hat eine Priorität von 0 bis 3, angezeigt als farbiger Balken an der Zeile: Niedrig grün, Mittel orange, Hoch rot; je höher, desto breiter der Balken. Weboberfläche und Karte nehmen die Farben aus dem HA-Theme (`--success-color`, `--warning-color`, `--error-color`). In der Schnelleingabe setzen `!`, `!!` und `!!!` Niedrig, Mittel und Hoch.
 
 Die alte Markierung „Wichtig“ wurde zu Priorität Hoch. Ältere Clients können weiter `important` senden bzw. lesen (Hoch = wichtig) und `sort: important` verwenden.
 

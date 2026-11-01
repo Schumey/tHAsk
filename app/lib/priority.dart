@@ -8,10 +8,10 @@ String priorityName(int priority) => switch (priority) {
       _ => 'Keine',
     };
 
-/// Farbe einer Priorität wie in der Weboberfläche: Niedrig grün, Mittel gelb, Hoch rot; ohne Priorität keine.
+/// Farbe einer Priorität wie in der Weboberfläche: Niedrig grün, Mittel orange (warning-color von HA), Hoch rot; ohne Priorität keine.
 Color? priorityColor(int priority) => switch (priority) {
       1 => const Color(0xFF43A047),
-      2 => const Color(0xFFFDD835),
+      2 => const Color(0xFFFFA600),
       3 => const Color(0xFFE53935),
       _ => null,
     };

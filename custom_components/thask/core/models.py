@@ -86,7 +86,7 @@ class Step:
 
 
 TASK_SORTS = ("manual", "priority", "due", "title", "created")
-# Priority levels: 0 none, 1 low (green), 2 medium (yellow), 3 high (red).
+# Priority levels: 0 none, 1 low (green), 2 medium (orange), 3 high (red).
 PRIORITIES = (0, 1, 2, 3)
 PRIORITY_HIGH = 3
 
