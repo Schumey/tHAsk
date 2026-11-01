@@ -232,3 +232,28 @@ def test_legacy_important_flag_becomes_high_priority(collection, list_id):
     collection.load(stored)
     assert collection.tasks["t1"].priority == 3 and collection.tasks["t2"].priority == 0
     assert collection.lists["l1"].sort == "priority"
+
+
+def test_views_kept_apart():
+    """Options "separate_week" and "separate_month"; Sunday, 1 November 2026, the last day of week 44."""
+    sunday = date(2026, 11, 1)
+    utc = timezone.utc
+
+    def task(task_id, due):
+        return Task(id=task_id, list_id="l", title=task_id, due=due)
+
+    today = task("today", Period.day(sunday))
+    week = task("week 44", Period.iso_week(2026, 44))
+    overdue = task("overdue", Period.day(date(2026, 10, 30)))
+    november = task("november", Period.month(2026, 11))
+    later = task("later", Period.day(date(2026, 11, 20)))
+
+    def names(check):
+        return {t.title for t in (today, week, overdue, november, later) if check(t)}
+
+    assert names(lambda t: t.in_today(sunday, utc)) == {"today", "week 44", "overdue"}
+    assert names(lambda t: t.in_today(sunday, utc, days_only=True)) == {"today", "overdue"}
+    assert names(lambda t: t.in_this_week(sunday, utc)) == {"today", "week 44", "overdue"}
+    assert names(lambda t: t.in_this_week(sunday, utc, separate=True)) == {"week 44"}
+    assert names(lambda t: t.in_this_month(sunday, utc)) == {"today", "week 44", "overdue", "november", "later"}
+    assert names(lambda t: t.in_this_month(sunday, utc, separate=True)) == {"november", "later"}

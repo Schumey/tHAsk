@@ -240,15 +240,12 @@ class ThaskSmartListEntity(ThaskTodoEntity):
 
     def _matches(self, task: Task, today: date) -> bool:
         if self._key == SMART_MY_DAY:
-            return task.in_today(today, self._data.tz, overdue=self._data.overdue_mode != "separate")
+            return task.in_today(
+                today, self._data.tz, overdue=self._data.overdue_mode != "separate", days_only=self._data.separate_week
+            )
         if self._key == SMART_OVERDUE:
             return task.overdue(today)
-        week_end = Period(Granularity.WEEK, today).end
-        if task.completed:
-            return task.due_by(week_end) and task.completed_on_or_after(
-                Period(Granularity.WEEK, today).start, self._data.tz
-            )
-        return task.due_by(week_end)
+        return task.in_this_week(today, self._data.tz, separate=self._data.separate_week)
 
     def _tasks(self) -> list[Task]:
         today = self._data.today

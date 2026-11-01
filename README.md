@@ -53,6 +53,8 @@ Beim ersten Start wird die Liste „Aufgaben“ angelegt. Für ein Update den Or
 Einstellungen → Geräte & Dienste → tHAsk → **Konfigurieren**. Änderungen wirken ohne Neustart, auch in den Apps.
 
 - **Überfällige Aufgaben in „Heute“**: oben als eigener, zuklappbarer Abschnitt (Standard), zwischen den heutigen oder nicht in „Heute“, sondern in einer eigenen Ansicht „Überfällig“. Gilt für Weboberfläche, Karte, Apps, Widget und `todo.thask_mein_tag`.
+- **„Heute“ und „Diese Woche“ trennen** (aus): „Heute“ zeigt nur Aufgaben, die an einem bestimmten Tag fällig sind, dazu Überfälliges. Ein Zeitraum, der heute endet (am Sonntag „KW 44“), steht dann in „Diese Woche“; „Diese Woche“ zeigt umgekehrt nichts, was schon in „Heute“ steht. Gilt auch für `todo.thask_mein_tag`, `todo.thask_diese_woche` und den Zähler an der Taskleiste.
+- **„Diesen Monat“ trennen** (aus): „Diesen Monat“ zeigt nur, was nach dieser Woche bis Monatsende fällig ist.
 - **Erinnerungen senden an**: Benachrichtigungsdienste für Erinnerungen, siehe [Erinnerungen](#erinnerungen).
 
 ## Weboberfläche

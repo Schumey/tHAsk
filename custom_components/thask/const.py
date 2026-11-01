@@ -33,6 +33,12 @@ CONF_OVERDUE = "overdue_in_today"
 OVERDUE_MODES = ("section", "mixed", "separate")
 DEFAULT_OVERDUE = "section"
 
+# Options: keep the smart views apart. "separate_week": "Today" only has tasks due on a day (and overdue
+# ones), periods such as "week 44" go to "This week", which leaves out what "Today" shows.
+# "separate_month": "This month" only has what is due after this week.
+CONF_SEPARATE_WEEK = "separate_week"
+CONF_SEPARATE_MONTH = "separate_month"
+
 # Option: notify services (notify.<name>) that receive reminders.
 CONF_REMINDER_TARGETS = "reminder_targets"
 

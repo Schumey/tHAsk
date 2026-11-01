@@ -117,10 +117,23 @@ class ThaskStore extends ChangeNotifier {
   /// 'mixed' (zwischen den heutigen) oder 'separate' (nicht in „Heute“, sondern in einer eigenen Ansicht).
   String overdueMode = 'section';
 
+  /// Optionen der Integration, die die Ansichten trennen (wie `core/models.py`): Mit [separateWeek] hat „Heute“
+  /// nur Tage (und Überfälliges), ein Zeitraum, der heute endet („KW 44“ am Sonntag), steht in „Diese Woche“,
+  /// und „Diese Woche“ lässt weg, was in „Heute“ steht. Mit [separateMonth] zeigt „Diesen Monat“ nur, was
+  /// nach dieser Woche fällig ist.
+  bool separateWeek = false;
+  bool separateMonth = false;
+
+  /// Ob eine Aufgabe zu „Heute“ gehört, Überfälliges eingeschlossen (auch für den Zähler an der Taskleiste).
+  bool inTodayView(Task t) {
+    if (!t.inToday(today)) return false;
+    return !(separateWeek && t.due!.granularity != Granularity.day && !t.due!.end.isBefore(dateOnly(today)));
+  }
+
   /// „Heute“: alles, was bis heute fällig ist, und was heute erledigt wurde.
   /// Überfälliges nur, wenn es keine eigene Ansicht hat.
   List<Task> get dueToday => sortTasks(
-        _tasks.values.where((t) => t.inToday(today) && (overdueMode != 'separate' || !t.isOverdue(today))),
+        _tasks.values.where((t) => inTodayView(t) && (overdueMode != 'separate' || !t.isOverdue(today))),
         'due',
       );
 
@@ -139,13 +152,30 @@ class ThaskStore extends ChangeNotifier {
   /// Alles, was bis zum Ende der laufenden Woche fällig ist (inkl. Überfälligem), ohne Erledigtes.
   List<Task> get thisWeek {
     final weekEnd = Period.containing(Granularity.week, today).end;
-    return sortTasks(_tasks.values.where((t) => !t.completed && t.due != null && !t.due!.end.isAfter(weekEnd)), 'due');
+    final day = dateOnly(today);
+    bool inToday(Task t) => t.due!.end.isBefore(day) || (t.due!.granularity == Granularity.day && t.due!.end == day);
+    return sortTasks(
+      _tasks.values.where(
+        (t) => !t.completed && t.due != null && !t.due!.end.isAfter(weekEnd) && !(separateWeek && inToday(t)),
+      ),
+      'due',
+    );
   }
 
   /// Alles, was bis zum Ende des laufenden Monats fällig ist (inkl. Überfälligem), ohne Erledigtes.
   List<Task> get thisMonth {
     final monthEnd = Period.containing(Granularity.month, today).end;
-    return sortTasks(_tasks.values.where((t) => !t.completed && t.due != null && !t.due!.end.isAfter(monthEnd)), 'due');
+    final weekEnd = Period.containing(Granularity.week, today).end;
+    return sortTasks(
+      _tasks.values.where(
+        (t) =>
+            !t.completed &&
+            t.due != null &&
+            !t.due!.end.isAfter(monthEnd) &&
+            !(separateMonth && !t.due!.end.isAfter(weekEnd)),
+      ),
+      'due',
+    );
   }
 
   /// Zeitraum von „Wichtig“: `all` oder `week`, `month`, `quarter`, `year` (fällig bis zu dessen Ende).
@@ -222,7 +252,7 @@ class ThaskStore extends ChangeNotifier {
     _saveTimer = Timer(const Duration(seconds: 2), () {
       _cache.save(jsonEncode({
         'today': isoDate(today),
-        'options': {'overdue_in_today': overdueMode},
+        'options': {'overdue_in_today': overdueMode, 'separate_week': separateWeek, 'separate_month': separateMonth},
         'lists': _rawLists.values.toList(),
         'tasks': _rawTasks.values.toList(),
       }));
@@ -350,6 +380,8 @@ class ThaskStore extends ChangeNotifier {
   void _applyOptions(Map<String, dynamic> options) {
     final mode = options['overdue_in_today'];
     overdueMode = const ['section', 'mixed', 'separate'].contains(mode) ? mode as String : 'section';
+    separateWeek = options['separate_week'] == true;
+    separateMonth = options['separate_month'] == true;
   }
 
   final _reminders = StreamController<Task>.broadcast();

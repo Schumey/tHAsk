@@ -213,16 +213,40 @@ class Task:
             self.due_time = None
         self.modified = utc_now_iso()
 
-    def in_today(self, today: date, tz: tzinfo, overdue: bool = True) -> bool:
+    def in_today(self, today: date, tz: tzinfo, overdue: bool = True, days_only: bool = False) -> bool:
         """The "Today" view: open tasks due by today, and those completed today.
 
-        Overdue tasks are left out when `overdue` is false (they then have a view of their own).
+        Overdue tasks are left out when `overdue` is false (they then have a view of their own). With
+        `days_only` a period that ends today ("week 44" on a Sunday) belongs to "This week" instead.
         """
         if not self.due_by(today):
+            return False
+        if days_only and self.due.granularity is not Granularity.DAY and self.due.end >= today:
             return False
         if self.completed:
             return self.completed_on_or_after(today, tz)
         return overdue or not self.overdue(today)
+
+    def in_this_week(self, today: date, tz: tzinfo, separate: bool = False) -> bool:
+        """The "This week" view: due by Sunday (overdue tasks included), and those completed this week.
+
+        With `separate` it leaves out what "Today" shows when that only has days: overdue tasks and days due today.
+        """
+        week = Period(Granularity.WEEK, today)
+        if not self.due_by(week.end):
+            return False
+        if separate and (self.due.end < today or (self.due.granularity is Granularity.DAY and self.due.end == today)):
+            return False
+        return not self.completed or self.completed_on_or_after(week.start, tz)
+
+    def in_this_month(self, today: date, tz: tzinfo, separate: bool = False) -> bool:
+        """The "This month" view: due by the end of the month; with `separate` only what is due after this week."""
+        month = Period(Granularity.MONTH, today)
+        if not self.due_by(month.end):
+            return False
+        if separate and self.due.end <= Period(Granularity.WEEK, today).end:
+            return False
+        return not self.completed or self.completed_on_or_after(month.start, tz)
 
     def overdue(self, today: date) -> bool:
         """Open and due before today."""

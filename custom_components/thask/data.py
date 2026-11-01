@@ -23,6 +23,8 @@ from homeassistant.util import dt as dt_util
 from .const import (
     CONF_OVERDUE,
     CONF_REMINDER_TARGETS,
+    CONF_SEPARATE_MONTH,
+    CONF_SEPARATE_WEEK,
     DEFAULT_OVERDUE,
     DOMAIN,
     EVENT_REMINDER,
@@ -81,6 +83,8 @@ class ThaskData:
         self._reminders: dict[str, CALLBACK_TYPE] = {}
         self._unsubs: list[CALLBACK_TYPE] = []
         self.overdue_mode = DEFAULT_OVERDUE
+        self.separate_week = False
+        self.separate_month = False
         self.reminder_targets: list[str] = []
 
     @callback
@@ -88,12 +92,18 @@ class ThaskData:
         mode = options.get(CONF_OVERDUE, DEFAULT_OVERDUE)
         self.overdue_mode = mode if mode in OVERDUE_MODES else DEFAULT_OVERDUE
         self.reminder_targets = list(options.get(CONF_REMINDER_TARGETS, []))
+        self.separate_week = bool(options.get(CONF_SEPARATE_WEEK, False))
+        self.separate_month = bool(options.get(CONF_SEPARATE_MONTH, False))
         async_dispatcher_send(self.hass, SIGNAL_OPTIONS_CHANGED)
 
     @property
     def options(self) -> dict[str, Any]:
         """The options the apps need, sent with the snapshot."""
-        return {CONF_OVERDUE: self.overdue_mode}
+        return {
+            CONF_OVERDUE: self.overdue_mode,
+            CONF_SEPARATE_WEEK: self.separate_week,
+            CONF_SEPARATE_MONTH: self.separate_month,
+        }
 
     @property
     def tz(self) -> tzinfo:

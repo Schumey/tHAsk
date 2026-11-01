@@ -234,6 +234,8 @@ class ThaskPanel extends HTMLElement {
     this._search = "";
     this._groupMenu = null; // null | "pick" | "new"
     this._overdueMode = "section"; // option of the integration: section | mixed | separate
+    this._separateWeek = false; // options of the integration: keep the smart views apart
+    this._separateMonth = false;
     this._overdueCollapsed = false;
     try {
       this._overdueCollapsed = localStorage.getItem(OVERDUE_COLLAPSED_KEY) === "1";
@@ -338,6 +340,8 @@ class ThaskPanel extends HTMLElement {
 
   _setOptions(options) {
     this._overdueMode = options.overdue_in_today || "section";
+    this._separateWeek = !!options.separate_week;
+    this._separateMonth = !!options.separate_month;
     if (this._view.type === "smart" && this._view.key === "overdue" && this._overdueMode !== "separate") {
       this._view = { type: "smart", key: "my_day" };
     }
@@ -411,7 +415,10 @@ class ThaskPanel extends HTMLElement {
   }
 
   _matchesSmart(task, key) {
-    return matchesSmart(task, key, { today: this._today, overdueMode: this._overdueMode, importantRange: this._importantRange });
+    return matchesSmart(task, key, {
+      today: this._today, overdueMode: this._overdueMode, importantRange: this._importantRange,
+      separateWeek: this._separateWeek, separateMonth: this._separateMonth,
+    });
   }
 
   _matchesSearch(task) {

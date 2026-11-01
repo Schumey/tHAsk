@@ -186,10 +186,14 @@
         "title": "tHAsk options",
         "data": {
           "overdue_in_today": "Overdue tasks in “Today”",
+          "separate_week": "Keep “Today” and “This week” apart",
+          "separate_month": "Keep “This month” apart",
           "reminder_targets": "Send reminders to"
         },
         "data_description": {
           "overdue_in_today": "Applies to the web interface, the app, the widget and the “Today” list in Home Assistant.",
+          "separate_week": "“Today” only shows tasks due on a specific day (and overdue ones); periods such as “week 44” are in “This week”, which in turn leaves out what “Today” shows.",
+          "separate_month": "“This month” only shows what is due after this week until the end of the month, without overdue tasks.",
           "reminder_targets": "Notify services (notify.…) that receive reminders, e.g. the companion app on your phone (with a “Done” button) or persistent_notification for the bell in Home Assistant. The Windows app shows reminders on its own while it is running."
         }
       }

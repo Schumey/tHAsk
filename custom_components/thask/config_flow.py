@@ -8,9 +8,17 @@ import voluptuous as vol
 
 from homeassistant.config_entries import ConfigEntry, ConfigFlow, ConfigFlowResult, OptionsFlow
 from homeassistant.core import callback
-from homeassistant.helpers.selector import SelectSelector, SelectSelectorConfig, SelectSelectorMode
+from homeassistant.helpers.selector import BooleanSelector, SelectSelector, SelectSelectorConfig, SelectSelectorMode
 
-from .const import CONF_OVERDUE, CONF_REMINDER_TARGETS, DEFAULT_OVERDUE, DOMAIN, OVERDUE_MODES
+from .const import (
+    CONF_OVERDUE,
+    CONF_REMINDER_TARGETS,
+    CONF_SEPARATE_MONTH,
+    CONF_SEPARATE_WEEK,
+    DEFAULT_OVERDUE,
+    DOMAIN,
+    OVERDUE_MODES,
+)
 
 
 class ThaskConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -43,6 +51,8 @@ class ThaskOptionsFlow(OptionsFlow):
                         options=list(OVERDUE_MODES), translation_key=CONF_OVERDUE, mode=SelectSelectorMode.LIST
                     )
                 ),
+                vol.Required(CONF_SEPARATE_WEEK, default=options.get(CONF_SEPARATE_WEEK, False)): BooleanSelector(),
+                vol.Required(CONF_SEPARATE_MONTH, default=options.get(CONF_SEPARATE_MONTH, False)): BooleanSelector(),
                 vol.Optional(CONF_REMINDER_TARGETS, default=targets): SelectSelector(
                     SelectSelectorConfig(
                         # Keep targets whose service is gone (phone removed) visible, so they can be unticked.

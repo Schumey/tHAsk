@@ -169,13 +169,16 @@ export const completedSince = (task, day) => !!task.completed_at && new Date(tas
 
 export const isOverdue = (task, today) => !task.completed && !!task.due && periodEndOf(task.due) < today;
 
-// Whether a task belongs to a smart view. `ctx`: { today, overdueMode, importantRange }.
+// Whether a task belongs to a smart view (same rules as core/models.py).
+// `ctx`: { today, overdueMode, importantRange, separateWeek, separateMonth }.
 export function matchesSmart(task, key, ctx) {
   const { today } = ctx;
   switch (key) {
     case "my_day":
       // Today: everything due by today, and what was completed today. Overdue tasks may have a view of their own.
       if (!dueBy(task, today)) return false;
+      // Kept apart from "This week": a period that ends today ("week 44" on a Sunday) belongs there.
+      if (ctx.separateWeek && task.due.granularity !== "day" && periodEndOf(task.due) >= today) return false;
       if (task.completed) return completedSince(task, today);
       return ctx.overdueMode !== "separate" || !isOverdue(task, today);
     case "overdue":
@@ -186,11 +189,17 @@ export function matchesSmart(task, key, ctx) {
       return dueBy(task, periodEnd(ctx.importantRange, periodStart(ctx.importantRange, today)));
     case "planned":
       return !!task.due;
-    case "this_week":
+    case "this_week": {
       if (!dueBy(task, periodEnd("week", periodStart("week", today)))) return false;
+      // Kept apart from "Today": without overdue tasks and days due today.
+      const end = periodEndOf(task.due);
+      if (ctx.separateWeek && (end < today || (task.due.granularity === "day" && end.getTime() === today.getTime()))) return false;
       return !task.completed || completedSince(task, periodStart("week", today));
+    }
     case "this_month":
       if (!dueBy(task, periodEnd("month", periodStart("month", today)))) return false;
+      // Kept apart: only what is due after this week.
+      if (ctx.separateMonth && dueBy(task, periodEnd("week", periodStart("week", today)))) return false;
       return !task.completed || completedSince(task, periodStart("month", today));
   }
   return false;

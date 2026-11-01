@@ -129,6 +129,7 @@ def seed(collection: TaskCollection, today: date) -> None:
     house = collection.create_list("Haus", group="Zuhause")
     week = Period(Granularity.WEEK, today)
     collection.create_task(tasks.id, "Reifen wechseln", due=week.shift(1).as_dict(), priority=3)
+    collection.create_task(tasks.id, "Belege sortieren", due=week.as_dict())
     collection.create_task(
         tasks.id,
         "Steuererklärung",
@@ -192,7 +193,7 @@ class Backend:
         self.last_check: str | None = None
         seed_triggers(self.triggers, self.collection)
         # Options of the integration; "dev/options" changes them, e.g. {"overdue_in_today": "separate"}.
-        self.options: dict[str, Any] = {"overdue_in_today": "section"}
+        self.options: dict[str, Any] = {"overdue_in_today": "section", "separate_week": False, "separate_month": False}
 
     def handle(self, msg: dict[str, Any]) -> Any:
         collection, today = self.collection, self.today

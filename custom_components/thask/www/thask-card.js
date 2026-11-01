@@ -116,6 +116,7 @@ class ThaskCard extends HTMLElement {
     this._tasks = new Map();
     this._today = periodStart("day", new Date());
     this._overdueMode = "section";
+    this._options = {};
     this._expanded = null; // id of the task whose steps and notes are shown
     this._showDone = new Set(); // views whose completed tasks are unfolded
     this._tab = 0;
@@ -194,6 +195,7 @@ class ThaskCard extends HTMLElement {
         this._lists = event.lists;
         this._tasks = new Map(event.tasks.map((task) => [task.id, task]));
         this._overdueMode = event.options?.overdue_in_today || "section";
+        this._options = event.options || {};
         this._loaded = true;
         this._error = null;
         break;
@@ -202,6 +204,7 @@ class ThaskCard extends HTMLElement {
         break;
       case "options":
         this._overdueMode = event.overdue_in_today || "section";
+        this._options = event;
         break;
       case "change":
         if (event.kind === "task") {
@@ -267,7 +270,10 @@ class ThaskCard extends HTMLElement {
 
   _visible(view, skip = null) {
     if (!this._loaded) return { open: [], done: [] };
-    const ctx = { today: this._today, overdueMode: this._overdueMode, importantRange: readStorage(RANGE_STORAGE_KEY) || "all" };
+    const ctx = {
+      today: this._today, overdueMode: this._overdueMode, importantRange: readStorage(RANGE_STORAGE_KEY) || "all",
+      separateWeek: !!this._options.separate_week, separateMonth: !!this._options.separate_month,
+    };
     const minPriority = Number(this._config.min_priority) || 0;
     const tasks = [...this._tasks.values()].filter((task) =>
       (view.type === "list" ? task.list_id === view.listId : matchesSmart(task, view.key, ctx))

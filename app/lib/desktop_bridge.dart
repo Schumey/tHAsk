@@ -13,9 +13,9 @@ import 'store.dart';
 /// Kanal zum Windows-Runner (`runner/flutter_window.cpp`): Zähler an der Taskleiste, Fenster nach vorn holen.
 const _taskbar = MethodChannel('thask/taskbar');
 
-/// Zähler an der Taskleiste: offene Aufgaben, die bis heute fällig sind (auch Überfälliges).
+/// Zähler an der Taskleiste: offene Aufgaben in „Heute“, Überfälliges eingeschlossen.
 int taskbarCount(ThaskStore store) =>
-    [for (final list in store.lists) ...store.tasksOf(list.id)].where((t) => !t.completed && t.inToday(store.today)).length;
+    [for (final list in store.lists) ...store.tasksOf(list.id)].where((t) => !t.completed && store.inTodayView(t)).length;
 
 /// Windows: zeigt Erinnerungen als Benachrichtigung und die Zahl der heute fälligen Aufgaben an der Taskleiste.
 class DesktopBridge {

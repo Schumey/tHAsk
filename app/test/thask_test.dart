@@ -492,6 +492,35 @@ void main() {
       expect(ViewRef.fromId('overdue'), isA<OverdueView>());
     });
 
+    test('Optionen der Integration: Heute, Woche und Monat getrennt', () async {
+      // Heute ist Samstag, der 31. Oktober: Der Oktober endet heute, KW 44 morgen.
+      await signIn();
+      connection.emit({
+        ..._snapshot,
+        'tasks': [
+          {'id': 'alt', 'list_id': 'l1', 'title': 'Alt', 'due': {'granularity': 'day', 'start': '2026-10-29'}},
+          {'id': 'heute', 'list_id': 'l1', 'title': 'Heute', 'due': {'granularity': 'day', 'start': '2026-10-31'}},
+          {'id': 'oktober', 'list_id': 'l1', 'title': 'Oktober', 'due': {'granularity': 'month', 'start': '2026-10-01'}},
+          {'id': 'sonntag', 'list_id': 'l1', 'title': 'Sonntag', 'due': {'granularity': 'day', 'start': '2026-11-01'}},
+          {'id': 'kw44', 'list_id': 'l1', 'title': 'KW 44', 'due': {'granularity': 'week', 'start': '2026-10-26'}},
+        ],
+      });
+      await Future<void>.delayed(Duration.zero);
+      Set<String> ids(List<Task> tasks) => {for (final t in tasks) t.id};
+      expect(ids(store.dueToday), {'alt', 'heute', 'oktober'});
+      expect(ids(store.thisWeek), {'alt', 'heute', 'oktober', 'sonntag', 'kw44'});
+      expect(ids(store.thisMonth), {'alt', 'heute', 'oktober'});
+      expect(taskbarCount(store), 3);
+
+      connection.emit({'type': 'options', 'overdue_in_today': 'section', 'separate_week': true, 'separate_month': true});
+      await Future<void>.delayed(Duration.zero);
+      expect(ids(store.dueToday), {'alt', 'heute'});
+      expect(ids(store.thisWeek), {'oktober', 'sonntag', 'kw44'});
+      // Der Monat endet vor der Woche, getrennt bleibt nichts übrig.
+      expect(ids(store.thisMonth), isEmpty);
+      expect(taskbarCount(store), 2);
+    });
+
     test('Erinnerungen der Integration kommen als Stream, ohne die Daten zu ändern', () async {
       await signIn();
       final reminders = <Task>[];
