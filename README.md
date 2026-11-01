@@ -50,7 +50,7 @@ Beim ersten Start wird die Liste „Aufgaben“ angelegt. Für ein Update den Or
 
 ### Optionen
 
-In der Weboberfläche unter **Einstellungen** (unten in der Seitenleiste, nur für Administratoren) oder in Home Assistant unter Einstellungen → Geräte & Dienste → tHAsk → **Konfigurieren**. Änderungen wirken ohne Neustart, auch in den Apps.
+In der Weboberfläche unter **Einstellungen** (unten in der Seitenleiste), in der App im Menü oben rechts unter **Einstellungen** (beides nur für Administratoren und mit Verbindung) oder in Home Assistant unter Einstellungen → Geräte & Dienste → tHAsk → **Konfigurieren**. Änderungen wirken ohne Neustart, auch in den Apps.
 
 - **Überfällige Aufgaben in „Heute“**: oben als eigener, zuklappbarer Abschnitt (Standard), zwischen den heutigen oder nicht in „Heute“, sondern in einer eigenen Ansicht „Überfällig“. Gilt für Weboberfläche, Karte, Apps, Widget und `todo.thask_mein_tag`.
 - **„Diese Woche“**: die Kalenderwoche (Montag bis Sonntag, Standard) oder heute und die nächsten 7 Tage. Mit den 7 Tagen steht am Sonntag schon die kommende Woche darin, auch ein Zeitraum wie „KW 45“. Gilt auch für `todo.thask_diese_woche`.

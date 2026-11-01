@@ -5,6 +5,7 @@ import 'l10n.dart';
 import 'list_dialogs.dart';
 import 'models.dart';
 import 'priority.dart';
+import 'settings_screen.dart';
 import 'store.dart';
 import 'task_detail_screen.dart';
 import 'views.dart';
@@ -203,6 +204,8 @@ class _HomeScreenState extends State<HomeScreen> {
             onSelected: (value) {
               if (value == 'logout') {
                 store.logout();
+              } else if (value == 'settings') {
+                Navigator.push(context, MaterialPageRoute<void>(builder: (_) => SettingsScreen(store: store)));
               } else if (list != null) {
                 _listMenu(value, list);
               }
@@ -219,6 +222,11 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const PopupMenuDivider(),
               ],
+              PopupMenuItem(
+                value: 'settings',
+                enabled: store.connection == LinkState.connected,
+                child: Text(tr('settings')),
+              ),
               PopupMenuItem(value: 'logout', child: Text(tr('logout'))),
             ],
           ),

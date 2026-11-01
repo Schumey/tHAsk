@@ -536,6 +536,23 @@ void main() {
       expect(views.whereType<ThisWeekView>(), hasLength(1));
     });
 
+    test('Einstellungen: Optionen laden und ändern', () async {
+      await signIn();
+      connection.results['thask/options/get'] = {
+        'options': {'week_mode': 'calendar', 'hidden_views': <String>[]},
+        'notify_services': ['persistent_notification'],
+      };
+      connection.results['thask/options/update'] = {
+        'options': {'week_mode': 'rolling', 'hidden_views': <String>[]},
+      };
+      final loaded = await store.loadOptions();
+      expect(loaded['notify_services'], ['persistent_notification']);
+      final options = await store.updateOptions({'week_mode': 'rolling'});
+      expect(options['week_mode'], 'rolling');
+      expect(connection.calls.last.$1, 'thask/options/update');
+      expect(connection.calls.last.$2, {'week_mode': 'rolling'});
+    });
+
     test('Erinnerungen der Integration kommen als Stream, ohne die Daten zu ändern', () async {
       await signIn();
       final reminders = <Task>[];

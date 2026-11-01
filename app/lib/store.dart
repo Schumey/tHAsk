@@ -672,6 +672,18 @@ class ThaskStore extends ChangeNotifier {
 
   Future<void> clearCompleted(String listId) => _call('thask/list/clear_completed', {'list_id': listId});
 
+  // -- Optionen der Integration (nur mit Verbindung und für Administratoren) ---
+
+  /// Alle Optionen und die Benachrichtigungsdienste: `{options: {...}, notify_services: [...]}`.
+  Future<Map<String, dynamic>> loadOptions() async =>
+      Map<String, dynamic>.from(await _call('thask/options/get', {}) as Map);
+
+  /// Optionen ändern; liefert alle Optionen danach. Die Ansichten folgen über das Abo (Ereignis `options`).
+  Future<Map<String, dynamic>> updateOptions(Map<String, dynamic> patch) async {
+    final result = await _call('thask/options/update', patch) as Map;
+    return Map<String, dynamic>.from(result['options'] as Map);
+  }
+
   // -- Listen (nur mit Verbindung) ---------------------------------------------
 
   /// Vorhandene Listengruppen, alphabetisch.
