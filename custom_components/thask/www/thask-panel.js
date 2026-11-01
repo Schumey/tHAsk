@@ -76,6 +76,117 @@ const STRINGS = {
     fired_none: "No trigger fired", fired_n: "{0} task(s) added", missing_fields: "Enter a name, a title and the entity or time of each condition",
     is_on: "on", by_hand: "by hand",
   },
+  nl: {
+    my_day: "Vandaag", important: "Belangrijk", planned: "Gepland", this_week: "Deze week",
+    lists: "Lijsten", add_task: "Taak toevoegen", quick_hint: "bijv. „Banden wisselen volgende maand !”",
+    new_list: "Nieuwe lijst", completed: "Voltooid", steps: "Stappen", add_step: "Volgende stap",
+    range: "Periode", range_all: "Alle", range_week: "Tot eind van de week", range_month: "Tot eind van de maand",
+    range_quarter: "Tot eind van het kwartaal", range_year: "Tot eind van het jaar",
+    due: "Te doen", none: "Geen", day: "Dag", week: "Week", month: "Maand", quarter: "Kwartaal", year: "Jaar",
+    time: "Tijd", reminder: "Herinnering", recurrence: "Herhalen", every: "elke", notes: "Notities",
+    notes_hint: "Notitie toevoegen", list: "Lijst", delete: "Verwijderen", rename: "Hernoemen", group: "Groep",
+    delete_task_confirm: "Taak „{0}” verwijderen?", delete_list_confirm: "Lijst „{0}” met alle taken verwijderen?",
+    no_group: "Geen groep", new_group: "Nieuwe groep …", group_name: "Groepsnaam", created: "Gemaakt", overdue: "Te laat",
+    search: "Zoeken", search_results: "Zoekresultaten", later: "Later", this_month: "Deze maand", empty: "Geen taken", today: "Vandaag", tomorrow: "Morgen",
+    next_week: "Volgende week", next_month: "Volgende maand", steps_of: "{0} van {1}",
+    rec_day: "Dagelijks", rec_week: "Wekelijks", rec_month: "Maandelijks", rec_quarter: "Elk kwartaal", rec_year: "Jaarlijks",
+    rec_every: "Elke {0} {1}", units_day: "dagen", units_week: "weken", units_month: "maanden",
+    units_quarter: "kwartalen", units_year: "jaren", close: "Sluiten", on_weekdays: "Op", back: "Terug", loading: "Laden …",
+    not_loaded: "tHAsk is niet geladen. Is de integratie ingesteld?",
+    kind_due: "Te doen", kind_time: "Tijd", kind_recurrence: "Herhalen", kind_priority: "Prioriteit",
+    ignore: "Niet herkennen", priority: "Prioriteit", priority_0: "Geen", priority_1: "Laag", priority_2: "Gemiddeld", priority_3: "Hoog", complete: "Voltooid", week_short: "Week",
+    sort: "Sorteren", sort_manual: "Handmatig", sort_priority: "Prioriteit", sort_due: "Vervaldatum",
+    sort_title: "Alfabetisch", sort_created: "Aanmaakdatum", clear_completed: "Voltooide verwijderen",
+    clear_confirm: "{0} voltooide taak/taken definitief uit „{1}” verwijderen?", cleared: "{0} voltooide taak/taken verwijderd",
+    triggers: "Triggers", new_trigger: "Nieuwe trigger", check_now: "Nu controleren", name: "Naam", when: "Als", then: "Dan",
+    cond_state: "Status van een entiteit", cond_calendar: "Agenda-afspraak", cond_time: "Tijdstip", entity: "Entiteit",
+    state_is: "Status", state_hint: "leeg = on / home; >20 of <5 voor getallen", title_contains: "Titel bevat (leeg = elke afspraak)",
+    from_time: "vanaf", negate: "omkeren (NIET)", hold_minutes: "gedurende minuten", part_any: "elke dag van de afspraak",
+    part_start: "alleen de eerste dag", part_end: "alleen de laatste dag", add_condition: "Nog een voorwaarde", combine_and: "alle (EN)",
+    combine_or: "minstens één (OF)", window: "Alleen tussen", days_ahead: "Aanmaken tot dagen vooraf", days_ahead_hint: "0 = op de dag van de afspraak, 1 = de dag ervoor, 7 = een week ervoor", task_title: "Titel van de taak",
+    placeholders: "Plaatshouders: {afspraak}, {datum}, {weekdag}, {toestand}", due_today: "Vandaag", due_day: "Dag (van de afspraak)",
+    due_day_before: "Dag ervoor (van de afspraak)", due_week: "Week (van de afspraak)", due_month: "Maand (van de afspraak)", save: "Opslaan", test: "Testen", run_now: "Nu uitvoeren",
+    paused_until: "Gepauzeerd tot", paused_until_x: "gepauzeerd tot {0}", history: "Geschiedenis", undo: "Ongedaan maken", undone: "ongedaan gemaakt",
+    no_triggers: "Nog geen triggers. Een trigger voegt één keer per dag een taak toe als er iets in Home Assistant geldt, bijv. een afspraak morgen in de agenda.",
+    last_check: "Laatst gecontroleerd {0}", test_met: "Geldt nu", test_not_met: "Geldt nu niet", enabled: "Actief",
+    delete_trigger_confirm: "Trigger „{0}” verwijderen?", for_day: "voor {0}", task_created: "Taak „{0}” toegevoegd",
+    fired_none: "Geen trigger uitgevoerd", fired_n: "{0} taak/taken toegevoegd", missing_fields: "Vul een naam, een titel en de entiteit of tijd van elke voorwaarde in",
+    is_on: "aan", by_hand: "handmatig",
+  },
+  fr: {
+    my_day: "Aujourd'hui", important: "Important", planned: "Planifié", this_week: "Cette semaine",
+    lists: "Listes", add_task: "Ajouter une tâche", quick_hint: "p. ex. « Changer les pneus le mois prochain ! »",
+    new_list: "Nouvelle liste", completed: "Terminées", steps: "Étapes", add_step: "Étape suivante",
+    range: "Période", range_all: "Toutes", range_week: "D'ici la fin de la semaine", range_month: "D'ici la fin du mois",
+    range_quarter: "D'ici la fin du trimestre", range_year: "D'ici la fin de l'année",
+    due: "Échéance", none: "Aucune", day: "Jour", week: "Semaine", month: "Mois", quarter: "Trimestre", year: "Année",
+    time: "Heure", reminder: "Rappel", recurrence: "Répéter", every: "tous les", notes: "Notes",
+    notes_hint: "Ajouter une note", list: "Liste", delete: "Supprimer", rename: "Renommer", group: "Groupe",
+    delete_task_confirm: "Supprimer la tâche « {0} » ?", delete_list_confirm: "Supprimer la liste « {0} » et toutes ses tâches ?",
+    no_group: "Aucun groupe", new_group: "Nouveau groupe …", group_name: "Nom du groupe", created: "Créée le", overdue: "En retard",
+    search: "Rechercher", search_results: "Résultats de recherche", later: "Plus tard", this_month: "Ce mois-ci", empty: "Aucune tâche", today: "Aujourd'hui", tomorrow: "Demain",
+    next_week: "La semaine prochaine", next_month: "Le mois prochain", steps_of: "{0} sur {1}",
+    rec_day: "Tous les jours", rec_week: "Toutes les semaines", rec_month: "Tous les mois", rec_quarter: "Tous les trimestres", rec_year: "Tous les ans",
+    rec_every: "Tous les {0} {1}", units_day: "jours", units_week: "semaines", units_month: "mois",
+    units_quarter: "trimestres", units_year: "ans", close: "Fermer", on_weekdays: "Le", back: "Retour", loading: "Chargement …",
+    not_loaded: "tHAsk n'est pas chargé. L'intégration est-elle configurée ?",
+    kind_due: "Échéance", kind_time: "Heure", kind_recurrence: "Répéter", kind_priority: "Priorité",
+    ignore: "Ne pas reconnaître", priority: "Priorité", priority_0: "Aucune", priority_1: "Basse", priority_2: "Moyenne", priority_3: "Haute", complete: "Terminée", week_short: "Sem.",
+    sort: "Trier", sort_manual: "Manuel", sort_priority: "Priorité", sort_due: "Échéance",
+    sort_title: "Alphabétique", sort_created: "Date de création", clear_completed: "Supprimer les terminées",
+    clear_confirm: "Supprimer définitivement {0} tâche(s) terminée(s) de « {1} » ?", cleared: "{0} tâche(s) terminée(s) supprimée(s)",
+    triggers: "Déclencheurs", new_trigger: "Nouveau déclencheur", check_now: "Vérifier maintenant", name: "Nom", when: "Quand", then: "Alors",
+    cond_state: "État d'une entité", cond_calendar: "Événement d'agenda", cond_time: "Heure", entity: "Entité",
+    state_is: "État", state_hint: "vide = on / home ; >20 ou <5 pour les nombres", title_contains: "Le titre contient (vide = tout événement)",
+    from_time: "à partir de", negate: "inverser (NON)", hold_minutes: "depuis minutes", part_any: "chaque jour de l'événement",
+    part_start: "premier jour seulement", part_end: "dernier jour seulement", add_condition: "Autre condition", combine_and: "toutes (ET)",
+    combine_or: "au moins une (OU)", window: "Seulement entre", days_ahead: "Créer jusqu'à jours avant", days_ahead_hint: "0 = le jour de l'événement, 1 = la veille, 7 = une semaine avant", task_title: "Titre de la tâche",
+    placeholders: "Variables : {evenement}, {date}, {jour}, {etat}", due_today: "Aujourd'hui", due_day: "Jour (de l'événement)",
+    due_day_before: "Veille (de l'événement)", due_week: "Semaine (de l'événement)", due_month: "Mois (de l'événement)", save: "Enregistrer", test: "Tester", run_now: "Exécuter maintenant",
+    paused_until: "En pause jusqu'au", paused_until_x: "en pause jusqu'au {0}", history: "Historique", undo: "Annuler", undone: "annulé",
+    no_triggers: "Aucun déclencheur. Un déclencheur ajoute une tâche une fois par jour quand une condition est remplie dans Home Assistant, p. ex. un événement demain dans l'agenda.",
+    last_check: "Dernière vérification {0}", test_met: "Remplie maintenant", test_not_met: "Non remplie maintenant", enabled: "Actif",
+    delete_trigger_confirm: "Supprimer le déclencheur « {0} » ?", for_day: "pour {0}", task_created: "Tâche « {0} » ajoutée",
+    fired_none: "Aucun déclencheur exécuté", fired_n: "{0} tâche(s) ajoutée(s)", missing_fields: "Indiquez un nom, un titre et l'entité ou l'heure de chaque condition",
+    is_on: "activé", by_hand: "manuellement",
+  },
+  es: {
+    my_day: "Hoy", important: "Importante", planned: "Planificado", this_week: "Esta semana",
+    lists: "Listas", add_task: "Añadir una tarea", quick_hint: "p. ej. «Cambiar neumáticos el próximo mes !»",
+    new_list: "Nueva lista", completed: "Completadas", steps: "Pasos", add_step: "Siguiente paso",
+    range: "Periodo", range_all: "Todas", range_week: "Hasta el final de la semana", range_month: "Hasta el final del mes",
+    range_quarter: "Hasta el final del trimestre", range_year: "Hasta el final del año",
+    due: "Vencimiento", none: "Ninguno", day: "Día", week: "Semana", month: "Mes", quarter: "Trimestre", year: "Año",
+    time: "Hora", reminder: "Recordatorio", recurrence: "Repetir", every: "cada", notes: "Notas",
+    notes_hint: "Añadir una nota", list: "Lista", delete: "Eliminar", rename: "Cambiar nombre", group: "Grupo",
+    delete_task_confirm: "¿Eliminar la tarea «{0}»?", delete_list_confirm: "¿Eliminar la lista «{0}» con todas sus tareas?",
+    no_group: "Sin grupo", new_group: "Nuevo grupo …", group_name: "Nombre del grupo", created: "Creada", overdue: "Vencidas",
+    search: "Buscar", search_results: "Resultados de búsqueda", later: "Más tarde", this_month: "Este mes", empty: "No hay tareas", today: "Hoy", tomorrow: "Mañana",
+    next_week: "La próxima semana", next_month: "El próximo mes", steps_of: "{0} de {1}",
+    rec_day: "Diariamente", rec_week: "Semanalmente", rec_month: "Mensualmente", rec_quarter: "Trimestralmente", rec_year: "Anualmente",
+    rec_every: "Cada {0} {1}", units_day: "días", units_week: "semanas", units_month: "meses",
+    units_quarter: "trimestres", units_year: "años", close: "Cerrar", on_weekdays: "Los", back: "Atrás", loading: "Cargando …",
+    not_loaded: "tHAsk no está cargado. ¿Está configurada la integración?",
+    kind_due: "Vencimiento", kind_time: "Hora", kind_recurrence: "Repetir", kind_priority: "Prioridad",
+    ignore: "No reconocer", priority: "Prioridad", priority_0: "Ninguna", priority_1: "Baja", priority_2: "Media", priority_3: "Alta", complete: "Completada", week_short: "Sem.",
+    sort: "Ordenar", sort_manual: "Manual", sort_priority: "Prioridad", sort_due: "Vencimiento",
+    sort_title: "Alfabético", sort_created: "Fecha de creación", clear_completed: "Eliminar completadas",
+    clear_confirm: "¿Eliminar definitivamente {0} tarea(s) completada(s) de «{1}»?", cleared: "{0} tarea(s) completada(s) eliminada(s)",
+    triggers: "Disparadores", new_trigger: "Nuevo disparador", check_now: "Comprobar ahora", name: "Nombre", when: "Cuando", then: "Entonces",
+    cond_state: "Estado de una entidad", cond_calendar: "Evento del calendario", cond_time: "Hora del día", entity: "Entidad",
+    state_is: "Estado", state_hint: "vacío = on / home; >20 o <5 para números", title_contains: "El título contiene (vacío = cualquier evento)",
+    from_time: "desde", negate: "invertir (NO)", hold_minutes: "durante minutos", part_any: "cada día del evento",
+    part_start: "solo el primer día", part_end: "solo el último día", add_condition: "Otra condición", combine_and: "todas (Y)",
+    combine_or: "al menos una (O)", window: "Solo entre", days_ahead: "Crear hasta días antes", days_ahead_hint: "0 = el día del evento, 1 = el día anterior, 7 = una semana antes", task_title: "Título de la tarea",
+    placeholders: "Variables: {evento}, {fecha}, {dia}, {estado}", due_today: "Hoy", due_day: "Día (del evento)",
+    due_day_before: "Día anterior (al evento)", due_week: "Semana (del evento)", due_month: "Mes (del evento)", save: "Guardar", test: "Probar", run_now: "Ejecutar ahora",
+    paused_until: "En pausa hasta", paused_until_x: "en pausa hasta {0}", history: "Historial", undo: "Deshacer", undone: "deshecho",
+    no_triggers: "Aún no hay disparadores. Un disparador añade una tarea una vez al día cuando algo se cumple en Home Assistant, p. ej. un evento mañana en el calendario.",
+    last_check: "Última comprobación {0}", test_met: "Se cumple ahora", test_not_met: "No se cumple ahora", enabled: "Activo",
+    delete_trigger_confirm: "¿Eliminar el disparador «{0}»?", for_day: "para {0}", task_created: "Tarea «{0}» añadida",
+    fired_none: "Ningún disparador ejecutado", fired_n: "{0} tarea(s) añadida(s)", missing_fields: "Introduce un nombre, un título y la entidad o la hora de cada condición",
+    is_on: "encendido", by_hand: "a mano",
+  },
 };
 
 const TASK_SORTS = ["manual", "priority", "due", "title", "created"];
@@ -90,7 +201,7 @@ const {
   MONTHS, MONTHS_SHORT, WEEKDAYS_SHORT, GRANULARITIES, pad, toISO, parseISO, addDays,
   addMonths, weekdayIndex, periodStart, periodEnd, isoWeek, makePeriod, shiftPeriod, periodEndOf,
   periodStatus, periodLabel, periodRange, sortTasks, esc, dueBy, completedSince, isOverdue,
-  matchesSmart, sortByDue, splitDone,
+  matchesSmart, sortByDue, splitDone, language, dateLocale,
 } = await import(`./thask-common.js?v=${VERSION}`);
 
 const CONDITION_KINDS = ["state", "calendar", "time"];
@@ -164,7 +275,8 @@ class ThaskPanel extends HTMLElement {
     this._hass = hass;
     if (this._menuButton) this._menuButton.hass = hass;
     if (first) {
-      this._lang = (hass.language || "en").startsWith("de") ? "de" : "en";
+      this._lang = language(hass.language);
+      this._locale = dateLocale(hass.language);
       this._buildSkeleton();
       this._subscribe();
     }
@@ -177,7 +289,7 @@ class ThaskPanel extends HTMLElement {
   }
 
   t(key, ...args) {
-    let text = STRINGS[this._lang][key] ?? key;
+    let text = STRINGS[this._lang][key] ?? STRINGS.en[key] ?? key;
     args.forEach((arg, index) => (text = text.replace(`{${index}}`, arg)));
     return text;
   }
@@ -504,7 +616,7 @@ class ThaskPanel extends HTMLElement {
         <button class="icon-button" data-action="list-delete" title="${esc(this.t("delete"))}"><ha-icon icon="mdi:delete-outline"></ha-icon></button>`;
     } else {
       const sub = this._view.key === "my_day" && !this._search.trim()
-        ? `<span class="subtitle">${esc(this._today.toLocaleDateString(this._lang === "de" ? "de-DE" : "en-GB", { weekday: "long", day: "numeric", month: "long" }))}</span>`
+        ? `<span class="subtitle">${esc(this._today.toLocaleDateString(this._locale, { weekday: "long", day: "numeric", month: "long" }))}</span>`
         : "";
       title.innerHTML = `${esc(this._viewTitle())}${sub}`;
       root.querySelector(".view-actions").innerHTML = this._view.key === "important" && !this._search.trim()
@@ -639,7 +751,7 @@ class ThaskPanel extends HTMLElement {
     }
     const describe = (token) => {
       switch (token.kind) {
-        case "due": return parsed.due_label + (parsed.due && parsed.due.granularity !== "day" ? ` (${periodRange(parsed.due, this._lang)})` : "");
+        case "due": return parsed.due_label + (parsed.due && parsed.due.granularity !== "day" ? ` (${periodRange(parsed.due, this._locale)})` : "");
         case "time": return parsed.due_time;
         case "recurrence": return this._recurrenceLabel(parsed.recurrence);
         default: return "";
@@ -690,7 +802,7 @@ class ThaskPanel extends HTMLElement {
       dueEditor = `
         <div class="stepper">
           <button class="icon-button" data-action="due-shift" data-shift="-1"><ha-icon icon="mdi:chevron-left"></ha-icon></button>
-          <div class="stepper-label"><b>${esc(periodLabel(task.due, lang, this._today))}</b><span>${esc(periodRange(task.due, lang))}</span></div>
+          <div class="stepper-label"><b>${esc(periodLabel(task.due, lang, this._today))}</b><span>${esc(periodRange(task.due, this._locale))}</span></div>
           <button class="icon-button" data-action="due-shift" data-shift="1"><ha-icon icon="mdi:chevron-right"></ha-icon></button>
         </div>`;
     }
@@ -766,7 +878,7 @@ class ThaskPanel extends HTMLElement {
         <textarea class="notes" data-field="notes" rows="5" placeholder="${esc(this.t("notes_hint"))}">${esc(task.notes)}</textarea>
       </div>
       <div class="detail-footer">
-        <span class="muted">${esc(this.t("created"))} ${esc(new Date(task.created).toLocaleDateString(lang === "de" ? "de-DE" : "en-GB"))}</span>
+        <span class="muted">${esc(this.t("created"))} ${esc(new Date(task.created).toLocaleDateString(this._locale))}</span>
         <button class="icon-button danger" data-action="delete-task" title="${esc(this.t("delete"))}"><ha-icon icon="mdi:delete-outline"></ha-icon></button>
       </div>`;
     this._autosize(detail.querySelector(".title-input"));
@@ -918,7 +1030,7 @@ class ThaskPanel extends HTMLElement {
     if (!this._triggers.length) html += `<div class="empty">${esc(this.t("no_triggers"))}</div>`;
     const status = this._triggerStatus;
     if (status.last_check) {
-      const time = new Date(status.last_check).toLocaleTimeString(this._lang === "de" ? "de-DE" : "en-GB", { hour: "2-digit", minute: "2-digit" });
+      const time = new Date(status.last_check).toLocaleTimeString(this._locale, { hour: "2-digit", minute: "2-digit" });
       html += `<div class="muted status-line">${esc(this.t("last_check", time))}</div>`;
     }
     for (const error of status.errors || []) html += `<div class="error-line"><ha-icon icon="mdi:alert-outline"></ha-icon>${esc(error)}</div>`;

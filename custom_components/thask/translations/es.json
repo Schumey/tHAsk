@@ -1,0 +1,198 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "tHAsk",
+        "description": "¿Configurar tHAsk? Se creará una primera lista."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "tHAsk ya está configurado."
+    }
+  },
+  "entity": {
+    "todo": {
+      "my_day": {
+        "name": "Hoy"
+      },
+      "overdue": {
+        "name": "Vencidas"
+      },
+      "this_week": {
+        "name": "Esta semana"
+      }
+    }
+  },
+  "selector": {
+    "granularity": {
+      "options": {
+        "day": "Día",
+        "week": "Semana",
+        "month": "Mes",
+        "quarter": "Trimestre",
+        "year": "Año"
+      }
+    },
+    "due_filter": {
+      "options": {
+        "today": "Hasta hoy",
+        "this_week": "Hasta el final de esta semana",
+        "this_month": "Hasta el final de este mes",
+        "overdue": "Vencidas",
+        "all": "Todas"
+      }
+    },
+    "overdue_in_today": {
+      "options": {
+        "section": "Arriba, en una sección «Vencidas»",
+        "mixed": "Entre las tareas de hoy",
+        "separate": "No en «Hoy», sino en una vista propia «Vencidas»"
+      }
+    },
+    "import_format": {
+      "options": {
+        "auto": "Detectar automáticamente",
+        "todoist": "Todoist (CSV o ZIP de copia de seguridad)",
+        "google_tasks": "Google Tasks (Takeout, Tasks.json)",
+        "ticktick": "TickTick (copia de seguridad CSV)",
+        "csv": "CSV (genérico)",
+        "ical": "iCalendar (.ics, VTODO)"
+      }
+    }
+  },
+  "services": {
+    "add_task": {
+      "name": "Añadir tarea",
+      "description": "Añade una tarea, opcionalmente para un día o dentro de una semana, un mes, un trimestre o un año.",
+      "fields": {
+        "entity_id": {
+          "name": "Lista",
+          "description": "Lista (vacío = primera lista)"
+        },
+        "title": {
+          "name": "Título",
+          "description": "Título de la tarea."
+        },
+        "notes": {
+          "name": "Notas",
+          "description": "Notas de la tarea."
+        },
+        "due_granularity": {
+          "name": "Vence dentro de",
+          "description": "Precisión del vencimiento. Sin fecha se usa el periodo actual (p. ej. esta semana)."
+        },
+        "due_date": {
+          "name": "Fecha de vencimiento",
+          "description": "Cualquier día del periodo."
+        },
+        "priority": {
+          "name": "Prioridad",
+          "description": "0 = ninguna, 1 = baja, 2 = media, 3 = alta."
+        }
+      }
+    },
+    "get_tasks": {
+      "name": "Obtener tareas",
+      "description": "Devuelve tareas, p. ej. todo lo que vence hasta el final de esta semana.",
+      "fields": {
+        "entity_id": {
+          "name": "Lista",
+          "description": "Solo tareas de esta lista (vacío = todas)."
+        },
+        "due": {
+          "name": "Vencimiento",
+          "description": "Qué tareas devolver."
+        },
+        "include_completed": {
+          "name": "Incluir completadas",
+          "description": "Devolver también las tareas completadas."
+        }
+      }
+    },
+    "import_ms_todo": {
+      "name": "Importar desde MS To Do",
+      "description": "Importa un archivo creado con tools/ms_todo_export.py. Las tareas ya importadas se omiten. Solo para administradores.",
+      "fields": {
+        "file": {
+          "name": "Archivo",
+          "description": "Ruta relativa a la carpeta de configuración."
+        },
+        "dry_run": {
+          "name": "Solo probar",
+          "description": "Solo resumir, no cambiar nada."
+        },
+        "include_completed": {
+          "name": "Importar completadas",
+          "description": "Importar también las tareas completadas."
+        },
+        "skip_flagged_emails": {
+          "name": "Omitir correos marcados",
+          "description": "No importar la lista automática de correos marcados."
+        },
+        "convert_month_ends": {
+          "name": "Fin de mes → mes completo",
+          "description": "Las tareas que vencen el último día de un mes pasan a «vence en ese mes»."
+        },
+        "convert_sundays": {
+          "name": "Domingo → semana completa",
+          "description": "Las tareas que vencen en domingo pasan a «vence en esa semana»."
+        }
+      }
+    },
+    "import_tasks": {
+      "name": "Importar tareas",
+      "description": "Importa tareas desde Todoist, Google Tasks, TickTick o un archivo CSV o iCalendar. Las tareas ya importadas se omiten. Solo para administradores.",
+      "fields": {
+        "file": {
+          "name": "Archivo",
+          "description": "Ruta relativa a la carpeta de configuración, p. ej. todoist.zip, Tasks.json o tareas.csv."
+        },
+        "format": {
+          "name": "Formato",
+          "description": "Formato del archivo; normalmente basta con la detección automática."
+        },
+        "list": {
+          "name": "En la lista",
+          "description": "Importar todo en esta lista (se crea si hace falta). Vacío: listas como en el archivo, o una lista con el nombre del archivo."
+        },
+        "dry_run": {
+          "name": "Solo probar",
+          "description": "Solo resumir, no cambiar nada."
+        },
+        "include_completed": {
+          "name": "Importar completadas",
+          "description": "Importar también las tareas completadas."
+        }
+      }
+    },
+    "clear_completed": {
+      "name": "Eliminar completadas",
+      "description": "Elimina las tareas completadas de una lista o de todas, opcionalmente solo las más antiguas.",
+      "fields": {
+        "entity_id": {
+          "name": "Lista",
+          "description": "Solo esta lista (vacío = todas las listas)."
+        },
+        "older_than_days": {
+          "name": "Más antiguas que (días)",
+          "description": "Solo tareas completadas hace más de este número de días."
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Opciones de tHAsk",
+        "data": {
+          "overdue_in_today": "Tareas vencidas en «Hoy»",
+          "reminder_targets": "Enviar recordatorios a"
+        },
+        "data_description": {
+          "overdue_in_today": "Se aplica a la interfaz web, la app, el widget y la lista «Hoy» en Home Assistant.",
+          "reminder_targets": "Servicios de notificación (notify.…) que reciben los recordatorios, p. ej. la app Companion de tu móvil (con un botón «Hecho») o persistent_notification para la campana de Home Assistant. La app de Windows muestra los recordatorios por sí misma mientras está abierta."
+        }
+      }
+    }
+  }
+}

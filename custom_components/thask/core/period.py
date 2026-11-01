@@ -27,6 +27,15 @@ class PeriodStatus(StrEnum):
     UPCOMING = "upcoming"
 
 
+LANGUAGES = ("de", "en", "nl", "fr", "es")
+
+
+def language(lang: str | None) -> str:
+    """The supported language for a Home Assistant language code ("de-CH" -> "de"); English otherwise."""
+    code = (lang or "en").split("-")[0].lower()
+    return code if code in LANGUAGES else "en"
+
+
 _MONTHS = {
     "de": [
         "Januar", "Februar", "März", "April", "Mai", "Juni",
@@ -36,15 +45,42 @@ _MONTHS = {
         "January", "February", "March", "April", "May", "June",
         "July", "August", "September", "October", "November", "December",
     ],
+    "nl": [
+        "januari", "februari", "maart", "april", "mei", "juni",
+        "juli", "augustus", "september", "oktober", "november", "december",
+    ],
+    "fr": [
+        "janvier", "février", "mars", "avril", "mai", "juin",
+        "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+    ],
+    "es": [
+        "enero", "febrero", "marzo", "abril", "mayo", "junio",
+        "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+    ],
 }
 _MONTHS_SHORT = {
     "de": ["Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sep.", "Okt.", "Nov.", "Dez."],
     "en": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    "nl": ["jan.", "feb.", "mrt.", "apr.", "mei", "jun.", "jul.", "aug.", "sep.", "okt.", "nov.", "dec."],
+    "fr": ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."],
+    "es": ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sept", "oct", "nov", "dic"],
 }
 _WEEKDAYS_SHORT = {
     "de": ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
     "en": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    "nl": ["ma", "di", "wo", "do", "vr", "za", "zo"],
+    "fr": ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."],
+    "es": ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"],
 }
+# Day label ("Mo, 5. Nov.") and calendar week label per language.
+_DAY_FORMAT = {
+    "de": "{weekday}, {day}. {month}",
+    "en": "{weekday}, {month} {day}",
+    "nl": "{weekday} {day} {month}",
+    "fr": "{weekday} {day} {month}",
+    "es": "{weekday}, {day} {month}",
+}
+_WEEK_FORMAT = {"de": "KW {week}", "en": "Week {week}", "nl": "Week {week}", "fr": "Semaine {week}", "es": "Semana {week}"}
 
 
 def add_months(day: date, months: int) -> date:
@@ -146,17 +182,17 @@ class Period:
 
     def label(self, lang: str = "de", today: date | None = None) -> str:
         """Human readable label, e.g. "KW 46", "November", "Q4 2026". The year is omitted when it is today's."""
-        lang = "de" if lang.startswith("de") else "en"
+        lang = language(lang)
         start = self.start
         match self.granularity:
             case Granularity.DAY:
                 weekday = _WEEKDAYS_SHORT[lang][start.weekday()]
                 month = _MONTHS_SHORT[lang][start.month - 1]
-                text = f"{weekday}, {start.day}. {month}" if lang == "de" else f"{weekday}, {month} {start.day}"
+                text = _DAY_FORMAT[lang].format(weekday=weekday, day=start.day, month=month)
                 year = start.year
             case Granularity.WEEK:
                 year, week, _ = start.isocalendar()
-                text = f"KW {week}" if lang == "de" else f"Week {week}"
+                text = _WEEK_FORMAT[lang].format(week=week)
             case Granularity.MONTH:
                 text, year = _MONTHS[lang][start.month - 1], start.year
             case Granularity.QUARTER:

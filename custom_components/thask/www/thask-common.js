@@ -1,14 +1,44 @@
 // Shared by the tHAsk panel and the dashboard card: dates, periods and the smart views.
 
+export const LANGUAGES = ["de", "en", "nl", "fr", "es"];
+// The supported language for a Home Assistant language code ("de-CH" -> "de"); English otherwise.
+export const language = (code) => {
+  const lang = (code || "en").split("-")[0].toLowerCase();
+  return LANGUAGES.includes(lang) ? lang : "en";
+};
+// Locale for dates; the full code keeps regional formats ("en-US" vs "en-GB").
+export const dateLocale = (code) => (!code || code === "en" ? "en-GB" : code);
+
 export const MONTHS = {
   de: ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"],
   en: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+  nl: ["januari", "februari", "maart", "april", "mei", "juni", "juli", "augustus", "september", "oktober", "november", "december"],
+  fr: ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"],
+  es: ["enero", "febrero", "marzo", "abril", "mayo", "junio", "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre"],
 };
 export const MONTHS_SHORT = {
   de: ["Jan.", "Feb.", "März", "Apr.", "Mai", "Juni", "Juli", "Aug.", "Sep.", "Okt.", "Nov.", "Dez."],
   en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+  nl: ["jan.", "feb.", "mrt.", "apr.", "mei", "jun.", "jul.", "aug.", "sep.", "okt.", "nov.", "dec."],
+  fr: ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."],
+  es: ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sept", "oct", "nov", "dic"],
 };
-export const WEEKDAYS_SHORT = { de: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"], en: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] };
+export const WEEKDAYS_SHORT = {
+  de: ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"],
+  en: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+  nl: ["ma", "di", "wo", "do", "vr", "za", "zo"],
+  fr: ["lun.", "mar.", "mer.", "jeu.", "ven.", "sam.", "dim."],
+  es: ["lun", "mar", "mié", "jue", "vie", "sáb", "dom"],
+};
+// Same formats as core/period.py.
+const DAY_FORMAT = {
+  de: (w, d, m) => `${w}, ${d}. ${m}`,
+  en: (w, d, m) => `${w}, ${m} ${d}`,
+  nl: (w, d, m) => `${w} ${d} ${m}`,
+  fr: (w, d, m) => `${w} ${d} ${m}`,
+  es: (w, d, m) => `${w}, ${d} ${m}`,
+};
+const WEEK_LABEL = { de: "KW", en: "Week", nl: "Week", fr: "Semaine", es: "Semana" };
 export const GRANULARITIES = ["day", "week", "month", "quarter", "year"];
 
 // ---- Dates and periods (same rules as core/period.py) ------------------------------------
@@ -86,13 +116,13 @@ export function periodLabel(period, lang, today) {
     case "day": {
       const weekday = WEEKDAYS_SHORT[lang][weekdayIndex(start)];
       const month = MONTHS_SHORT[lang][start.getMonth()];
-      text = lang === "de" ? `${weekday}, ${start.getDate()}. ${month}` : `${weekday}, ${month} ${start.getDate()}`;
+      text = DAY_FORMAT[lang](weekday, start.getDate(), month);
       break;
     }
     case "week": {
       const [weekYear, week] = isoWeek(start);
       year = weekYear;
-      text = lang === "de" ? `KW ${week}` : `Week ${week}`;
+      text = `${WEEK_LABEL[lang]} ${week}`;
       break;
     }
     case "month":
@@ -107,11 +137,11 @@ export function periodLabel(period, lang, today) {
   return year === today.getFullYear() ? text : `${text} ${year}`;
 }
 
-export function periodRange(period, lang) {
+export function periodRange(period, locale) {
   if (period.granularity === "day") return "";
   const start = parseISO(period.start);
   const end = periodEndOf(period);
-  const fmt = (d) => d.toLocaleDateString(lang === "de" ? "de-DE" : "en-GB", { day: "numeric", month: "short" });
+  const fmt = (d) => d.toLocaleDateString(locale === "de" ? "de-DE" : locale === "en" ? "en-GB" : locale, { day: "numeric", month: "short" });
   return `${fmt(start)} – ${fmt(end)}`;
 }
 

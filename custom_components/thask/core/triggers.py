@@ -19,7 +19,7 @@ from typing import Any, Literal, Protocol
 
 from .collection import NotFoundError, TaskCollection
 from .models import new_id, utc_now_iso
-from .period import Granularity, Period
+from .period import Granularity, Period, language
 
 DATA_VERSION = 1
 CONDITION_KINDS = ("state", "calendar", "time")
@@ -34,6 +34,9 @@ _COMPARISON = re.compile(r"^\s*(<=|>=|<|>)\s*(-?\d+(?:[.,]\d+)?)\s*$")
 _WEEKDAYS = {
     "de": ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"],
     "en": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+    "nl": ["maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag", "zondag"],
+    "fr": ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"],
+    "es": ["lunes", "martes", "miércoles", "jueves", "viernes", "sábado", "domingo"],
 }
 
 
@@ -355,14 +358,19 @@ class Evaluator:
 
 
 def render_title(template: str, match: Match | None, day: date, lang: str, today: date) -> str:
-    lang = "de" if lang.startswith("de") else "en"
+    lang = language(lang)
     values = {
         "event": match.event.summary if match and match.event else "",
         "date": Period.day(day).label(lang, today),
         "weekday": _WEEKDAYS[lang][day.weekday()],
         "state": match.state if match and match.state is not None else "",
     }
-    aliases = {"termin": "event", "datum": "date", "wochentag": "weekday", "zustand": "state"}
+    aliases = {
+        "termin": "event", "datum": "date", "wochentag": "weekday", "zustand": "state",
+        "afspraak": "event", "weekdag": "weekday", "toestand": "state",
+        "evenement": "event", "jour": "weekday", "etat": "state",
+        "evento": "event", "fecha": "date", "dia": "weekday", "estado": "state",
+    }
 
     def replace(found: re.Match[str]) -> str:
         name = found[1].lower()

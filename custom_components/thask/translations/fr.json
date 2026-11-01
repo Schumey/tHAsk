@@ -1,0 +1,198 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "tHAsk",
+        "description": "Configurer tHAsk ? Une première liste sera créée."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "tHAsk est déjà configuré."
+    }
+  },
+  "entity": {
+    "todo": {
+      "my_day": {
+        "name": "Aujourd'hui"
+      },
+      "overdue": {
+        "name": "En retard"
+      },
+      "this_week": {
+        "name": "Cette semaine"
+      }
+    }
+  },
+  "selector": {
+    "granularity": {
+      "options": {
+        "day": "Jour",
+        "week": "Semaine",
+        "month": "Mois",
+        "quarter": "Trimestre",
+        "year": "Année"
+      }
+    },
+    "due_filter": {
+      "options": {
+        "today": "Jusqu'à aujourd'hui",
+        "this_week": "D'ici la fin de la semaine",
+        "this_month": "D'ici la fin du mois",
+        "overdue": "En retard",
+        "all": "Toutes"
+      }
+    },
+    "overdue_in_today": {
+      "options": {
+        "section": "En haut, dans une section « En retard »",
+        "mixed": "Parmi les tâches du jour",
+        "separate": "Pas dans « Aujourd'hui », mais dans une vue « En retard » à part"
+      }
+    },
+    "import_format": {
+      "options": {
+        "auto": "Détecter automatiquement",
+        "todoist": "Todoist (CSV ou ZIP de sauvegarde)",
+        "google_tasks": "Google Tasks (Takeout, Tasks.json)",
+        "ticktick": "TickTick (sauvegarde CSV)",
+        "csv": "CSV (générique)",
+        "ical": "iCalendar (.ics, VTODO)"
+      }
+    }
+  },
+  "services": {
+    "add_task": {
+      "name": "Ajouter une tâche",
+      "description": "Ajoute une tâche, éventuellement à faire un jour donné ou dans une semaine, un mois, un trimestre ou une année.",
+      "fields": {
+        "entity_id": {
+          "name": "Liste",
+          "description": "Liste (vide = première liste)"
+        },
+        "title": {
+          "name": "Titre",
+          "description": "Titre de la tâche."
+        },
+        "notes": {
+          "name": "Notes",
+          "description": "Notes de la tâche."
+        },
+        "due_granularity": {
+          "name": "À faire dans",
+          "description": "Précision de l'échéance. Sans date, la période en cours est utilisée (p. ex. cette semaine)."
+        },
+        "due_date": {
+          "name": "Échéance",
+          "description": "N'importe quel jour de la période."
+        },
+        "priority": {
+          "name": "Priorité",
+          "description": "0 = aucune, 1 = basse, 2 = moyenne, 3 = haute."
+        }
+      }
+    },
+    "get_tasks": {
+      "name": "Obtenir les tâches",
+      "description": "Renvoie des tâches, p. ex. tout ce qui est à faire d'ici la fin de la semaine.",
+      "fields": {
+        "entity_id": {
+          "name": "Liste",
+          "description": "Seulement les tâches de cette liste (vide = toutes)."
+        },
+        "due": {
+          "name": "Échéance",
+          "description": "Quelles tâches renvoyer."
+        },
+        "include_completed": {
+          "name": "Inclure les terminées",
+          "description": "Renvoyer aussi les tâches terminées."
+        }
+      }
+    },
+    "import_ms_todo": {
+      "name": "Importer depuis MS To Do",
+      "description": "Importe un fichier créé avec tools/ms_todo_export.py. Les tâches déjà importées sont ignorées. Réservé aux administrateurs.",
+      "fields": {
+        "file": {
+          "name": "Fichier",
+          "description": "Chemin relatif au dossier de configuration."
+        },
+        "dry_run": {
+          "name": "Test uniquement",
+          "description": "Seulement résumer, ne rien modifier."
+        },
+        "include_completed": {
+          "name": "Importer les terminées",
+          "description": "Reprendre aussi les tâches terminées."
+        },
+        "skip_flagged_emails": {
+          "name": "Ignorer les e-mails marqués",
+          "description": "Ne pas importer la liste automatique des e-mails marqués d'un indicateur."
+        },
+        "convert_month_ends": {
+          "name": "Fin de mois → mois entier",
+          "description": "Les tâches à faire le dernier jour d'un mois deviennent « à faire dans ce mois »."
+        },
+        "convert_sundays": {
+          "name": "Dimanche → semaine entière",
+          "description": "Les tâches à faire un dimanche deviennent « à faire dans cette semaine »."
+        }
+      }
+    },
+    "import_tasks": {
+      "name": "Importer des tâches",
+      "description": "Importe des tâches depuis Todoist, Google Tasks, TickTick, un fichier CSV ou iCalendar. Les tâches déjà importées sont ignorées. Réservé aux administrateurs.",
+      "fields": {
+        "file": {
+          "name": "Fichier",
+          "description": "Chemin relatif au dossier de configuration, p. ex. todoist.zip, Tasks.json ou taches.csv."
+        },
+        "format": {
+          "name": "Format",
+          "description": "Format du fichier ; la détection automatique suffit généralement."
+        },
+        "list": {
+          "name": "Dans la liste",
+          "description": "Tout importer dans cette liste (créée si nécessaire). Vide : listes comme dans le fichier, ou une liste portant le nom du fichier."
+        },
+        "dry_run": {
+          "name": "Test uniquement",
+          "description": "Seulement résumer, ne rien modifier."
+        },
+        "include_completed": {
+          "name": "Importer les terminées",
+          "description": "Reprendre aussi les tâches terminées."
+        }
+      }
+    },
+    "clear_completed": {
+      "name": "Supprimer les terminées",
+      "description": "Supprime les tâches terminées d'une liste ou de toutes les listes, éventuellement seulement les plus anciennes.",
+      "fields": {
+        "entity_id": {
+          "name": "Liste",
+          "description": "Seulement cette liste (vide = toutes les listes)."
+        },
+        "older_than_days": {
+          "name": "Plus anciennes que (jours)",
+          "description": "Seulement les tâches terminées depuis plus de ce nombre de jours."
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Options de tHAsk",
+        "data": {
+          "overdue_in_today": "Tâches en retard dans « Aujourd'hui »",
+          "reminder_targets": "Envoyer les rappels à"
+        },
+        "data_description": {
+          "overdue_in_today": "S'applique à l'interface web, à l'application, au widget et à la liste « Aujourd'hui » dans Home Assistant.",
+          "reminder_targets": "Services de notification (notify.…) qui reçoivent les rappels, p. ex. l'application Companion sur votre téléphone (avec un bouton « Terminé ») ou persistent_notification pour la cloche de Home Assistant. L'application Windows affiche elle-même les rappels tant qu'elle est ouverte."
+        }
+      }
+    }
+  }
+}

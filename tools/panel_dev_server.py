@@ -80,7 +80,8 @@ PAGE = """<!doctype html>
   // A few entities for the trigger form.
   const state = (entity_id, value, friendly_name) => ({ entity_id, state: value, attributes: { friendly_name } });
   window.fakeHass = {
-    language: "de",
+    // ?lang=fr shows another language.
+    language: new URLSearchParams(location.search).get("lang") || "de",
     user: { is_admin: true },
     states: Object.fromEntries([
       state("calendar.arbeit", "off", "Arbeit"),
@@ -302,9 +303,10 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self) -> None:
-        if self.path in ("/", "/index.html"):
+        path = self.path.split("?")[0]
+        if path in ("/", "/index.html"):
             self._send(200, PAGE.replace("__VERSION__", VERSION).encode(), "text/html; charset=utf-8")
-        elif self.path in ("/card", "/card.html"):
+        elif path in ("/card", "/card.html"):
             self._send(200, CARD_PAGE.replace("__VERSION__", VERSION).encode(), "text/html; charset=utf-8")
         elif self.path.startswith("/thask_static/") and (
             file := INTEGRATION / "www" / self.path.split("?")[0].removeprefix("/thask_static/")

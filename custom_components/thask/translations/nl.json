@@ -1,0 +1,198 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "tHAsk",
+        "description": "tHAsk instellen? Er wordt een eerste lijst aangemaakt."
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "tHAsk is al ingesteld."
+    }
+  },
+  "entity": {
+    "todo": {
+      "my_day": {
+        "name": "Vandaag"
+      },
+      "overdue": {
+        "name": "Te laat"
+      },
+      "this_week": {
+        "name": "Deze week"
+      }
+    }
+  },
+  "selector": {
+    "granularity": {
+      "options": {
+        "day": "Dag",
+        "week": "Week",
+        "month": "Maand",
+        "quarter": "Kwartaal",
+        "year": "Jaar"
+      }
+    },
+    "due_filter": {
+      "options": {
+        "today": "Tot vandaag",
+        "this_week": "Tot eind deze week",
+        "this_month": "Tot eind deze maand",
+        "overdue": "Te laat",
+        "all": "Alle"
+      }
+    },
+    "overdue_in_today": {
+      "options": {
+        "section": "Bovenaan in een sectie „Te laat”",
+        "mixed": "Tussen de taken van vandaag",
+        "separate": "Niet in „Vandaag”, maar in een eigen weergave „Te laat”"
+      }
+    },
+    "import_format": {
+      "options": {
+        "auto": "Automatisch herkennen",
+        "todoist": "Todoist (CSV of back-up-ZIP)",
+        "google_tasks": "Google Tasks (Takeout, Tasks.json)",
+        "ticktick": "TickTick (CSV-back-up)",
+        "csv": "CSV (algemeen)",
+        "ical": "iCalendar (.ics, VTODO)"
+      }
+    }
+  },
+  "services": {
+    "add_task": {
+      "name": "Taak toevoegen",
+      "description": "Voegt een taak toe, optioneel te doen op een dag of binnen een week, maand, kwartaal of jaar.",
+      "fields": {
+        "entity_id": {
+          "name": "Lijst",
+          "description": "Lijst (leeg = eerste lijst)"
+        },
+        "title": {
+          "name": "Titel",
+          "description": "Titel van de taak."
+        },
+        "notes": {
+          "name": "Notities",
+          "description": "Notities bij de taak."
+        },
+        "due_granularity": {
+          "name": "Te doen binnen",
+          "description": "Nauwkeurigheid van de vervaldatum. Zonder datum geldt de huidige periode (bijv. deze week)."
+        },
+        "due_date": {
+          "name": "Vervaldatum",
+          "description": "Een willekeurige dag binnen de periode."
+        },
+        "priority": {
+          "name": "Prioriteit",
+          "description": "0 = geen, 1 = laag, 2 = gemiddeld, 3 = hoog."
+        }
+      }
+    },
+    "get_tasks": {
+      "name": "Taken ophalen",
+      "description": "Geeft taken terug, bijv. alles wat uiterlijk eind deze week moet.",
+      "fields": {
+        "entity_id": {
+          "name": "Lijst",
+          "description": "Alleen taken van deze lijst (leeg = alle)."
+        },
+        "due": {
+          "name": "Te doen",
+          "description": "Welke taken worden teruggegeven."
+        },
+        "include_completed": {
+          "name": "Inclusief voltooide",
+          "description": "Ook voltooide taken teruggeven."
+        }
+      }
+    },
+    "import_ms_todo": {
+      "name": "Importeren uit MS To Do",
+      "description": "Importeert een bestand dat met tools/ms_todo_export.py is gemaakt. Eerder geïmporteerde taken worden overgeslagen. Alleen voor beheerders.",
+      "fields": {
+        "file": {
+          "name": "Bestand",
+          "description": "Pad relatief aan de configuratiemap."
+        },
+        "dry_run": {
+          "name": "Alleen testen",
+          "description": "Alleen samenvatten, niets wijzigen."
+        },
+        "include_completed": {
+          "name": "Voltooide importeren",
+          "description": "Ook voltooide taken overnemen."
+        },
+        "skip_flagged_emails": {
+          "name": "Gemarkeerde e-mails overslaan",
+          "description": "De automatische lijst met gemarkeerde e-mails niet importeren."
+        },
+        "convert_month_ends": {
+          "name": "Einde maand → hele maand",
+          "description": "Taken die op de laatste dag van een maand moeten, worden „te doen in die maand”."
+        },
+        "convert_sundays": {
+          "name": "Zondag → hele week",
+          "description": "Taken die op een zondag moeten, worden „te doen in die week”."
+        }
+      }
+    },
+    "import_tasks": {
+      "name": "Taken importeren",
+      "description": "Importeert taken uit Todoist, Google Tasks, TickTick, een CSV- of iCalendar-bestand. Eerder geïmporteerde taken worden overgeslagen. Alleen voor beheerders.",
+      "fields": {
+        "file": {
+          "name": "Bestand",
+          "description": "Pad relatief aan de configuratiemap, bijv. todoist.zip, Tasks.json of taken.csv."
+        },
+        "format": {
+          "name": "Formaat",
+          "description": "Formaat van het bestand; automatisch herkennen volstaat meestal."
+        },
+        "list": {
+          "name": "In lijst",
+          "description": "Alles in deze lijst importeren (wordt zo nodig aangemaakt). Leeg: lijsten zoals in het bestand, of één lijst met de bestandsnaam."
+        },
+        "dry_run": {
+          "name": "Alleen testen",
+          "description": "Alleen samenvatten, niets wijzigen."
+        },
+        "include_completed": {
+          "name": "Voltooide importeren",
+          "description": "Ook voltooide taken overnemen."
+        }
+      }
+    },
+    "clear_completed": {
+      "name": "Voltooide verwijderen",
+      "description": "Verwijdert voltooide taken van één lijst of alle lijsten, optioneel alleen oudere.",
+      "fields": {
+        "entity_id": {
+          "name": "Lijst",
+          "description": "Alleen deze lijst (leeg = alle lijsten)."
+        },
+        "older_than_days": {
+          "name": "Ouder dan (dagen)",
+          "description": "Alleen taken die meer dan zoveel dagen geleden zijn voltooid."
+        }
+      }
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "tHAsk-opties",
+        "data": {
+          "overdue_in_today": "Te late taken in „Vandaag”",
+          "reminder_targets": "Herinneringen sturen naar"
+        },
+        "data_description": {
+          "overdue_in_today": "Geldt voor de webinterface, de app, de widget en de lijst „Vandaag” in Home Assistant.",
+          "reminder_targets": "Meldingsdiensten (notify.…) die herinneringen krijgen, bijv. de Companion-app op je telefoon (met een knop „Klaar”) of persistent_notification voor de bel in Home Assistant. De Windows-app toont herinneringen zelf zolang hij draait."
+        }
+      }
+    }
+  }
+}

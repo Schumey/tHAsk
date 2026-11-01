@@ -43,9 +43,18 @@ from .const import (
 )
 from .core.collection import Change, TaskCollection
 from .core.models import Task
-from .core.period import Period
+from .core.period import Period, language
 from .core.triggers import Evaluator, Match, TriggerBook, TriggerRun
 from .trigger_source import HassSource
+
+# The few texts the integration writes itself, by language.
+_TEXTS = {
+    "de": {"default_list": "Aufgaben", "reminder": "Erinnerung", "done": "Erledigt"},
+    "en": {"default_list": "Tasks", "reminder": "Reminder", "done": "Done"},
+    "nl": {"default_list": "Taken", "reminder": "Herinnering", "done": "Klaar"},
+    "fr": {"default_list": "Tâches", "reminder": "Rappel", "done": "Terminé"},
+    "es": {"default_list": "Tareas", "reminder": "Recordatorio", "done": "Hecho"},
+}
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -98,13 +107,16 @@ class ThaskData:
     def language(self) -> str:
         return self.hass.config.language or "en"
 
+    def text(self, key: str) -> str:
+        return _TEXTS[language(self.language)][key]
+
     async def async_start(self) -> None:
         if data := await self._store.async_load():
             self.collection.load(data)
         if self._migrate_my_day():
             await self._store.async_save(self.collection.dump())
         if not self.collection.lists:
-            self.collection.create_list("Aufgaben" if self.language.startswith("de") else "Tasks")
+            self.collection.create_list(self.text("default_list"))
             await self._store.async_save(self.collection.dump())
         self._unsubs.append(self.collection.subscribe(self._on_change))
         self._unsubs.append(
@@ -254,7 +266,7 @@ class ThaskData:
         details = [part for part in (info["list_name"], info["due_label"]) if part]
         service_data: dict[str, Any] = {
             "title": task.title,
-            "message": " · ".join(details) or ("Erinnerung" if self.language.startswith("de") else "Reminder"),
+            "message": " · ".join(details) or self.text("reminder"),
         }
         if target.startswith("mobile_app_"):
             service_data["data"] = {
@@ -263,7 +275,7 @@ class ThaskData:
                 "actions": [
                     {
                         "action": f"{NOTIFY_ACTION_DONE}{task.id}",
-                        "title": "Erledigt" if self.language.startswith("de") else "Done",
+                        "title": self.text("done"),
                     }
                 ],
             }

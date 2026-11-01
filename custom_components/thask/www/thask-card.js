@@ -6,7 +6,7 @@ const VERSION = new URL(import.meta.url).searchParams.get("v") || "";
 await import(`./thask-icons.js?v=${VERSION}`);
 const {
   parseISO, periodStart, periodEnd, periodEndOf, periodStatus, periodLabel, makePeriod, sortTasks, esc,
-  isOverdue, matchesSmart, sortByDue, splitDone,
+  isOverdue, matchesSmart, sortByDue, splitDone, language,
 } = await import(`./thask-common.js?v=${VERSION}`);
 
 const STRINGS = {
@@ -37,6 +37,45 @@ const STRINGS = {
     priority_0: "All", priority_1: "Low", priority_2: "Medium", priority_3: "High",
     card_description: "A tHAsk view or list with fuzzy due dates, quick add and steps.",
   },
+  nl: {
+    my_day: "Vandaag", overdue: "Te laat", important: "Belangrijk", planned: "Gepland", this_week: "Deze week",
+    this_month: "Deze maand", later: "Later", today: "Vandaag", tomorrow: "Morgen", empty: "Geen taken",
+    completed: "Voltooid", add_task: "Taak toevoegen", more: "nog {0}", loading: "Laden …",
+    not_loaded: "tHAsk is niet geladen", unknown_list: "Onbekende lijst", open_panel: "Openen in tHAsk",
+    complete: "Voltooid", add_step: "Stap toevoegen",
+    views: "Weergaven (een of meer)", tabs: "Als tabbladen in plaats van onder elkaar",
+    hide_duplicates: "Elke taak maar één keer tonen", title: "Titel (leeg = naam van de weergave)", show_entry: "Snel toevoegen",
+    show_completed: "Voltooide tonen", show_list: "Lijst bij elke taak tonen",
+    min_priority: "Minstens prioriteit", max_items: "Hoogstens zoveel taken (0 = alle)", compact: "Compact",
+    priority_0: "Alle", priority_1: "Laag", priority_2: "Gemiddeld", priority_3: "Hoog",
+    card_description: "Een tHAsk-weergave of -lijst met vage vervaldatums, snel toevoegen en stappen.",
+  },
+  fr: {
+    my_day: "Aujourd'hui", overdue: "En retard", important: "Important", planned: "Planifié", this_week: "Cette semaine",
+    this_month: "Ce mois-ci", later: "Plus tard", today: "Aujourd'hui", tomorrow: "Demain", empty: "Aucune tâche",
+    completed: "Terminées", add_task: "Ajouter une tâche", more: "{0} de plus", loading: "Chargement …",
+    not_loaded: "tHAsk n'est pas chargé", unknown_list: "Liste inconnue", open_panel: "Ouvrir dans tHAsk",
+    complete: "Terminée", add_step: "Ajouter une étape",
+    views: "Vues (une ou plusieurs)", tabs: "En onglets plutôt que l'une sous l'autre",
+    hide_duplicates: "Afficher chaque tâche une seule fois", title: "Titre (vide = nom de la vue)", show_entry: "Saisie rapide",
+    show_completed: "Afficher les terminées", show_list: "Afficher la liste de chaque tâche",
+    min_priority: "Priorité minimale", max_items: "Au plus ce nombre de tâches (0 = toutes)", compact: "Compact",
+    priority_0: "Toutes", priority_1: "Basse", priority_2: "Moyenne", priority_3: "Haute",
+    card_description: "Une vue ou une liste tHAsk avec échéances souples, saisie rapide et étapes.",
+  },
+  es: {
+    my_day: "Hoy", overdue: "Vencidas", important: "Importante", planned: "Planificado", this_week: "Esta semana",
+    this_month: "Este mes", later: "Más tarde", today: "Hoy", tomorrow: "Mañana", empty: "No hay tareas",
+    completed: "Completadas", add_task: "Añadir una tarea", more: "{0} más", loading: "Cargando …",
+    not_loaded: "tHAsk no está cargado", unknown_list: "Lista desconocida", open_panel: "Abrir en tHAsk",
+    complete: "Completada", add_step: "Añadir un paso",
+    views: "Vistas (una o varias)", tabs: "En pestañas en lugar de una debajo de otra",
+    hide_duplicates: "Mostrar cada tarea solo una vez", title: "Título (vacío = nombre de la vista)", show_entry: "Entrada rápida",
+    show_completed: "Mostrar completadas", show_list: "Mostrar la lista de cada tarea",
+    min_priority: "Prioridad mínima", max_items: "Como máximo tantas tareas (0 = todas)", compact: "Compacto",
+    priority_0: "Todas", priority_1: "Baja", priority_2: "Media", priority_3: "Alta",
+    card_description: "Una vista o lista de tHAsk con vencimientos flexibles, entrada rápida y pasos.",
+  },
 };
 
 const SMART_VIEWS = ["my_day", "overdue", "important", "planned", "this_week", "this_month"];
@@ -54,7 +93,7 @@ const parseView = (id) => (id.startsWith("list:") ? { id, type: "list", listId: 
 const OVERDUE_COLLAPSED_KEY = "thask.overdueCollapsed";
 const RANGE_STORAGE_KEY = "thask.importantRange";
 
-const lang = (hass) => (hass?.language || "en").startsWith("de") ? "de" : "en";
+const lang = (hass) => language(hass?.language);
 const translate = (hass, key, ...args) => {
   const text = STRINGS[lang(hass)][key] ?? STRINGS.en[key] ?? key;
   return args.reduce((s, a, i) => s.replace(`{${i}}`, a), text);
