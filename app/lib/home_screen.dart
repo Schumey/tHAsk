@@ -513,7 +513,6 @@ class _TaskTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final overdue = task.isOverdue(store.today);
     final due = task.due;
     final dueText = due == null ? null : '${due.label(store.today)}${task.dueTime != null ? ', ${task.dueTime}' : ''}';
     final steps = task.steps.isEmpty ? null : '${task.steps.where((s) => s.completed).length}/${task.steps.length}';
@@ -545,14 +544,61 @@ class _TaskTile extends StatelessWidget {
             ? null
             : Wrap(
                 spacing: 12,
+                runSpacing: 4,
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  if (dueText != null)
-                    Text(dueText, style: TextStyle(color: overdue ? theme.colorScheme.error : null)),
+                  if (dueText != null) DueChip(task: task, today: store.today, text: dueText),
                   if (task.recurrence != null) const Icon(Icons.repeat, size: 14),
                   if (steps != null) Text(steps),
                 ],
               ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Fälligkeit als Pille. Zeiträume (Woche, Monat, Quartal, Jahr) laufen rechts aus, ein fester Tag nicht:
+/// So ist die Unschärfe der Fälligkeit zu sehen. Überfälliges ist rot, was heute endet, blau.
+class DueChip extends StatelessWidget {
+  const DueChip({super.key, required this.task, required this.today, required this.text});
+
+  final Task task;
+  final DateTime today;
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final due = task.due!;
+    final overdue = task.isOverdue(today);
+    final endsToday = !task.completed && due.end == dateOnly(today);
+    final (background, foreground) = overdue
+        ? (scheme.errorContainer, scheme.onErrorContainer)
+        : endsToday
+            ? (scheme.primaryContainer, scheme.onPrimaryContainer)
+            : (scheme.surfaceContainerHighest, scheme.onSurfaceVariant);
+    final fuzzy = due.granularity != Granularity.day;
+    return Semantics(
+      label: '${fuzzy ? 'Fällig im Zeitraum' : 'Fällig'} $text${overdue ? ', überfällig' : ''}',
+      excludeSemantics: true,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: fuzzy ? null : background,
+          gradient: fuzzy
+              ? LinearGradient(
+                  colors: [background, background, background.withValues(alpha: 0)],
+                  stops: const [0, 0.62, 1],
+                )
+              : null,
+        ),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(8, 2, fuzzy ? 20 : 8, 2),
+          child: Text(
+            text,
+            style: Theme.of(context).textTheme.labelMedium?.copyWith(color: foreground),
+          ),
         ),
       ),
     );

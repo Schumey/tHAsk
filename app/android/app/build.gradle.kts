@@ -30,6 +30,15 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        // Gemeinsamer Debug-Schlüssel aus dem privaten Begleit-Repo (local/), damit `adb install -r` von jedem
+        // PC aus ein Update ist. Fehlt er, nimmt Gradle den Schlüssel des PCs.
+        getByName("debug") {
+            val shared = rootProject.file("../../local/android/debug.keystore")
+            if (shared.exists()) storeFile = shared
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.

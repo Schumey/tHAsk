@@ -381,6 +381,8 @@ void main() {
       expect(list.map((t) => (t as Map)['title']), ['Steuer']);
       expect((list.single as Map)['due'], 'KW 44');
       expect((list.single as Map)['overdue'], isFalse);
+      expect((list.single as Map)['fuzzy'], isTrue);
+      expect((views['list:l1'] as Map)['count'], 1);
       expect(ViewRef.fromId('list:l1'), isA<ListRef>());
       expect(ViewRef.fromId('gibt-es-nicht'), isA<TodayView>());
     });

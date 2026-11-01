@@ -22,7 +22,8 @@ class DesktopBridge {
 
   final ThaskStore store;
 
-  final _notifications = FlutterLocalNotificationsWindows();
+  /// Erst bei Bedarf anlegen: Der Konstruktor lädt eine Windows-DLL und würde auf Android abstürzen.
+  late final _notifications = FlutterLocalNotificationsWindows();
   StreamSubscription<Task>? _reminders;
   int? _count;
 
@@ -44,6 +45,7 @@ class DesktopBridge {
   }
 
   void dispose() {
+    if (!supported) return;
     _reminders?.cancel();
     store.removeListener(_updateCount);
     _notifications.dispose();

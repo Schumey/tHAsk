@@ -602,9 +602,9 @@ const STYLE = `
     --thask-muted: var(--secondary-text-color, #727272);
     --thask-accent: var(--primary-color, #03a9f4);
     --thask-danger: var(--error-color, #db4437);
-    --thask-prio-1: #43a047;
-    --thask-prio-2: #fdd835;
-    --thask-prio-3: #e53935;
+    --thask-prio-1: var(--success-color, #43a047);
+    --thask-prio-2: var(--warning-color, #ffa600);
+    --thask-prio-3: var(--error-color, #db4437);
   }
   ha-card { padding: 4px 0 8px; overflow: hidden; color: var(--primary-text-color); }
   button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
@@ -621,10 +621,10 @@ const STYLE = `
   .tab ha-icon { --mdc-icon-size: 18px; }
   .tab .name { flex: none; }
   .tab .count { font-size: 12px; }
-  .tab.on { background: var(--secondary-background-color, rgba(127,127,127,.12)); color: var(--primary-text-color); }
+  .tab.on { background: var(--secondary-background-color, color-mix(in srgb, var(--primary-text-color, #212121) 12%, transparent)); color: var(--primary-text-color); }
   .tab.on ha-icon { color: var(--thask-accent); }
   .entry { display: flex; align-items: center; gap: 8px; margin: 0 12px 6px 20px; padding: 0 10px; border-radius: 8px;
-    background: var(--secondary-background-color, rgba(127,127,127,.08)); }
+    background: var(--secondary-background-color, color-mix(in srgb, var(--primary-text-color, #212121) 8%, transparent)); }
   .entry[hidden] { display: none; }
   .entry ha-icon { --mdc-icon-size: 18px; color: var(--thask-muted); }
   .quick { flex: 1; min-width: 0; padding: 9px 0; border: 0; outline: none; background: transparent; color: var(--primary-text-color); font: inherit; }
@@ -659,7 +659,7 @@ const STYLE = `
   .details { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; cursor: default; }
   .step { display: flex; align-items: center; gap: 8px; font-size: 14px; }
   .step.completed span { text-decoration: line-through; color: var(--thask-muted); }
-  .step-input { border: 0; border-bottom: 1px solid var(--divider-color, rgba(127,127,127,.3)); background: transparent; color: var(--primary-text-color);
+  .step-input { border: 0; border-bottom: 1px solid var(--divider-color, color-mix(in srgb, var(--primary-text-color, #212121) 30%, transparent)); background: transparent; color: var(--primary-text-color);
     font: inherit; font-size: 14px; padding: 4px 0; outline: none; }
   .notes { font-size: 13px; color: var(--thask-muted); white-space: pre-wrap; }
   .more { display: block; padding: 6px 16px 6px 24px; font-size: 13px; color: var(--thask-accent); }

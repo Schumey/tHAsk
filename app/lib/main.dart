@@ -17,6 +17,20 @@ Future<void> main() async {
   runApp(ThaskApp(store: store, bridge: bridge));
 }
 
+/// Blau des Standard-Themes von Home Assistant (primary-color); auch im Symbol, im Widget und im Zähler
+/// der Taskleiste.
+const haBlue = Color(0xFF03A9F4);
+
+/// Farben aus dem HA-Blau. `fidelity` hält die Farbe näher am Original als die blassere Standard-Ableitung.
+ThemeData thaskTheme(Brightness brightness) => ThemeData(
+      useMaterial3: true,
+      colorScheme: ColorScheme.fromSeed(
+        seedColor: haBlue,
+        brightness: brightness,
+        dynamicSchemeVariant: DynamicSchemeVariant.fidelity,
+      ),
+    );
+
 class ThaskApp extends StatefulWidget {
   const ThaskApp({super.key, required this.store, this.bridge});
 
@@ -50,8 +64,8 @@ class _ThaskAppState extends State<ThaskApp> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'tHAsk',
-      theme: ThemeData(colorSchemeSeed: Colors.indigo, useMaterial3: true),
-      darkTheme: ThemeData(colorSchemeSeed: Colors.indigo, brightness: Brightness.dark, useMaterial3: true),
+      theme: thaskTheme(Brightness.light),
+      darkTheme: thaskTheme(Brightness.dark),
       home: ListenableBuilder(
         listenable: widget.store,
         builder: (context, _) {

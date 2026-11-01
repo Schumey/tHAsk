@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Erzeugt von tools/make_app_icon.py -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#FFC107" android:pathData="M38.25,37.5h6a3.75,3.75 0,0 1,0,7.5h-6a3.75,3.75 0,0 1,0,-7.5z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M38.25,50.25h19.5a3.75,3.75 0,0 1,0,7.5h-19.5a3.75,3.75 0,0 1,0,-7.5z" />
+    <path android:fillColor="#FFFFFF" android:fillAlpha="0.7" android:pathData="M38.25,63h33a3.75,3.75 0,0 1,0,7.5h-33a3.75,3.75 0,0 1,0,-7.5z" />
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="4.875" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M55.5,41.25L60,45.75L69.75,35.25" />
+</vector>

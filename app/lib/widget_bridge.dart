@@ -71,6 +71,7 @@ class WidgetBridge {
           {
             'id': view.id,
             'title': view.title(store),
+            'count': view.tasks(store).where((t) => !t.completed).length,
             'tasks': [
               for (final task in view.tasks(store).where((t) => !t.completed).take(maxWidgetTasks))
                 {
@@ -80,6 +81,9 @@ class WidgetBridge {
                       ? null
                       : '${task.due!.label(today)}${task.dueTime != null ? ', ${task.dueTime}' : ''}',
                   'overdue': task.isOverdue(today),
+                  // Fällig bis heute (blau) und Zeitraum statt festem Tag (Chip läuft aus).
+                  'today': task.due != null && task.due!.end == dateOnly(today),
+                  'fuzzy': task.due != null && task.due!.granularity != Granularity.day,
                   'priority': task.priority,
                 },
             ],

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Hintergründe der Fälligkeits-Chips im Widget. -->
+<resources>
+    <color name="widget_chip_neutral">#FF2E2E2E</color>
+    <color name="widget_chip_neutral_clear">#002E2E2E</color>
+    <color name="widget_chip_today">#FF0B3A55</color>
+    <color name="widget_chip_today_clear">#000B3A55</color>
+    <color name="widget_chip_overdue">#FF5A1D1A</color>
+    <color name="widget_chip_overdue_clear">#005A1D1A</color>
+</resources>

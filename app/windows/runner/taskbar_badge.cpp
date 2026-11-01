@@ -76,10 +76,10 @@ HICON TaskbarBadge::CreateIcon(int count) const {
   graphics.SetTextRenderingHint(Gdiplus::TextRenderingHintAntiAliasGridFit);
   graphics.Clear(Gdiplus::Color(0, 0, 0, 0));
 
-  // Indigo like the app's color scheme, with a white ring that separates it
-  // from the app icon underneath.
+  // A darker shade of the Home Assistant blue of the app icon, so the white
+  // digits stay readable, with a white ring that separates it from the app icon.
   Gdiplus::SolidBrush ring(Gdiplus::Color(255, 255, 255, 255));
-  Gdiplus::SolidBrush fill(Gdiplus::Color(255, 63, 81, 181));
+  Gdiplus::SolidBrush fill(Gdiplus::Color(255, 2, 119, 189));
   const Gdiplus::REAL border = size / 16.0f;
   graphics.FillEllipse(&ring, 0.0f, 0.0f, (Gdiplus::REAL)size, (Gdiplus::REAL)size);
   graphics.FillEllipse(&fill, border, border, size - 2 * border, size - 2 * border);
