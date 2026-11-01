@@ -198,6 +198,16 @@
           "description": "Only tasks completed more than this many days ago."
         }
       }
+    },
+    "install_sentences": {
+      "name": "Install Assist sentences",
+      "description": "Writes the sentences Assist listens to for tHAsk (\"What's due this week?\", \"New task taxes week 47\") to custom_sentences and reloads them. Admins only.",
+      "fields": {
+        "languages": {
+          "name": "Languages",
+          "description": "Write sentences for these languages."
+        }
+      }
     }
   },
   "options": {

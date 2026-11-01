@@ -198,6 +198,16 @@
           "description": "Seulement les tâches terminées depuis plus de ce nombre de jours."
         }
       }
+    },
+    "install_sentences": {
+      "name": "Installer les phrases Assist",
+      "description": "Écrit les phrases qu'Assist reconnaît pour tHAsk dans custom_sentences et les recharge (pour l'instant allemand et anglais). Réservé aux administrateurs.",
+      "fields": {
+        "languages": {
+          "name": "Langues",
+          "description": "Écrire les phrases pour ces langues."
+        }
+      }
     }
   },
   "options": {

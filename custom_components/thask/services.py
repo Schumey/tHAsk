@@ -17,6 +17,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
+from .core.assist import LANGUAGES as SENTENCE_LANGUAGES, sentences
 from .core.models import PRIORITIES, Task
 from .core.importers import FORMATS, merge_lists, read_export
 from .core.ms_todo import ImportOptions, ImportResult, import_export
@@ -29,6 +30,7 @@ SERVICE_GET_TASKS = "get_tasks"
 SERVICE_IMPORT_MS_TODO = "import_ms_todo"
 SERVICE_CLEAR_COMPLETED = "clear_completed"
 SERVICE_IMPORT_TASKS = "import_tasks"
+SERVICE_INSTALL_SENTENCES = "install_sentences"
 
 DUE_FILTERS = ["today", "this_week", "this_month", "overdue", "all"]
 
@@ -82,6 +84,33 @@ IMPORT_TASKS_SCHEMA = vol.Schema(
         vol.Optional("include_completed", default=True): cv.boolean,
     }
 )
+
+
+INSTALL_SENTENCES_SCHEMA = vol.Schema(
+    {
+        vol.Optional("languages", default=list(SENTENCE_LANGUAGES)): vol.All(
+            cv.ensure_list, [vol.In(SENTENCE_LANGUAGES)]
+        ),
+    }
+)
+
+
+def _write_sentences(config_dir: str, languages: list[str]) -> list[str]:
+    """Write `custom_sentences/<lang>/thask.yaml`; returns the paths."""
+    paths = []
+    for lang in languages:
+        path = Path(config_dir) / "custom_sentences" / lang / "thask.yaml"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(sentences(lang), encoding="utf-8")
+        paths.append(str(path))
+    return paths
+
+
+async def _require_admin(hass: HomeAssistant, call: ServiceCall) -> None:
+    if call.context.user_id:
+        user = await hass.auth.async_get_user(call.context.user_id)
+        if user is None or not user.is_admin:
+            raise Unauthorized(context=call.context)
 
 
 def _config_file(config_dir: str, file: str) -> Path:
@@ -174,10 +203,7 @@ def async_setup_services(hass: HomeAssistant) -> None:
         return {"removed": removed} if call.return_response else None
 
     async def import_ms_todo(call: ServiceCall) -> ServiceResponse:
-        if call.context.user_id:
-            user = await hass.auth.async_get_user(call.context.user_id)
-            if user is None or not user.is_admin:
-                raise Unauthorized(context=call.context)
+        await _require_admin(hass, call)
         data = async_get_data(hass)
         export = await hass.async_add_executor_job(_read_export, hass.config.config_dir, call.data["file"])
         options = ImportOptions(
@@ -193,10 +219,7 @@ def async_setup_services(hass: HomeAssistant) -> None:
         return result.as_dict()
 
     async def import_tasks(call: ServiceCall) -> ServiceResponse:
-        if call.context.user_id:
-            user = await hass.auth.async_get_user(call.context.user_id)
-            if user is None or not user.is_admin:
-                raise Unauthorized(context=call.context)
+        await _require_admin(hass, call)
         data = async_get_data(hass)
         path = _config_file(hass.config.config_dir, call.data["file"])
         content = await hass.async_add_executor_job(path.read_bytes)
@@ -237,6 +260,23 @@ def async_setup_services(hass: HomeAssistant) -> None:
         import_tasks,
         schema=IMPORT_TASKS_SCHEMA,
         supports_response=SupportsResponse.ONLY,
+    )
+    async def install_sentences(call: ServiceCall) -> ServiceResponse:
+        """Sentences for Assist; Home Assistant reads them only from the config directory."""
+        await _require_admin(hass, call)
+        paths = await hass.async_add_executor_job(
+            _write_sentences, hass.config.config_dir, call.data["languages"]
+        )
+        if hass.services.has_service("conversation", "reload"):
+            await hass.services.async_call("conversation", "reload", blocking=True)
+        return {"files": paths} if call.return_response else None
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_INSTALL_SENTENCES,
+        install_sentences,
+        schema=INSTALL_SENTENCES_SCHEMA,
+        supports_response=SupportsResponse.OPTIONAL,
     )
     hass.services.async_register(
         DOMAIN,

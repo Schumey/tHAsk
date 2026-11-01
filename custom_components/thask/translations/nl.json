@@ -198,6 +198,16 @@
           "description": "Alleen taken die meer dan zoveel dagen geleden zijn voltooid."
         }
       }
+    },
+    "install_sentences": {
+      "name": "Assist-zinnen installeren",
+      "description": "Schrijft de zinnen waarop Assist voor tHAsk luistert naar custom_sentences en laadt ze opnieuw (voorlopig Duits en Engels). Alleen voor beheerders.",
+      "fields": {
+        "languages": {
+          "name": "Talen",
+          "description": "Zinnen voor deze talen schrijven."
+        }
+      }
     }
   },
   "options": {

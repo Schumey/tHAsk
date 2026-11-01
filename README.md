@@ -23,6 +23,7 @@ Aktueller Stand: **0.9.1** (siehe [Releases](https://github.com/Schumey/tHAsk/re
 - **Schnelleingabe mit Erkennung**: „Steuer KW 47 !!!“, „Blumen gießen jeden Mi und Sa“, „Zahnarzt morgen um 9:30“ – auch auf Englisch, Niederländisch, Französisch und Spanisch („Dentist next Friday“, „Tandarts morgen om 9 uur“, „Impôts semaine 47“, „Leche mañana a las 9“).
 - **Sprachen**: Deutsch, Englisch, Niederländisch, Französisch und Spanisch. Weboberfläche und Karte folgen der Sprache in Home Assistant, die Apps der des Geräts.
 - **Erinnerungen** als Push (Companion-App, mit Knopf „Erledigt“), in der HA-Glocke und als Windows-Benachrichtigung.
+- **Sprachsteuerung** mit Assist: „Was ist diese Woche fällig?“, „Neue Aufgabe Steuer KW 47“.
 - **Trigger**: legen Aufgaben automatisch an, wenn in HA etwas zutrifft (z. B. ein Kalendertermin morgen).
 - **Import** aus Microsoft To Do, Todoist, Google Tasks, TickTick, iCalendar und CSV.
 
@@ -120,6 +121,22 @@ Eine Aufgabe kann eine Erinnerung mit Datum und Uhrzeit haben (im Detailbereich)
 
 Ohne Auswahl bei *Erinnerungen senden an* gibt es nur das Event und die Benachrichtigung der Windows-App.
 
+## Sprachsteuerung (Assist)
+
+tHAsk beantwortet Fragen und legt Aufgaben an, auf Deutsch und Englisch:
+
+| Satz | Antwort |
+|---|---|
+| „Was ist heute fällig?“, „Was steht diese Woche an?“, „Was muss ich diesen Monat erledigen?“ | „Diese Woche sind 3 Aufgaben fällig: Steuer, Müll und Reifen.“ (höchstens fünf Titel, der Rest wird gezählt) |
+| „Was ist überfällig?“ | die überfälligen Aufgaben |
+| „Neue Aufgabe Steuer KW 47“, „Notiere Milch auf die Liste Einkauf“, „Ich muss noch Reifen wechseln nächsten Monat“ | „Steuer steht auf Aufgaben, fällig KW 47.“ |
+
+Die Fragen nach heute, Woche und Monat zählen Überfälliges immer mit; „diese Woche“ folgt der Option *Diese Woche*. Beim Anlegen versteht tHAsk dieselben Angaben wie die Schnelleingabe (Fälligkeit, Uhrzeit, Wiederholung, `!`). Eine Liste lässt sich am Ende nennen („… auf die Liste Einkauf“, „… to my shopping list“), aber nur eine, die es gibt; sonst landet die Aufgabe in der ersten Liste.
+
+**Einrichten (einmalig):** Home Assistant liest die Sätze für Assist nur aus dem Konfigurationsordner, eine Integration kann sie nicht mitbringen. Deshalb unter *Entwicklerwerkzeuge → Aktionen* den Service `thask.install_sentences` ausführen. Er schreibt `custom_sentences/de/thask.yaml` und `custom_sentences/en/thask.yaml` und lädt sie neu, ohne Neustart. Nach Updates von tHAsk erneut ausführen, falls neue Sätze dazukommen.
+
+KI-Assistenten (z. B. ein LLM als Gesprächsagent mit Zugriff auf Home Assistant) brauchen die Sätze nicht: Sie sehen die beiden Befehle `ThaskDueTasks` und `ThaskAddTask` direkt.
+
 ## Trigger
 
 Ein Trigger legt **einmal pro Tag** automatisch eine Aufgabe an, wenn in Home Assistant etwas zutrifft. Beispiel: Steht morgen ein Termin „Frühschicht“ im Kalender, entsteht heute die Aufgabe „Frühschicht vorbereiten“. Die Integration prüft jede Minute.
@@ -164,6 +181,7 @@ Aufgaben aus Automationen legt man am einfachsten mit `todo.add_item` an, mit Ze
 - `thask.clear_completed` – erledigte Aufgaben einer Liste (oder aller Listen) löschen, optional nur ältere als `older_than_days`. Gut für eine nächtliche Aufräum-Automation.
 - `thask.import_ms_todo` – Import aus Microsoft To Do (siehe unten).
 - `thask.import_tasks` – Import aus Todoist, Google Tasks, TickTick, iCalendar und CSV (siehe unten).
+- `thask.install_sentences` – Sätze für Assist anlegen (siehe [Sprachsteuerung](#sprachsteuerung-assist)).
 
 ### Events
 

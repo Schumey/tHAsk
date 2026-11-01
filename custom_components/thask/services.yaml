@@ -133,3 +133,16 @@ import_ms_todo:
       default: false
       selector:
         boolean:
+
+install_sentences:
+  fields:
+    languages:
+      default:
+        - de
+        - en
+      selector:
+        select:
+          multiple: true
+          options:
+            - de
+            - en

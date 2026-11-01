@@ -198,6 +198,16 @@
           "description": "Solo tareas completadas hace más de este número de días."
         }
       }
+    },
+    "install_sentences": {
+      "name": "Instalar frases de Assist",
+      "description": "Escribe las frases que Assist reconoce para tHAsk en custom_sentences y las recarga (por ahora alemán e inglés). Solo administradores.",
+      "fields": {
+        "languages": {
+          "name": "Idiomas",
+          "description": "Escribir frases para estos idiomas."
+        }
+      }
     }
   },
   "options": {

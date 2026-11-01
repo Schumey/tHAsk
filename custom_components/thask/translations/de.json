@@ -198,6 +198,16 @@
           "description": "Nur Aufgaben, die vor mehr als so vielen Tagen erledigt wurden."
         }
       }
+    },
+    "install_sentences": {
+      "name": "Sätze für Assist anlegen",
+      "description": "Legt die Sätze, auf die Assist für tHAsk hört („Was ist diese Woche fällig?“, „Neue Aufgabe Steuer KW 47“), unter custom_sentences an und lädt sie neu. Nur für Administratoren.",
+      "fields": {
+        "languages": {
+          "name": "Sprachen",
+          "description": "Für diese Sprachen Sätze anlegen."
+        }
+      }
     }
   },
   "options": {
