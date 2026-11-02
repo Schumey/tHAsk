@@ -69,6 +69,7 @@
       "options": {
         "important": "Wichtig",
         "planned": "Geplant",
+        "day_view": "Tagesplan",
         "this_week": "Diese Woche",
         "this_month": "Diesen Monat"
       }

@@ -20,11 +20,13 @@ sealed class ViewRef {
         'important' => const ImportantView(),
         'planned' => const PlannedView(),
         'overdue' => const OverdueView(),
+        'day_view' => const DayPlanView(),
         _ when id.startsWith('list:') => ListRef(id.substring(5)),
         _ => const TodayView(),
       };
 
   /// Alle Ansichten, die es gerade gibt: zuerst die intelligenten, dann die eigenen Listen.
+  /// Ohne den Tagesplan, der seinen Tag erst in der App bekommt (für das Widget).
   static List<ViewRef> all(ThaskStore store) => [
         const TodayView(),
         if (store.overdueMode == 'separate') const OverdueView(),
@@ -94,6 +96,17 @@ class PlannedView extends ViewRef {
   String title(ThaskStore store) => tr('view_planned');
   @override
   List<Task> tasks(ThaskStore store) => store.planned;
+}
+
+/// Ein Tag, in der Kopfzeile gewählt, mit Vorschauen wiederkehrender Aufgaben.
+class DayPlanView extends ViewRef {
+  const DayPlanView();
+  @override
+  String get id => 'day_view';
+  @override
+  String title(ThaskStore store) => tr('view_day_view');
+  @override
+  List<Task> tasks(ThaskStore store) => store.dayPlan;
 }
 
 class ListRef extends ViewRef {

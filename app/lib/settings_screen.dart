@@ -134,7 +134,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       subtitle: Text(tr('opt_separate_month_hint')),
                     ),
                     _section(tr('opt_hidden_views')),
-                    for (final view in const ['important', 'planned', 'this_week', 'this_month'])
+                    for (final view in const ['important', 'planned', 'day_view', 'this_week', 'this_month'])
                       CheckboxListTile(
                         value: _list('hidden_views').contains(view),
                         onChanged: (on) => _toggleIn('hidden_views', view, on ?? false),

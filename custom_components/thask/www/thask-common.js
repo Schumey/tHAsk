@@ -88,7 +88,8 @@ export function makePeriod(granularity, d) {
   return { granularity, start: toISO(periodStart(granularity, d)) };
 }
 
-export function shiftPeriod(period, count) {
+// Move a period by `count` units (default: its own granularity); it keeps its granularity (Period.shift).
+export function shiftPeriod(period, count, unit = period.granularity) {
   const start = parseISO(period.start);
   const shifted = {
     day: () => addDays(start, count),
@@ -96,7 +97,7 @@ export function shiftPeriod(period, count) {
     month: () => addMonths(start, count),
     quarter: () => addMonths(start, 3 * count),
     year: () => addMonths(start, 12 * count),
-  }[period.granularity]();
+  }[unit]();
   return makePeriod(period.granularity, shifted);
 }
 
@@ -223,4 +224,64 @@ export function splitDone(tasks) {
     open: tasks.filter((task) => !task.completed),
     done: tasks.filter((task) => task.completed).sort((a, b) => (b.completed_at || "").localeCompare(a.completed_at || "")),
   };
+}
+
+// ---- Recurrence (same rules as Recurrence in core/models.py) ---------------------------------
+
+// The next period after `period` that has not already ended before today.
+export function nextPeriod(recurrence, period, today) {
+  const interval = recurrence.interval || 1;
+  const weekdays = recurrence.unit === "week" ? recurrence.weekdays || [] : [];
+  if (weekdays.length && period.granularity === "day") {
+    // Weeks are counted from the week of the current due day, so "every other week" stays in step.
+    const start = parseISO(period.start);
+    const anchor = addDays(start, -weekdayIndex(start));
+    for (let day = addDays(start, 1); ; day = addDays(day, 1)) {
+      const weeks = Math.floor(Math.round((day - anchor) / 864e5) / 7);
+      if (weeks % interval === 0 && weekdays.includes(weekdayIndex(day)) && day >= today) return makePeriod("day", day);
+    }
+  }
+  let following = shiftPeriod(period, interval, recurrence.unit);
+  while (periodEndOf(following) < today) {
+    const after = shiftPeriod(following, interval, recurrence.unit);
+    if (after.start <= following.start) break; // a unit finer than the period ("daily" on a week) does not move it
+    following = after;
+  }
+  return following;
+}
+
+// The due periods a recurring task will get after its current one, up to those starting on `until`:
+// what completing it again and again would create. Empty for tasks that do not repeat or are completed.
+export function projectedPeriods(task, until, today, limit = 2000) {
+  if (!task.recurrence || !task.due || task.completed) return [];
+  const last = toISO(until);
+  const periods = [];
+  let period = task.due;
+  while (periods.length < limit) {
+    const next = nextPeriod(task.recurrence, period, today);
+    if (next.start <= period.start || next.start > last) break;
+    periods.push(next);
+    period = next;
+  }
+  return periods;
+}
+
+// Everything due on `day`: tasks whose due period contains it, plus previews of recurring tasks that will be due
+// then but do not exist yet (they are created when completing the current one). A preview is a copy of the task
+// with that due period and `preview: true`; it keeps the task's id.
+export function dayTasks(tasks, day, today) {
+  const iso = toISO(day);
+  const contains = (period) => period.start <= iso && toISO(periodEndOf(period)) >= iso;
+  const result = [];
+  for (const task of tasks) {
+    if (task.due && contains(task.due)) result.push(task);
+    const due = projectedPeriods(task, day, today).find(contains);
+    if (due) result.push({ ...task, due, preview: true });
+  }
+  return result;
+}
+
+// Order within a day: by time of day, then priority, then the manual order.
+export function sortByTime(tasks) {
+  return [...tasks].sort((a, b) => (a.due_time || "99").localeCompare(b.due_time || "99") || b.priority - a.priority || a.position - b.position);
 }

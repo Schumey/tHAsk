@@ -155,6 +155,11 @@ def seed(collection: TaskCollection, today: date) -> None:
     collection.create_task(shopping.id, "Milch", due=Period.day(today).as_dict(), priority=3)
     collection.create_task(shopping.id, "Kaffee")
     collection.create_task(house.id, "Dachrinne prüfen", due=Period(Granularity.YEAR, today).as_dict())
+    # Recurring tasks for the day plan's previews.
+    collection.create_task(house.id, "Mülltonne rausstellen", due=Period.day(today).as_dict(), due_time="19:00",
+                           recurrence={"unit": "week", "interval": 1, "weekdays": [1, 4]})
+    collection.create_task(house.id, "Blumen gießen", due=Period.day(today - timedelta(days=1)).as_dict(),
+                           recurrence={"unit": "day", "interval": 3})
 
 
 class FakeSource:
@@ -301,6 +306,7 @@ CARD_PAGE = PAGE.replace("<thask-panel></thask-panel>", """<div class="cards">
   <thask-card data-config='{"view": "list:first", "show_completed": true}'></thask-card>
   <thask-card data-config='{"view": "this_week", "categories": ["Anrufe"], "title": "Anrufe"}'></thask-card>
   <thask-card data-config='{"view": "overdue", "hide_if_empty": true, "title": "Überfällig (verschwindet, wenn leer)"}'></thask-card>
+  <thask-card data-config='{"views": ["day_view", "this_week"]}'></thask-card>
 </div>
 <style>.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; padding: 12px; }
   ha-card { display: block; background: var(--card-background-color, #fff); border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.2); }</style>""").replace(

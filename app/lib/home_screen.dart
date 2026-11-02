@@ -139,7 +139,12 @@ class _HomeScreenState extends State<HomeScreen> {
     final listId = _targetList;
     if (text.isEmpty || listId == null || _sending) return;
     setState(() => _sending = true);
-    final added = await _guard(() => store.addQuick(listId, text, dueToday: _view is TodayView || _view is OverdueView));
+    final added = await _guard(() => store.addQuick(
+          listId,
+          text,
+          dueToday: _view is TodayView || _view is OverdueView,
+          dueDay: _view is DayPlanView ? store.planDay : null,
+        ));
     if (!mounted) return;
     setState(() => _sending = false);
     if (added) _entry.clear();
@@ -227,7 +232,14 @@ class _HomeScreenState extends State<HomeScreen> {
     final searching = _query != null;
     final listView = _view is ListRef && !searching;
     final list = listView ? store.list((_view as ListRef).listId) : null;
-    Widget tile(Task task) => _TaskTile(
+    Widget tile(Task task) => task.preview
+        ? _PreviewTile(
+            task: task,
+            store: store,
+            selected: wide && task.id == _selected,
+            onOpen: () => _openTask(task, wide),
+          )
+        : _TaskTile(
           task: task,
           store: store,
           showList: !listView,
@@ -317,6 +329,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: Column(
         children: [
           if (store.connection != LinkState.connected || store.pendingCount > 0) _ConnectionBanner(store: store),
+          if (_view is DayPlanView && !searching) _DayBar(store: store),
           Expanded(
             child: tasks.isEmpty && searching
                 ? _NoResults(query: _query!)
@@ -330,6 +343,8 @@ class _HomeScreenState extends State<HomeScreen> {
                         for (final task in open) tile(task)
                       else if (_view is PlannedView)
                         ..._plannedSections(context, open, tile)
+                      else if (_view is DayPlanView)
+                        ..._daySections(context, open, tile)
                       else if (_view is TodayView && store.overdueMode == 'section' && open.any(_isOverdue))
                         ..._todaySections(context, open, tile)
                       else
@@ -468,6 +483,32 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
   }
 
+  /// Tagesplan: Überfälliges (nur heute), der Tag selbst, dann Zeiträume wie „KW 45“, die ihn enthalten.
+  List<Widget> _daySections(BuildContext context, List<Task> open, Widget Function(Task) tile) {
+    final theme = Theme.of(context);
+    final overdue = open.where((t) => !t.preview && _isOverdue(t)).toList();
+    final day = open.where((t) => !overdue.contains(t) && t.due!.granularity == Granularity.day).toList();
+    final periods = open.where((t) => !overdue.contains(t) && t.due!.granularity != Granularity.day).toList();
+    return [
+      if (overdue.isNotEmpty)
+        ExpansionTile(
+          key: const PageStorageKey('day-overdue'),
+          initiallyExpanded: !store.overdueCollapsed,
+          onExpansionChanged: (expanded) => store.setOverdueCollapsed(!expanded),
+          textColor: theme.colorScheme.error,
+          collapsedTextColor: theme.colorScheme.error,
+          title: Text(tr('overdue_n', [overdue.length])),
+          children: [for (final task in overdue) tile(task)],
+        ),
+      if (day.isNotEmpty && (overdue.isNotEmpty || periods.isNotEmpty)) _SectionHeader(L10n.dayLabel(store.planDay), day.length),
+      for (final task in day) tile(task),
+      if (periods.isNotEmpty) ...[
+        _SectionHeader(tr('in_period'), periods.length),
+        for (final task in periods) tile(task),
+      ],
+    ];
+  }
+
   Widget _buildEntry(BuildContext context) {
     return SafeArea(
       top: false,
@@ -554,6 +595,14 @@ class _HomeScreenState extends State<HomeScreen> {
             selected: _view is PlannedView,
             trailing: _count(store.planned.where((t) => !t.completed).length),
             onTap: () => select(const PlannedView()),
+          ),
+        if (!store.hiddenViews.contains('day_view'))
+          ListTile(
+            leading: const Icon(Icons.event_note_outlined),
+            title: Text(tr('view_day_view')),
+            selected: _view is DayPlanView,
+            trailing: _count(store.dayPlan.where((t) => !t.completed).length),
+            onTap: () => select(const DayPlanView()),
           ),
         const Divider(),
         for (final group in groups) ...[
@@ -704,6 +753,101 @@ class _TaskTile extends StatelessWidget {
                 ],
               ),
         ),
+      ),
+    );
+  }
+}
+
+/// Kommendes Vorkommen einer wiederkehrenden Aufgabe im Tagesplan. Es gibt die Aufgabe so noch nicht, deshalb
+/// ohne Haken und ohne Wischen; Antippen öffnet die jetzige Aufgabe.
+class _PreviewTile extends StatelessWidget {
+  const _PreviewTile({required this.task, required this.store, required this.onOpen, this.selected = false});
+
+  final Task task;
+  final ThaskStore store;
+  final VoidCallback onOpen;
+  final bool selected;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    final due = task.due!;
+    final dueText = '${due.label(store.today)}${task.dueTime != null ? ', ${task.dueTime}' : ''}';
+    final listName = store.list(task.listId)?.name;
+    return Tooltip(
+      message: tr('preview_hint'),
+      child: ListTile(
+        selected: selected,
+        onTap: onOpen,
+        leading: SizedBox(width: 40, child: Icon(Icons.update, color: muted.withValues(alpha: 0.7))),
+        title: Text(task.title, style: TextStyle(color: muted)),
+        subtitle: Wrap(
+          spacing: 12,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            DueChip(task: task, today: store.today, text: dueText),
+            if (listName != null) _ListOrigin(listName),
+            Text(tr('preview'), style: theme.textTheme.bodySmall?.copyWith(color: muted, fontStyle: FontStyle.italic)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Tag des Tagesplans: zurück, Datum (öffnet die Auswahl), weiter und zurück auf heute.
+class _DayBar extends StatelessWidget {
+  const _DayBar({required this.store});
+
+  final ThaskStore store;
+
+  @override
+  Widget build(BuildContext context) {
+    final day = store.planDay;
+    final isToday = day == store.today;
+    Future<void> pick() async {
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: day,
+        firstDate: DateTime(store.today.year - 5),
+        lastDate: DateTime(store.today.year + 10),
+        helpText: tr('pick_day'),
+      );
+      if (picked != null) store.setPlanDay(picked);
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Row(
+        children: [
+          IconButton(
+            tooltip: tr('prev_day'),
+            icon: const Icon(Icons.chevron_left),
+            onPressed: () => store.setPlanDay(DateTime(day.year, day.month, day.day - 1)),
+          ),
+          Expanded(
+            child: TextButton.icon(
+              onPressed: pick,
+              icon: const Icon(Icons.event_outlined, size: 18),
+              label: Text(
+                '${L10n.longDate(day)}${day.year == store.today.year ? '' : ' ${day.year}'}',
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+          IconButton(
+            tooltip: tr('next_day'),
+            icon: const Icon(Icons.chevron_right),
+            onPressed: () => store.setPlanDay(DateTime(day.year, day.month, day.day + 1)),
+          ),
+          IconButton(
+            tooltip: tr('today'),
+            icon: const Icon(Icons.today_outlined),
+            onPressed: isToday ? null : () => store.setPlanDay(store.today),
+          ),
+        ],
       ),
     );
   }

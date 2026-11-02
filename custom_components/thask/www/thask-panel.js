@@ -5,7 +5,7 @@ const STRINGS = {
   de: {
     attachments: "Anhänge", add_file: "Datei hinzufügen", uploading: "Wird hochgeladen …", delete_attachment_confirm: "Anhang „{0}“ löschen?", drop_files: "Dateien hierher ziehen",
     members: "Für wen", members_all: "Alle", show_other_lists: "Listen anderer zeigen ({0})", only_my_lists: "Nur meine Listen",
-    my_day: "Heute", important: "Wichtig", planned: "Geplant", this_week: "Diese Woche",
+    my_day: "Heute", day_view: "Tagesplan", in_period: "Im Zeitraum fällig", preview: "Vorschau", preview_hint: "Wiederholung: entsteht, wenn die aktuelle Aufgabe erledigt ist", prev_day: "Vorheriger Tag", next_day: "Nächster Tag", pick_day: "Tag wählen", important: "Wichtig", planned: "Geplant", this_week: "Diese Woche",
     lists: "Listen", add_task: "Aufgabe hinzufügen", quick_hint: "z. B. „Reifen wechseln nächsten Monat !“",
     new_list: "Neue Liste", completed: "Erledigt", steps: "Schritte", add_step: "Nächster Schritt",
     range: "Zeitraum", range_all: "Alle", range_week: "Bis Ende der Woche", range_month: "Bis Ende des Monats",
@@ -48,7 +48,7 @@ const STRINGS = {
   en: {
     attachments: "Attachments", add_file: "Add file", uploading: "Uploading …", delete_attachment_confirm: "Delete attachment “{0}”?", drop_files: "Drop files here",
     members: "Who is it for", members_all: "Everyone", show_other_lists: "Show others' lists ({0})", only_my_lists: "Only my lists",
-    my_day: "Today", important: "Important", planned: "Planned", this_week: "This week",
+    my_day: "Today", day_view: "Day plan", in_period: "Due within a period", preview: "Preview", preview_hint: "Repeats: created when the current task is completed", prev_day: "Previous day", next_day: "Next day", pick_day: "Pick a day", important: "Important", planned: "Planned", this_week: "This week",
     lists: "Lists", add_task: "Add a task", quick_hint: "e.g. “Change tyres next month !”",
     new_list: "New list", completed: "Completed", steps: "Steps", add_step: "Next step",
     range: "Period", range_all: "All", range_week: "By end of week", range_month: "By end of month",
@@ -91,7 +91,7 @@ const STRINGS = {
   nl: {
     attachments: "Bijlagen", add_file: "Bestand toevoegen", uploading: "Bezig met uploaden …", delete_attachment_confirm: "Bijlage „{0}” verwijderen?", drop_files: "Sleep bestanden hierheen",
     members: "Voor wie", members_all: "Iedereen", show_other_lists: "Lijsten van anderen tonen ({0})", only_my_lists: "Alleen mijn lijsten",
-    my_day: "Vandaag", important: "Belangrijk", planned: "Gepland", this_week: "Deze week",
+    my_day: "Vandaag", day_view: "Dagplanning", in_period: "In een periode", preview: "Voorbeeld", preview_hint: "Herhaling: ontstaat als de huidige taak klaar is", prev_day: "Vorige dag", next_day: "Volgende dag", pick_day: "Dag kiezen", important: "Belangrijk", planned: "Gepland", this_week: "Deze week",
     lists: "Lijsten", add_task: "Taak toevoegen", quick_hint: "bijv. „Banden wisselen volgende maand !”",
     new_list: "Nieuwe lijst", completed: "Voltooid", steps: "Stappen", add_step: "Volgende stap",
     range: "Periode", range_all: "Alle", range_week: "Tot eind van de week", range_month: "Tot eind van de maand",
@@ -134,7 +134,7 @@ const STRINGS = {
   fr: {
     attachments: "Pièces jointes", add_file: "Ajouter un fichier", uploading: "Envoi …", delete_attachment_confirm: "Supprimer la pièce jointe « {0} » ?", drop_files: "Déposez des fichiers ici",
     members: "Pour qui", members_all: "Tout le monde", show_other_lists: "Afficher les listes des autres ({0})", only_my_lists: "Seulement mes listes",
-    my_day: "Aujourd'hui", important: "Important", planned: "Planifié", this_week: "Cette semaine",
+    my_day: "Aujourd'hui", day_view: "Programme du jour", in_period: "Dans une période", preview: "Aperçu", preview_hint: "Répétition : créée lorsque la tâche actuelle est terminée", prev_day: "Jour précédent", next_day: "Jour suivant", pick_day: "Choisir un jour", important: "Important", planned: "Planifié", this_week: "Cette semaine",
     lists: "Listes", add_task: "Ajouter une tâche", quick_hint: "p. ex. « Changer les pneus le mois prochain ! »",
     new_list: "Nouvelle liste", completed: "Terminées", steps: "Étapes", add_step: "Étape suivante",
     range: "Période", range_all: "Toutes", range_week: "D'ici la fin de la semaine", range_month: "D'ici la fin du mois",
@@ -177,7 +177,7 @@ const STRINGS = {
   es: {
     attachments: "Adjuntos", add_file: "Añadir archivo", uploading: "Subiendo …", delete_attachment_confirm: "¿Eliminar el adjunto «{0}»?", drop_files: "Suelta archivos aquí",
     members: "Para quién", members_all: "Todos", show_other_lists: "Mostrar listas de otros ({0})", only_my_lists: "Solo mis listas",
-    my_day: "Hoy", important: "Importante", planned: "Planificado", this_week: "Esta semana",
+    my_day: "Hoy", day_view: "Plan del día", in_period: "Dentro de un periodo", preview: "Vista previa", preview_hint: "Repetición: se crea al completar la tarea actual", prev_day: "Día anterior", next_day: "Día siguiente", pick_day: "Elegir un día", important: "Importante", planned: "Planificado", this_week: "Esta semana",
     lists: "Listas", add_task: "Añadir una tarea", quick_hint: "p. ej. «Cambiar neumáticos el próximo mes !»",
     new_list: "Nueva lista", completed: "Completadas", steps: "Pasos", add_step: "Siguiente paso",
     range: "Periodo", range_all: "Todas", range_week: "Hasta el final de la semana", range_month: "Hasta el final del mes",
@@ -248,7 +248,7 @@ const {
   MONTHS, MONTHS_SHORT, WEEKDAYS_SHORT, GRANULARITIES, pad, toISO, parseISO, addDays,
   addMonths, weekdayIndex, periodStart, periodEnd, isoWeek, makePeriod, shiftPeriod, periodEndOf,
   periodStatus, periodLabel, periodRange, sortTasks, esc, dueBy, completedSince, isOverdue,
-  matchesSmart, sortByDue, splitDone, language, dateLocale,
+  matchesSmart, sortByDue, splitDone, language, dateLocale, dayTasks, sortByTime,
 } = await import(`./thask-common.js?v=${VERSION}`);
 
 const CONDITION_KINDS = ["state", "calendar", "time"];
@@ -262,6 +262,8 @@ const SMART_VIEWS = [
   { key: "overdue", icon: "mdi:calendar-alert" },
   { key: "important", icon: "mdi:flag-outline" },
   { key: "planned", icon: "mdi:calendar-month-outline" },
+  // One day, picked in the header, with previews of recurring tasks.
+  { key: "day_view", icon: "mdi:calendar-cursor" },
   { key: "this_week", icon: "mdi:calendar-week" },
   { key: "this_month", icon: "mdi:calendar-month" },
 ];
@@ -275,6 +277,7 @@ class ThaskPanel extends HTMLElement {
     this._lists = [];
     this._tasks = new Map();
     this._today = periodStart("day", new Date());
+    this._day = this._today; // the day shown in the day plan
     this._view = { type: "smart", key: "my_day" };
     this._selectedTask = null;
     this._showCompleted = false;
@@ -378,6 +381,8 @@ class ThaskPanel extends HTMLElement {
 
   _onEvent(event) {
     if (event.type === "snapshot") {
+      // The day plan follows a new day as long as it shows today.
+      if (this._day.getTime() === this._today.getTime()) this._day = parseISO(event.today);
       this._today = parseISO(event.today);
       this._lists = event.lists;
       this._me = event.me ?? this._hass?.user?.id ?? null;
@@ -389,6 +394,7 @@ class ThaskPanel extends HTMLElement {
         this._view = { type: "smart", key: "my_day" };
       }
     } else if (event.type === "day_changed") {
+      if (this._day.getTime() === this._today.getTime()) this._day = parseISO(event.today);
       this._today = parseISO(event.today);
     } else if (event.type === "options") {
       this._setOptions(event);
@@ -506,6 +512,13 @@ class ThaskPanel extends HTMLElement {
     // An active search looks through all lists; the sidebar counts (explicit view) stay unaffected.
     const searching = view === this._view && this._search.trim();
     const visible = new Set(this._visibleLists().map((l) => l.id));
+    if (view.type === "smart" && view.key === "day_view" && !searching) {
+      const mine = [...this._tasks.values()].filter((task) => visible.has(task.list_id));
+      const tasks = dayTasks(mine, this._day, this._today);
+      // Today also shows what is overdue, like "Today".
+      if (this._day.getTime() === this._today.getTime()) tasks.push(...mine.filter((task) => this._isOverdue(task)));
+      return splitDone(sortByTime(tasks));
+    }
     const tasks = [...this._tasks.values()].filter((task) =>
       view.type === "list" && !searching ? task.list_id === view.id
         : visible.has(task.list_id) && (searching ? this._matchesSearch(task) : this._matchesSmart(task, view.key))
@@ -695,6 +708,7 @@ class ThaskPanel extends HTMLElement {
   _renderHeader() {
     const root = this.shadowRoot;
     const title = root.querySelector(".view-title");
+    root.querySelector(".toolbar").classList.toggle("day-toolbar", this._view.type === "smart" && this._view.key === "day_view" && !this._search.trim());
     if (this._view.type === "settings") {
       title.textContent = this.t("settings");
       root.querySelector(".view-actions").innerHTML = "";
@@ -717,14 +731,25 @@ class ThaskPanel extends HTMLElement {
         <button class="icon-button" data-action="list-members" title="${esc(this.t("members"))}"><ha-icon icon="${this._lists.find((l) => l.id === this._view.id)?.members?.length ? "mdi:account-multiple-check-outline" : "mdi:account-multiple-outline"}"></ha-icon></button>
         <button class="icon-button" data-action="list-delete" title="${esc(this.t("delete"))}"><ha-icon icon="mdi:delete-outline"></ha-icon></button>`;
     } else {
-      const sub = this._view.key === "my_day" && !this._search.trim()
-        ? `<span class="subtitle">${esc(this._today.toLocaleDateString(this._locale, { weekday: "long", day: "numeric", month: "long" }))}</span>`
+      const searching = !!this._search.trim();
+      const shown = { my_day: this._today, day_view: this._day }[this._view.key];
+      const sub = shown && !searching
+        ? `<span class="subtitle">${esc(shown.toLocaleDateString(this._locale, { weekday: "long", day: "numeric", month: "long", year: shown.getFullYear() === this._today.getFullYear() ? undefined : "numeric" }))}</span>`
         : "";
       title.innerHTML = `${esc(this._viewTitle())}${sub}`;
-      root.querySelector(".view-actions").innerHTML = this._view.key === "important" && !this._search.trim()
-        ? `<label class="sort" title="${esc(this.t("range"))}"><ha-icon icon="mdi:calendar-range"></ha-icon>
-            <select data-field="important-range">${IMPORTANT_RANGES.map((r) => `<option value="${r}" ${r === this._importantRange ? "selected" : ""}>${esc(this.t(`range_${r}`))}</option>`).join("")}</select></label>`
-        : "";
+      let actions = "";
+      if (this._view.key === "important" && !searching) {
+        actions = `<label class="sort" title="${esc(this.t("range"))}"><ha-icon icon="mdi:calendar-range"></ha-icon>
+            <select data-field="important-range">${IMPORTANT_RANGES.map((r) => `<option value="${r}" ${r === this._importantRange ? "selected" : ""}>${esc(this.t(`range_${r}`))}</option>`).join("")}</select></label>`;
+      } else if (this._view.key === "day_view" && !searching) {
+        const isToday = this._day.getTime() === this._today.getTime();
+        actions = `
+          <button class="icon-button" data-action="day-shift" data-shift="-1" title="${esc(this.t("prev_day"))}"><ha-icon icon="mdi:chevron-left"></ha-icon></button>
+          <input class="day-pick" type="date" data-field="day-date" value="${toISO(this._day)}" title="${esc(this.t("pick_day"))}">
+          <button class="icon-button" data-action="day-shift" data-shift="1" title="${esc(this.t("next_day"))}"><ha-icon icon="mdi:chevron-right"></ha-icon></button>
+          <button class="icon-button" data-action="day-today" title="${esc(this.t("today"))}" ${isToday ? "disabled" : ""}><ha-icon icon="mdi:calendar-today"></ha-icon></button>`;
+      }
+      root.querySelector(".view-actions").innerHTML = actions;
     }
   }
 
@@ -790,6 +815,22 @@ class ThaskPanel extends HTMLElement {
       for (const [key, tasks] of Object.entries(groups)) {
         if (tasks.length) html += `<div class="section-title ${key}">${esc(this.t(key))} <span>${tasks.length}</span></div>${tasks.map((t) => this._taskRow(t, false)).join("")}`;
       }
+    } else if (!searching && this._view.type === "smart" && this._view.key === "day_view") {
+      // Overdue (only on today), the day itself, then periods such as "week 45" that contain it.
+      const overdue = open.filter((t) => !t.preview && this._isOverdue(t));
+      const day = open.filter((t) => !overdue.includes(t) && t.due.granularity === "day");
+      const periods = open.filter((t) => !overdue.includes(t) && t.due.granularity !== "day");
+      const rows = (tasks) => tasks.map((t) => this._taskRow(t, false)).join("");
+      if (overdue.length) {
+        html += `<button class="section-title overdue" data-action="toggle-overdue">
+          <ha-icon icon="${this._overdueCollapsed ? "mdi:chevron-right" : "mdi:chevron-down"}"></ha-icon>${esc(this.t("overdue"))} <span>${overdue.length}</span></button>`;
+        if (!this._overdueCollapsed) html += rows(overdue);
+      }
+      if (day.length && (overdue.length || periods.length)) {
+        html += `<div class="section-title">${esc(periodLabel(makePeriod("day", this._day), this._lang, this._today))} <span>${day.length}</span></div>`;
+      }
+      html += rows(day);
+      if (periods.length) html += `<div class="section-title">${esc(this.t("in_period"))} <span>${periods.length}</span></div>${rows(periods)}`;
     } else if (!searching && this._view.type === "smart" && this._view.key === "my_day" && this._overdueMode === "section"
       && open.some((t) => this._isOverdue(t))) {
       // Overdue at the top under a heading that folds away; then today's tasks.
@@ -841,16 +882,18 @@ class ThaskPanel extends HTMLElement {
       const doneSteps = task.steps.filter((s) => s.completed).length;
       meta.push(`<span class="meta">${esc(this.t("steps_of", doneSteps, task.steps.length))}</span>`);
     }
-    if (task.recurrence) meta.push(`<span class="meta" title="${esc(this._recurrenceLabel(task.recurrence))}"><ha-icon icon="mdi:repeat"></ha-icon></span>`);
+    if (task.preview) meta.push(`<span class="meta preview-tag" title="${esc(this.t("preview_hint"))}"><ha-icon icon="mdi:repeat"></ha-icon>${esc(this.t("preview"))}</span>`);
+    else if (task.recurrence) meta.push(`<span class="meta" title="${esc(this._recurrenceLabel(task.recurrence))}"><ha-icon icon="mdi:repeat"></ha-icon></span>`);
     if (task.reminder && !task.completed) meta.push(`<span class="meta"><ha-icon icon="mdi:bell-outline"></ha-icon></span>`);
     if (task.notes) meta.push(`<span class="meta"><ha-icon icon="mdi:note-text-outline"></ha-icon></span>`);
     if (task.attachments?.length) meta.push(`<span class="meta"><ha-icon icon="mdi:paperclip"></ha-icon>${task.attachments.length}</span>`);
     return `
-      <div class="task prio-${task.priority || 0} ${task.completed ? "completed" : ""} ${task.id === this._selectedTask ? "selected" : ""}"
+      <div class="task prio-${task.priority || 0} ${task.completed ? "completed" : ""} ${task.preview ? "preview" : ""} ${task.id === this._selectedTask ? "selected" : ""}"
         ${task.priority ? `title="${esc(this.t("priority"))}: ${esc(this.t(`priority_${task.priority}`))}"` : ""}
         data-action="select-task" data-task-id="${esc(task.id)}" ${draggable ? `draggable="true" data-drop="task"` : ""}>
-        <button class="check" data-action="toggle-complete" data-task-id="${esc(task.id)}" title="${esc(this.t("complete"))}">
-          <ha-icon icon="mdi:check"></ha-icon></button>
+        ${task.preview ? `<span class="check preview" title="${esc(this.t("preview_hint"))}"></span>`
+          : `<button class="check" data-action="toggle-complete" data-task-id="${esc(task.id)}" title="${esc(this.t("complete"))}">
+          <ha-icon icon="mdi:check"></ha-icon></button>`}
         <div class="task-body">
           <div class="task-title">${esc(task.title)}</div>
           ${meta.length ? `<div class="task-meta">${meta.join('<span class="dot">·</span>')}</div>` : ""}
@@ -1116,6 +1159,7 @@ class ThaskPanel extends HTMLElement {
     if (parsed.recurrence) data.recurrence = parsed.recurrence;
     if (this._view.type === "smart") {
       if (this._view.key === "my_day" && !data.due) data.due = makePeriod("day", this._today);
+      if (this._view.key === "day_view" && !data.due) data.due = makePeriod("day", this._day);
       if (this._view.key === "important") data.priority = Math.max(data.priority, 3);
       if (this._view.key === "this_week" && !data.due) data.due = makePeriod("week", this._today);
       if (this._view.key === "this_month" && !data.due) data.due = makePeriod("month", this._today);
@@ -1234,7 +1278,7 @@ class ThaskPanel extends HTMLElement {
       ${toggle("separate_week")}
       ${toggle("separate_month")}
       <div class="section-title">${esc(this.t("opt_hidden_views"))}</div>
-      ${["important", "planned", "this_week", "this_month"].map((view) => `
+      ${["important", "planned", "day_view", "this_week", "this_month"].map((view) => `
         <label class="option-choice"><input type="checkbox" value="${view}" data-option="hidden_views" ${(o.hidden_views || []).includes(view) ? "checked" : ""}>
           <span>${esc(this.t(view))}</span></label>`).join("")}
       <div class="muted option-hint">${esc(this.t("opt_hidden_views_hint"))}</div>
@@ -1558,6 +1602,14 @@ class ThaskPanel extends HTMLElement {
         this._showCompleted = !this._showCompleted;
         this._render();
         break;
+      case "day-shift":
+        this._day = addDays(this._day, Number(target.dataset.shift));
+        this._render();
+        break;
+      case "day-today":
+        this._day = this._today;
+        this._render();
+        break;
       case "toggle-overdue":
         this._overdueCollapsed = !this._overdueCollapsed;
         try {
@@ -1708,6 +1760,11 @@ class ThaskPanel extends HTMLElement {
       } catch {
         // not remembered, still applied
       }
+      this._render();
+      return;
+    }
+    if (field === "day-date") {
+      if (ev.target.value) this._day = parseISO(ev.target.value);
       this._render();
       return;
     }
@@ -1982,6 +2039,12 @@ const STYLE = `
   .task { display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--thask-surface); border-radius: 6px; cursor: pointer; border: 1px solid transparent; }
   .task:hover { filter: brightness(0.97); }
   .task.selected { border-color: var(--thask-accent); }
+  /* Coming occurrences of recurring tasks that do not exist yet. */
+  .task.preview { background: none; border: 1px dashed var(--thask-divider); }
+  .task.preview .task-title { color: var(--thask-muted); }
+  .check.preview { border-style: dashed; opacity: 0.6; }
+  .meta.preview-tag { font-style: italic; }
+  .day-pick { border: 1px solid var(--thask-divider); border-radius: 6px; padding: 4px 6px; background: none; color: var(--thask-text); font: inherit; color-scheme: light dark; }
   .task.dragging { opacity: 0.4; }
   .task.drop-target { box-shadow: inset 0 2px 0 var(--thask-accent); }
   .drop-end { min-height: 24px; border-radius: 6px; }
@@ -2081,6 +2144,9 @@ const STYLE = `
   :host([narrow]) .app, :host([narrow]) .app.has-detail { grid-template-columns: 1fr; }
   :host([narrow]) .toolbar .menu-slot, :host([narrow]) .toolbar .back { display: inline-flex; }
   :host([narrow]) .toolbar { padding: 4px 8px; }
+  /* On phones the day picker gets a row of its own below the title. */
+  :host([narrow]) .toolbar.day-toolbar { flex-wrap: wrap; }
+  :host([narrow]) .toolbar.day-toolbar .view-actions { flex-basis: 100%; justify-content: center; padding-bottom: 4px; }
   :host([narrow]) .quick-add { margin: 0 12px 8px; }
   :host([narrow]) .tasks { padding: 0 12px 24px; }
   :host([narrow]) .sidebar, :host([narrow]) .main, :host([narrow]) .detail { display: none; }

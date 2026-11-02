@@ -46,7 +46,7 @@ DEFAULT_WEEK_MODE = "calendar"
 
 # Option: smart views left out of the navigation (web interface, apps, widget). "Today" always stays.
 CONF_HIDDEN_VIEWS = "hidden_views"
-HIDEABLE_VIEWS = ("important", "planned", "this_week", "this_month")
+HIDEABLE_VIEWS = ("important", "planned", "day_view", "this_week", "this_month")
 
 # Option: delete completed tasks automatically this many days after completion (0 = never). Runs at start,
 # after midnight and when the option changes.

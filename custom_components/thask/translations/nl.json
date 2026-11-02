@@ -69,6 +69,7 @@
       "options": {
         "important": "Belangrijk",
         "planned": "Gepland",
+        "day_view": "Dagplanning",
         "this_week": "Deze week",
         "this_month": "Deze maand"
       }

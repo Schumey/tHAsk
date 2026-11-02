@@ -46,6 +46,49 @@ void main() {
     });
   });
 
+  group('Wiederholung und Tagesplan', () {
+    Period day(int month, int d) => Period.day(DateTime(2026, month, d));
+
+    test('nextPeriod wie in core/models.py', () {
+      final today = DateTime(2026, 11, 3);
+      // Dienstag und Freitag.
+      const tueFri = Recurrence(Granularity.week, 1, [1, 4]);
+      expect(tueFri.nextPeriod(day(11, 3), today), day(11, 6));
+      expect(tueFri.nextPeriod(day(11, 6), today), day(11, 10));
+      // Alle zwei Wochen montags und donnerstags: der Donnerstag derselben Woche, dann zwei Wochen weiter.
+      const everyOther = Recurrence(Granularity.week, 2, [0, 3]);
+      expect(everyOther.nextPeriod(day(11, 2), DateTime(2026, 11, 2)), day(11, 5));
+      expect(everyOther.nextPeriod(day(11, 5), DateTime(2026, 11, 2)), day(11, 16));
+      // Monatlich am 31.: im Februar der 28., danach bleibt es beim 28.
+      const monthly = Recurrence(Granularity.month, 1);
+      final feb = monthly.nextPeriod(Period.day(DateTime(2026, 1, 31)), DateTime(2026, 1, 1));
+      expect(feb, Period.day(DateTime(2026, 2, 28)));
+      expect(monthly.nextPeriod(feb, DateTime(2026, 1, 1)), Period.day(DateTime(2026, 3, 28)));
+      // Überfällig: das nächste Vorkommen liegt nicht vor heute.
+      expect(const Recurrence(Granularity.day, 3).nextPeriod(day(11, 1), today), day(11, 4));
+      // Zeiträume behalten ihre Art.
+      expect(monthly.nextPeriod(Period(Granularity.month, DateTime(2026, 11, 1)), today), Period(Granularity.month, DateTime(2026, 12, 1)));
+    });
+
+    test('dayTasks zeigt kommende Vorkommen als Vorschau', () {
+      final today = DateTime(2026, 11, 3);
+      final tasks = [
+        Task(id: 'muell', listId: 'l', title: 'Müll', due: day(11, 3), recurrence: const Recurrence(Granularity.week, 1, [1, 4])),
+        Task(id: 'monat', listId: 'l', title: 'Rechnungen', due: Period(Granularity.month, DateTime(2026, 11, 1)), recurrence: const Recurrence(Granularity.month, 1)),
+        Task(id: 'einmal', listId: 'l', title: 'Zahnarzt', due: day(11, 6)),
+        Task(id: 'fertig', listId: 'l', title: 'Erledigt', due: day(11, 3), completed: true, recurrence: const Recurrence(Granularity.day, 1)),
+      ];
+      String describe(Task t) => '${t.id}${t.preview ? '*' : ''}';
+      expect(dayTasks(tasks, DateTime(2026, 11, 3), today).map(describe), ['muell', 'monat', 'fertig']);
+      expect(dayTasks(tasks, DateTime(2026, 11, 6), today).map(describe), ['muell*', 'monat', 'einmal']);
+      expect(dayTasks(tasks, DateTime(2026, 11, 5), today).map(describe), ['monat']);
+      expect(dayTasks(tasks, DateTime(2026, 12, 1), today).map(describe), ['muell*', 'monat*']);
+      final preview = dayTasks(tasks, DateTime(2026, 11, 6), today).first;
+      expect(preview.due, day(11, 6));
+      expect(preview.id, 'muell');
+    });
+  });
+
   test('sortTasks hält die manuelle Reihenfolge bei Gleichstand', () {
     Task t(String id, double pos, {int priority = 0, Period? due}) =>
         Task(id: id, listId: 'l', title: id, position: pos, priority: priority, due: due, created: id);
@@ -568,6 +611,42 @@ void main() {
         {'granularity': 'day', 'start': '2026-10-31'},
         {'granularity': 'week', 'start': '2026-11-16'},
       ]);
+    });
+
+    test('Tagesplan: gewählter Tag, Vorschauen und Schnelleingabe an diesem Tag', () async {
+      await signIn();
+      connection.emit({
+        ..._snapshot,
+        'tasks': [
+          {
+            'id': 'gießen',
+            'list_id': 'l1',
+            'title': 'Blumen gießen',
+            'due': {'granularity': 'day', 'start': '2026-10-30'},
+            'recurrence': {'unit': 'day', 'interval': 2},
+          },
+          {'id': 'post', 'list_id': 'l1', 'title': 'Post', 'due': {'granularity': 'day', 'start': '2026-11-02'}},
+        ],
+      });
+      await Future<void>.delayed(Duration.zero);
+      String describe(Task t) => '${t.id}${t.preview ? '*' : ''}';
+      // Heute steht das Überfällige; abgehakt käme es am 1. November wieder, dann alle zwei Tage.
+      expect(store.planDay, DateTime(2026, 10, 31));
+      expect(store.dayPlan.map(describe), ['gießen']);
+      store.setPlanDay(DateTime(2026, 11, 1));
+      expect(store.dayPlan.map(describe), ['gießen*']);
+      store.setPlanDay(DateTime(2026, 11, 2));
+      expect(store.dayPlan.map(describe), ['post']);
+      store.setPlanDay(DateTime(2026, 11, 3));
+      expect(store.dayPlan.map(describe), ['gießen*']);
+      await store.addQuick('l1', 'Brief', dueDay: store.planDay);
+      final creates = connection.calls.where((c) => c.$1 == 'thask/task/create').map((c) => c.$2['due']).toList();
+      expect(creates, [
+        {'granularity': 'day', 'start': '2026-11-03'},
+      ]);
+      // Der Tagesplan steht nicht im Widget.
+      expect(ViewRef.all(store).whereType<DayPlanView>(), isEmpty);
+      expect(ViewRef.fromId('day_view'), isA<DayPlanView>());
     });
 
     test('Option der Integration: Überfälliges in „Heute“ oder als eigene Ansicht', () async {

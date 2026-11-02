@@ -6,12 +6,12 @@ const VERSION = new URL(import.meta.url).searchParams.get("v") || "";
 await import(`./thask-icons.js?v=${VERSION}`);
 const {
   parseISO, periodStart, periodEnd, periodEndOf, periodStatus, periodLabel, makePeriod, sortTasks, esc,
-  isOverdue, matchesSmart, sortByDue, splitDone, language,
+  isOverdue, matchesSmart, sortByDue, splitDone, language, addDays, dayTasks, sortByTime,
 } = await import(`./thask-common.js?v=${VERSION}`);
 
 const STRINGS = {
   de: {
-    my_day: "Heute", overdue: "Überfällig", important: "Wichtig", planned: "Geplant", this_week: "Diese Woche",
+    my_day: "Heute", day_view: "Tagesplan", in_period: "Im Zeitraum fällig", preview: "Vorschau", prev_day: "Vorheriger Tag", next_day: "Nächster Tag", overdue: "Überfällig", important: "Wichtig", planned: "Geplant", this_week: "Diese Woche",
     this_month: "Diesen Monat", later: "Später", today: "Heute", tomorrow: "Morgen", empty: "Keine Aufgaben",
     completed: "Erledigt", add_task: "Aufgabe hinzufügen", more: "{0} weitere", loading: "Lade …",
     not_loaded: "tHAsk ist nicht geladen", unknown_list: "Unbekannte Liste", open_panel: "In tHAsk öffnen",
@@ -29,7 +29,7 @@ const STRINGS = {
     card_description: "Eine tHAsk-Ansicht oder -Liste mit Zeiträumen, Schnelleingabe und Schritten.",
   },
   en: {
-    my_day: "Today", overdue: "Overdue", important: "Important", planned: "Planned", this_week: "This week",
+    my_day: "Today", day_view: "Day plan", in_period: "Due within a period", preview: "Preview", prev_day: "Previous day", next_day: "Next day", overdue: "Overdue", important: "Important", planned: "Planned", this_week: "This week",
     this_month: "This month", later: "Later", today: "Today", tomorrow: "Tomorrow", empty: "No tasks",
     completed: "Completed", add_task: "Add a task", more: "{0} more", loading: "Loading …",
     not_loaded: "tHAsk is not loaded", unknown_list: "Unknown list", open_panel: "Open in tHAsk",
@@ -46,7 +46,7 @@ const STRINGS = {
     card_description: "A tHAsk view or list with fuzzy due dates, quick add and steps.",
   },
   nl: {
-    my_day: "Vandaag", overdue: "Te laat", important: "Belangrijk", planned: "Gepland", this_week: "Deze week",
+    my_day: "Vandaag", day_view: "Dagplanning", in_period: "In een periode", preview: "Voorbeeld", prev_day: "Vorige dag", next_day: "Volgende dag", overdue: "Te laat", important: "Belangrijk", planned: "Gepland", this_week: "Deze week",
     this_month: "Deze maand", later: "Later", today: "Vandaag", tomorrow: "Morgen", empty: "Geen taken",
     completed: "Voltooid", add_task: "Taak toevoegen", more: "nog {0}", loading: "Laden …",
     not_loaded: "tHAsk is niet geladen", unknown_list: "Onbekende lijst", open_panel: "Openen in tHAsk",
@@ -63,7 +63,7 @@ const STRINGS = {
     card_description: "Een tHAsk-weergave of -lijst met vage vervaldatums, snel toevoegen en stappen.",
   },
   fr: {
-    my_day: "Aujourd'hui", overdue: "En retard", important: "Important", planned: "Planifié", this_week: "Cette semaine",
+    my_day: "Aujourd'hui", day_view: "Programme du jour", in_period: "Dans une période", preview: "Aperçu", prev_day: "Jour précédent", next_day: "Jour suivant", overdue: "En retard", important: "Important", planned: "Planifié", this_week: "Cette semaine",
     this_month: "Ce mois-ci", later: "Plus tard", today: "Aujourd'hui", tomorrow: "Demain", empty: "Aucune tâche",
     completed: "Terminées", add_task: "Ajouter une tâche", more: "{0} de plus", loading: "Chargement …",
     not_loaded: "tHAsk n'est pas chargé", unknown_list: "Liste inconnue", open_panel: "Ouvrir dans tHAsk",
@@ -80,7 +80,7 @@ const STRINGS = {
     card_description: "Une vue ou une liste tHAsk avec échéances souples, saisie rapide et étapes.",
   },
   es: {
-    my_day: "Hoy", overdue: "Vencidas", important: "Importante", planned: "Planificado", this_week: "Esta semana",
+    my_day: "Hoy", day_view: "Plan del día", in_period: "Dentro de un periodo", preview: "Vista previa", prev_day: "Día anterior", next_day: "Día siguiente", overdue: "Vencidas", important: "Importante", planned: "Planificado", this_week: "Esta semana",
     this_month: "Este mes", later: "Más tarde", today: "Hoy", tomorrow: "Mañana", empty: "No hay tareas",
     completed: "Completadas", add_task: "Añadir una tarea", more: "{0} más", loading: "Cargando …",
     not_loaded: "tHAsk no está cargado", unknown_list: "Lista desconocida", open_panel: "Abrir en tHAsk",
@@ -98,10 +98,11 @@ const STRINGS = {
   },
 };
 
-const SMART_VIEWS = ["my_day", "overdue", "important", "planned", "this_week", "this_month"];
+const SMART_VIEWS = ["my_day", "overdue", "important", "planned", "day_view", "this_week", "this_month"];
 const VIEW_ICONS = {
   my_day: "mdi:calendar-today", overdue: "mdi:calendar-alert", important: "mdi:flag-outline",
   planned: "mdi:calendar-month-outline", this_week: "mdi:calendar-week", this_month: "mdi:calendar-month",
+  day_view: "mdi:calendar-cursor",
 };
 const DEFAULTS = {
   view: "my_day", tabs: false, hide_duplicates: true, show_entry: true, show_completed: false, show_list: true,
@@ -136,6 +137,7 @@ class ThaskCard extends HTMLElement {
     this._lists = [];
     this._tasks = new Map();
     this._today = periodStart("day", new Date());
+    this._day = this._today; // the day shown in the day plan
     this._overdueMode = "section";
     this._options = {};
     this._expanded = null; // id of the task whose steps and notes are shown
@@ -221,6 +223,8 @@ class ThaskCard extends HTMLElement {
   _onEvent(event) {
     switch (event.type) {
       case "snapshot":
+        // The day plan follows a new day as long as it shows today.
+        if (this._day.getTime() === this._today.getTime()) this._day = parseISO(event.today);
         this._today = parseISO(event.today);
         this._lists = event.lists;
         this._tasks = new Map(event.tasks.map((task) => [task.id, task]));
@@ -230,6 +234,7 @@ class ThaskCard extends HTMLElement {
         this._error = null;
         break;
       case "day_changed":
+        if (this._day.getTime() === this._today.getTime()) this._day = parseISO(event.today);
         this._today = parseISO(event.today);
         break;
       case "options":
@@ -313,11 +318,22 @@ class ThaskCard extends HTMLElement {
     const lists = this._config.lists || [];
     const categories = this._config.categories || [];
     const deleting = this._deleting?.task.id;
+    const filtered = (task) => (!categories.length || (task.categories || []).some((c) => categories.includes(c)))
+      && task.priority >= minPriority && task.id !== deleting;
+    if (view.type === "smart" && view.key === "day_view") {
+      const pool = [...this._tasks.values()].filter((task) =>
+        mine.has(task.list_id) && (!lists.length || lists.includes(task.list_id)) && filtered(task));
+      // Previews keep the id of their task, so hide_duplicates only applies to real tasks.
+      const tasks = dayTasks(pool, this._day, this._today).filter((task) => task.preview || !skip?.has(task.id));
+      if (this._day.getTime() === this._today.getTime()) {
+        tasks.push(...pool.filter((task) => isOverdue(task, this._today) && !skip?.has(task.id)));
+      }
+      return splitDone(sortByTime(tasks));
+    }
     const tasks = [...this._tasks.values()].filter((task) =>
       (view.type === "list" ? task.list_id === view.listId
         : mine.has(task.list_id) && (!lists.length || lists.includes(task.list_id)) && matchesSmart(task, view.key, ctx))
-      && (!categories.length || (task.categories || []).some((c) => categories.includes(c)))
-      && task.priority >= minPriority && !skip?.has(task.id) && task.id !== deleting
+      && filtered(task) && !skip?.has(task.id)
     );
     if (view.type === "list") {
       const sort = this._lists.find((l) => l.id === view.listId)?.sort || "manual";
@@ -370,7 +386,7 @@ class ThaskCard extends HTMLElement {
       const seen = this._config.hide_duplicates ? new Set() : null;
       body = views.map((view) => {
         const visible = this._visible(view, seen);
-        visible.open.forEach((task) => seen?.add(task.id));
+        visible.open.forEach((task) => !task.preview && seen?.add(task.id));
         return `<div class="view-head"><ha-icon icon="${this._viewIcon(view)}"></ha-icon><span class="name">${esc(this._viewName(view))}</span>
           <span class="count">${visible.open.length || ""}</span></div>${this._renderTasks(view, visible)}`;
       }).join("");
@@ -462,6 +478,26 @@ class ThaskCard extends HTMLElement {
       for (const [key, tasks] of Object.entries(groups)) {
         if (tasks.length) html += `<div class="section ${key}">${esc(this.t(key))}</div>${tasks.map((t) => this._row(t, view)).join("")}`;
       }
+    } else if (view.type === "smart" && view.key === "day_view") {
+      // Overdue (only on today), the day itself, then periods such as "week 45" that contain it.
+      const isToday = this._day.getTime() === this._today.getTime();
+      html += `<div class="day-nav">
+        <button class="icon" data-action="day" data-shift="-1" title="${esc(this.t("prev_day"))}"><ha-icon icon="mdi:chevron-left"></ha-icon></button>
+        <span class="day-label">${esc(this._day.toLocaleDateString(this._hass?.language || "en", { weekday: "long", day: "numeric", month: "long" }))}</span>
+        <button class="icon" data-action="day" data-shift="1" title="${esc(this.t("next_day"))}"><ha-icon icon="mdi:chevron-right"></ha-icon></button>
+        <button class="icon" data-action="day" data-shift="0" title="${esc(this.t("today"))}" ${isToday ? "disabled" : ""}><ha-icon icon="mdi:calendar-today"></ha-icon></button>
+      </div>`;
+      const overdue = shown.filter((t) => !t.preview && isOverdue(t, this._today));
+      const day = shown.filter((t) => !overdue.includes(t) && t.due.granularity === "day");
+      const periods = shown.filter((t) => !overdue.includes(t) && t.due.granularity !== "day");
+      if (overdue.length) {
+        html += `<button class="section overdue toggle" data-action="toggle-overdue">
+          <ha-icon icon="${this._overdueCollapsed ? "mdi:chevron-right" : "mdi:chevron-down"}"></ha-icon>${esc(this.t("overdue"))} <span>${overdue.length}</span></button>`;
+        if (!this._overdueCollapsed) html += overdue.map((t) => this._row(t, view)).join("");
+        if (day.length) html += `<div class="section">${esc(periodLabel(makePeriod("day", this._day), lang(this._hass), this._today))}</div>`;
+      }
+      html += day.map((t) => this._row(t, view)).join("");
+      if (periods.length) html += `<div class="section">${esc(this.t("in_period"))}</div>${periods.map((t) => this._row(t, view)).join("")}`;
     } else if (view.type === "smart" && view.key === "my_day" && this._overdueMode === "section" && shown.some((t) => isOverdue(t, this._today))) {
       const overdue = shown.filter((t) => isOverdue(t, this._today));
       const today = shown.filter((t) => !isOverdue(t, this._today));
@@ -508,9 +544,21 @@ class ThaskCard extends HTMLElement {
       if (list) meta.push(`<span class="meta list"><ha-icon icon="mdi:format-list-checks"></ha-icon>${esc(list.name)}</span>`);
     }
     if (task.steps?.length) meta.push(`<span class="meta"><ha-icon icon="mdi:format-list-bulleted"></ha-icon>${task.steps.filter((s) => s.completed).length}/${task.steps.length}</span>`);
-    if (task.recurrence) meta.push(`<span class="meta"><ha-icon icon="mdi:repeat"></ha-icon></span>`);
+    if (task.preview) meta.push(`<span class="meta preview-tag"><ha-icon icon="mdi:repeat"></ha-icon>${esc(this.t("preview"))}</span>`);
+    else if (task.recurrence) meta.push(`<span class="meta"><ha-icon icon="mdi:repeat"></ha-icon></span>`);
     if (task.notes) meta.push(`<span class="meta"><ha-icon icon="mdi:note-text-outline"></ha-icon></span>`);
     if (task.attachments?.length) meta.push(`<span class="meta"><ha-icon icon="mdi:paperclip"></ha-icon>${task.attachments.length}</span>`);
+    if (task.preview) {
+      // A coming occurrence of a recurring task: it does not exist yet, so there is nothing to tick off or change.
+      return `
+      <div class="task preview" data-view="${esc(view.id)}">
+        <span class="check preview"></span>
+        <div class="body">
+          <div class="title">${esc(task.title)}</div>
+          ${meta.length && !this._config.compact ? `<div class="metas">${meta.join("")}</div>` : ""}
+        </div>
+      </div>`;
+    }
     const expanded = this._expanded === task.id;
     const menu = this._menu === task.id;
     const drag = !task.completed && this._reorderable(view)
@@ -611,6 +659,10 @@ class ThaskCard extends HTMLElement {
       case "expand":
         if (ev.target.closest(".details, .actions")) break;
         this._expanded = this._expanded === target.dataset.id ? null : target.dataset.id;
+        this._render();
+        break;
+      case "day":
+        this._day = Number(target.dataset.shift) ? addDays(this._day, Number(target.dataset.shift)) : this._today;
         this._render();
         break;
       case "toggle-overdue":
@@ -761,6 +813,7 @@ class ThaskCard extends HTMLElement {
     const view = this._active();
     if (view.type === "smart") {
       if ((view.key === "my_day" || view.key === "overdue") && !data.due) data.due = makePeriod("day", this._today);
+      if (view.key === "day_view" && !data.due) data.due = makePeriod("day", this._day);
       if (view.key === "important") data.priority = Math.max(data.priority, 3);
       if (view.key === "this_week" && !data.due) data.due = makePeriod("week", this._today);
       if (view.key === "this_month" && !data.due) data.due = makePeriod("month", this._today);
@@ -939,6 +992,15 @@ const STYLE = `
   .step-input { border: 0; border-bottom: 1px solid var(--divider-color, color-mix(in srgb, var(--primary-text-color, #212121) 30%, transparent)); background: transparent; color: var(--primary-text-color);
     font: inherit; font-size: 14px; padding: 4px 0; outline: none; }
   .notes { font-size: 13px; color: var(--thask-muted); white-space: pre-wrap; }
+  .day-nav { display: flex; align-items: center; gap: 4px; padding: 2px 8px 4px 16px; }
+  .day-nav .day-label { flex: 1; font-size: 14px; font-weight: 500; }
+  .day-nav .icon { display: inline-flex; padding: 6px; border-radius: 50%; color: var(--thask-muted); }
+  .day-nav .icon:disabled { opacity: 0.35; }
+  /* Coming occurrences of recurring tasks that do not exist yet. */
+  .task.preview { cursor: default; }
+  .task.preview > .body > .title { color: var(--thask-muted); }
+  .check.preview { border-style: dashed; opacity: 0.6; }
+  .meta.preview-tag { font-style: italic; }
   .more { display: block; padding: 6px 16px 6px 24px; font-size: 13px; color: var(--thask-accent); }
   .empty { padding: 12px 16px 12px 24px; color: var(--thask-muted); }
   ha-card.compact .task { padding-top: 4px; padding-bottom: 4px; }

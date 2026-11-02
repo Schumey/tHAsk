@@ -97,7 +97,7 @@ const _strings = <String, Map<String, String>>{
   'de': {
     'today': 'Heute', 'tomorrow': 'Morgen', 'week_label': 'KW',
     'view_today': 'Heute', 'view_overdue': 'Überfällig', 'view_this_week': 'Diese Woche',
-    'view_this_month': 'Diesen Monat', 'view_important': 'Wichtig', 'view_planned': 'Geplant', 'list': 'Liste',
+    'view_this_month': 'Diesen Monat', 'view_important': 'Wichtig', 'view_planned': 'Geplant', 'view_day_view': 'Tagesplan', 'in_period': 'Im Zeitraum fällig', 'preview': 'Vorschau', 'preview_hint': 'Wiederholung: entsteht, wenn die aktuelle Aufgabe erledigt ist', 'prev_day': 'Vorheriger Tag', 'next_day': 'Nächster Tag', 'pick_day': 'Tag wählen', 'list': 'Liste',
     'later': 'Später', 'overdue_n': 'Überfällig ({0})', 'today_n': 'Heute ({0})', 'completed_n': 'Erledigt ({0})',
     'range_all': 'Alle', 'range_week': 'Bis Ende der Woche', 'range_month': 'Bis Ende des Monats',
     'range_quarter': 'Bis Ende des Quartals', 'range_year': 'Bis Ende des Jahres', 'range': 'Zeitraum',
@@ -142,7 +142,7 @@ const _strings = <String, Map<String, String>>{
   'en': {
     'today': 'Today', 'tomorrow': 'Tomorrow', 'week_label': 'Week',
     'view_today': 'Today', 'view_overdue': 'Overdue', 'view_this_week': 'This week',
-    'view_this_month': 'This month', 'view_important': 'Important', 'view_planned': 'Planned', 'list': 'List',
+    'view_this_month': 'This month', 'view_important': 'Important', 'view_planned': 'Planned', 'view_day_view': 'Day plan', 'in_period': 'Due within a period', 'preview': 'Preview', 'preview_hint': 'Repeats: created when the current task is completed', 'prev_day': 'Previous day', 'next_day': 'Next day', 'pick_day': 'Pick a day', 'list': 'List',
     'later': 'Later', 'overdue_n': 'Overdue ({0})', 'today_n': 'Today ({0})', 'completed_n': 'Completed ({0})',
     'range_all': 'All', 'range_week': 'By end of week', 'range_month': 'By end of month',
     'range_quarter': 'By end of quarter', 'range_year': 'By end of year', 'range': 'Period',
@@ -187,7 +187,7 @@ const _strings = <String, Map<String, String>>{
   'nl': {
     'today': 'Vandaag', 'tomorrow': 'Morgen', 'week_label': 'Week',
     'view_today': 'Vandaag', 'view_overdue': 'Te laat', 'view_this_week': 'Deze week',
-    'view_this_month': 'Deze maand', 'view_important': 'Belangrijk', 'view_planned': 'Gepland', 'list': 'Lijst',
+    'view_this_month': 'Deze maand', 'view_important': 'Belangrijk', 'view_planned': 'Gepland', 'view_day_view': 'Dagplanning', 'in_period': 'In een periode', 'preview': 'Voorbeeld', 'preview_hint': 'Herhaling: ontstaat als de huidige taak klaar is', 'prev_day': 'Vorige dag', 'next_day': 'Volgende dag', 'pick_day': 'Dag kiezen', 'list': 'Lijst',
     'later': 'Later', 'overdue_n': 'Te laat ({0})', 'today_n': 'Vandaag ({0})', 'completed_n': 'Voltooid ({0})',
     'range_all': 'Alle', 'range_week': 'Tot eind van de week', 'range_month': 'Tot eind van de maand',
     'range_quarter': 'Tot eind van het kwartaal', 'range_year': 'Tot eind van het jaar', 'range': 'Periode',
@@ -232,7 +232,7 @@ const _strings = <String, Map<String, String>>{
   'fr': {
     'today': "Aujourd'hui", 'tomorrow': 'Demain', 'week_label': 'Semaine',
     'view_today': "Aujourd'hui", 'view_overdue': 'En retard', 'view_this_week': 'Cette semaine',
-    'view_this_month': 'Ce mois-ci', 'view_important': 'Important', 'view_planned': 'Planifié', 'list': 'Liste',
+    'view_this_month': 'Ce mois-ci', 'view_important': 'Important', 'view_planned': 'Planifié', 'view_day_view': 'Programme du jour', 'in_period': 'Dans une période', 'preview': 'Aperçu', 'preview_hint': 'Répétition : créée lorsque la tâche actuelle est terminée', 'prev_day': 'Jour précédent', 'next_day': 'Jour suivant', 'pick_day': 'Choisir un jour', 'list': 'Liste',
     'later': 'Plus tard', 'overdue_n': 'En retard ({0})', 'today_n': "Aujourd'hui ({0})", 'completed_n': 'Terminées ({0})',
     'range_all': 'Toutes', 'range_week': "D'ici la fin de la semaine", 'range_month': "D'ici la fin du mois",
     'range_quarter': "D'ici la fin du trimestre", 'range_year': "D'ici la fin de l'année", 'range': 'Période',
@@ -277,7 +277,7 @@ const _strings = <String, Map<String, String>>{
   'es': {
     'today': 'Hoy', 'tomorrow': 'Mañana', 'week_label': 'Semana',
     'view_today': 'Hoy', 'view_overdue': 'Vencidas', 'view_this_week': 'Esta semana',
-    'view_this_month': 'Este mes', 'view_important': 'Importante', 'view_planned': 'Planificado', 'list': 'Lista',
+    'view_this_month': 'Este mes', 'view_important': 'Importante', 'view_planned': 'Planificado', 'view_day_view': 'Plan del día', 'in_period': 'Dentro de un periodo', 'preview': 'Vista previa', 'preview_hint': 'Repetición: se crea al completar la tarea actual', 'prev_day': 'Día anterior', 'next_day': 'Día siguiente', 'pick_day': 'Elegir un día', 'list': 'Lista',
     'later': 'Más tarde', 'overdue_n': 'Vencidas ({0})', 'today_n': 'Hoy ({0})', 'completed_n': 'Completadas ({0})',
     'range_all': 'Todas', 'range_week': 'Hasta el final de la semana', 'range_month': 'Hasta el final del mes',
     'range_quarter': 'Hasta el final del trimestre', 'range_year': 'Hasta el final del año', 'range': 'Periodo',

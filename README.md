@@ -19,7 +19,7 @@ Aktueller Stand: **0.9.1** (siehe [Releases](https://github.com/Schumey/tHAsk/re
 ### Funktionen
 
 - Fälligkeit als Tag, Woche, Monat, Quartal oder Jahr, optional mit Uhrzeit; Wiederholungen (auch an mehreren Wochentagen); Erinnerungen; Schritte; Notizen; Priorität (Niedrig, Mittel, Hoch); Kategorien.
-- Intelligente Listen: **Heute**, **Überfällig** (optional), **Wichtig**, **Geplant**, **Diese Woche**, **Diesen Monat**, dazu eigene Listen mit Gruppen.
+- Intelligente Listen: **Heute**, **Überfällig** (optional), **Wichtig**, **Geplant**, **Tagesplan**, **Diese Woche**, **Diesen Monat**, dazu eigene Listen mit Gruppen.
 - **Schnelleingabe mit Erkennung**: „Steuer KW 47 !!!“, „Blumen gießen jeden Mi und Sa“, „Zahnarzt morgen um 9:30“ – auch auf Englisch, Niederländisch, Französisch und Spanisch („Dentist next Friday“, „Tandarts morgen om 9 uur“, „Impôts semaine 47“, „Leche mañana a las 9“).
 - **Sprachen**: Deutsch, Englisch, Niederländisch, Französisch und Spanisch. Weboberfläche und Karte folgen der Sprache in Home Assistant, die Apps der des Geräts.
 - **Erinnerungen** als Push (Companion-App, mit Knopf „Erledigt“), in der HA-Glocke und als Windows-Benachrichtigung.
@@ -59,7 +59,7 @@ In der Weboberfläche unter **Einstellungen** (unten in der Seitenleiste), in de
 - **„Heute“ und „Diese Woche“ trennen** (aus): „Heute“ zeigt nur Aufgaben, die an einem bestimmten Tag fällig sind, dazu Überfälliges. Ein Zeitraum, der heute endet (am Sonntag „KW 44“), steht dann in „Diese Woche“; „Diese Woche“ zeigt umgekehrt nichts, was schon in „Heute“ steht. Gilt auch für `todo.thask_mein_tag`, `todo.thask_diese_woche` und den Zähler an der Taskleiste.
 - **„Diesen Monat“ trennen** (aus): „Diesen Monat“ zeigt nur, was nach dieser Woche bis Monatsende fällig ist.
 - **„Wichtig“ zeigt**: nur Priorität Hoch (Standard) oder Mittel und Hoch.
-- **Ansichten ausblenden**: „Wichtig“, „Geplant“, „Diese Woche“ und „Diesen Monat“ lassen sich aus der Navigation der Weboberfläche, der Apps und des Widgets nehmen. „Heute“ bleibt immer; Dashboard-Karten mit einer ausdrücklich gewählten Ansicht zeigen sie weiter.
+- **Ansichten ausblenden**: „Wichtig“, „Geplant“, „Tagesplan“, „Diese Woche“ und „Diesen Monat“ lassen sich aus der Navigation der Weboberfläche, der Apps und des Widgets nehmen. „Heute“ bleibt immer; Dashboard-Karten mit einer ausdrücklich gewählten Ansicht zeigen sie weiter.
 - **Erledigte automatisch löschen**: erledigte Aufgaben so viele Tage nach dem Abhaken löschen (0 = nie, Standard). Geprüft beim Start von Home Assistant, jede Nacht und direkt nach dem Ändern der Option. Für einzelne Listen oder eigene Regeln gibt es weiterhin `thask.clear_completed`.
 - **Erinnerungen senden an**: Benachrichtigungsdienste für Erinnerungen, siehe [Erinnerungen](#erinnerungen).
 
@@ -71,6 +71,7 @@ Nach dem Einrichten erscheint **tHAsk** in der HA-Seitenleiste:
   - **Heute**: alles, was bis heute fällig ist, inklusive Zeiträumen, die heute enden, und heute Erledigtem. Überfälliges je nach Option.
   - **Wichtig**: Priorität Hoch. Der Zeitraum oben rechts ist wählbar: alle oder fällig bis Ende der Woche, des Monats, des Quartals oder des Jahres; jedes Gerät merkt sich die Wahl.
   - **Geplant**: gruppiert nach Überfällig, Diese Woche, Diesen Monat und Später.
+  - **Tagesplan**: ein beliebiger Tag, mit Pfeilen oder Datumsauswahl gewählt. Er zeigt, was an diesem Tag fällig ist, darunter Zeiträume wie „KW 46“, die den Tag enthalten, und für heute auch Überfälliges. Wiederkehrende Aufgaben gibt es immer nur einmal (die nächste entsteht beim Abhaken); ihre kommenden Vorkommen erscheinen hier trotzdem, gestrichelt als **Vorschau**. Eine Vorschau lässt sich nicht abhaken, ein Klick öffnet die jetzige Aufgabe. Die Schnelleingabe legt am gewählten Tag an.
   - **Diese Woche** und **Diesen Monat**: alles, was bis Sonntag bzw. Monatsende fällig ist, inklusive Überfälligem.
   - Darunter die eigenen Listen, mit Gruppen; Listen für andere Personen sind ausgeblendet (siehe [Listen für bestimmte Personen](#listen-für-bestimmte-personen)).
 - **Schnelleingabe** mit Erkennung, z. B. „Reifen wechseln nächsten Monat !“, „Steuer KW 47“, „Rechnungen ablegen jeden Monat“, „Training alle 2 Wochen Mo und Do“, „Zeitung werktags“. Erkanntes erscheint als Chip; ein Klick auf den Chip nimmt die Erkennung zurück.
@@ -111,7 +112,7 @@ Die Integration bringt die Karte `custom:thask-card` mit; eine Ressource muss ni
 
 ```yaml
 type: custom:thask-card
-view: my_day            # my_day, overdue, important, planned, this_week, this_month oder list:<Listen-ID>
+view: my_day            # my_day, overdue, important, planned, day_view, this_week, this_month oder list:<Listen-ID>
 # views: [my_day, this_week]   # statt view: mehrere Ansichten auf einer Karte
 tabs: false             # mehrere Ansichten als Reiter statt untereinander
 hide_duplicates: true   # untereinander: jede Aufgabe nur in der ersten passenden Ansicht
@@ -129,7 +130,7 @@ hide_if_empty: false    # Karte ausblenden, wenn nichts offen ist (im Kartenedit
 
 Mehrere Ansichten stehen untereinander, jede mit eigener Überschrift (z. B. „Heute“ und darunter „Diese Woche“ ohne die heutigen Aufgaben), oder als Reiter. Die Schnelleingabe legt in der ersten bzw. der gezeigten Ansicht an.
 
-Zeiträume erscheinen als Chips (KW 46, November, Q4), Überfälliges rot; „Heute“ folgt der Option für Überfälliges, „Geplant“ ist gruppiert. Ein Klick auf eine Aufgabe klappt Schritte und Notizen auf (Schritte abhaken und hinzufügen), der Kreis hakt sie ab, die Überschrift öffnet die tHAsk-Seite.
+Zeiträume erscheinen als Chips (KW 46, November, Q4), Überfälliges rot; „Heute“ folgt der Option für Überfälliges, „Geplant“ ist gruppiert; der „Tagesplan“ blättert mit Pfeilen von Tag zu Tag und zeigt Vorschauen wiederkehrender Aufgaben. Ein Klick auf eine Aufgabe klappt Schritte und Notizen auf (Schritte abhaken und hinzufügen), der Kreis hakt sie ab, die Überschrift öffnet die tHAsk-Seite.
 
 Die drei Punkte rechts an einer Aufgabe (mit Maus beim Darüberfahren, auf Touch-Geräten immer sichtbar) öffnen Aktionen: auf heute, morgen, nächste Woche oder nächsten Monat schieben, Datum entfernen, Priorität setzen und löschen. Nach dem Löschen bleibt einige Sekunden „Rückgängig“; erst danach wird die Aufgabe wirklich gelöscht. In eigenen Listen mit manueller Sortierung lassen sich offene Aufgaben am Griff neben den Punkten verschieben, auch per Touch.
 

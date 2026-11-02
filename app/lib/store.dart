@@ -97,6 +97,19 @@ class ThaskStore extends ChangeNotifier {
   bool fromCache = false;
   late DateTime today = dateOnly(_clock());
 
+  /// Der Tag im Tagesplan; er folgt einem neuen Tag, solange er heute zeigt.
+  late DateTime planDay = today;
+
+  void setPlanDay(DateTime day) {
+    planDay = dateOnly(day);
+    notifyListeners();
+  }
+
+  void _setToday(DateTime day) {
+    if (planDay == today) planDay = day;
+    today = day;
+  }
+
   String? _address;
   String? _token;
   HaConnection? _client;
@@ -245,6 +258,14 @@ class ThaskStore extends ChangeNotifier {
       _visibleTasks.where((t) => t.priority >= (importantPriority == 'medium' ? 2 : 3) && (end == null || (t.due != null && !t.due!.end.isAfter(end)))),
       'due',
     );
+  }
+
+  /// Tagesplan für [planDay]: was an dem Tag fällig ist, mit Vorschauen wiederkehrender Aufgaben;
+  /// heute auch Überfälliges.
+  List<Task> get dayPlan {
+    final tasks = dayTasks(_visibleTasks, planDay, today);
+    if (planDay == today) tasks.addAll(_visibleTasks.where((t) => t.isOverdue(today)));
+    return sortByTime(tasks);
   }
 
   /// Alle Aufgaben mit Fälligkeit, nach Ende des Zeitraums.
@@ -483,7 +504,7 @@ class ThaskStore extends ChangeNotifier {
         _tasks
           ..clear()
           ..addEntries([for (final e in _rawTasks.entries) MapEntry(e.key, Task.fromJson(e.value))]);
-        today = dateOnly(DateTime.parse(event['today'] as String));
+        _setToday(dateOnly(DateTime.parse(event['today'] as String)));
         me = event['me'] as String? ?? me;
         _applyOptions((event['options'] as Map?)?.cast<String, dynamic>() ?? const {});
         // Noch nicht gesendete Änderungen bleiben sichtbar, bis der Server sie bestätigt.
@@ -491,7 +512,7 @@ class ThaskStore extends ChangeNotifier {
           _applyOptimistic(op);
         }
       case 'day_changed':
-        today = dateOnly(DateTime.parse(event['today'] as String));
+        _setToday(dateOnly(DateTime.parse(event['today'] as String)));
       case 'options':
         _applyOptions(event);
       case 'change':
@@ -758,8 +779,9 @@ class ThaskStore extends ChangeNotifier {
       );
 
   /// Aufgabe aus einem Schnelleingabe-Text anlegen („Steuer KW 47 !“). Erkannt wird auf dem Gerät,
-  /// deshalb geht das auch ohne Verbindung. Mit [dueToday] wird sie ohne erkannte Fälligkeit heute fällig.
-  Future<void> addQuick(String listId, String text, {bool dueToday = false}) {
+  /// deshalb geht das auch ohne Verbindung. Mit [dueToday] wird sie ohne erkannte Fälligkeit heute fällig,
+  /// mit [dueDay] an diesem Tag.
+  Future<void> addQuick(String listId, String text, {bool dueToday = false, DateTime? dueDay}) {
     final parsed = parse(text, today);
     final title = parsed.title.isEmpty ? text.trim() : parsed.title;
     if (title.isEmpty) return Future.value();
@@ -770,8 +792,8 @@ class ThaskStore extends ChangeNotifier {
         'title': title,
         if (parsed.due != null)
           'due': parsed.due!.toJson()
-        else if (dueToday)
-          'due': Period.day(today).toJson(),
+        else if (dueDay != null || dueToday)
+          'due': Period.day(dueDay ?? today).toJson(),
         if (parsed.dueTime != null) 'due_time': parsed.dueTime,
         if (parsed.recurrence != null) 'recurrence': parsed.recurrence!.toJson(),
         if (parsed.priority > 0) 'priority': parsed.priority,

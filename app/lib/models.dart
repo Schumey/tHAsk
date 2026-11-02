@@ -93,6 +93,18 @@ class Period {
         },
       );
 
+  /// Um [count] Einheiten [unit] verschieben; die Art des Zeitraums bleibt (wie Period.shift in core/period.py).
+  Period shiftBy(int count, Granularity unit) => Period.containing(
+        granularity,
+        switch (unit) {
+          Granularity.day => DateTime(start.year, start.month, start.day + count),
+          Granularity.week => DateTime(start.year, start.month, start.day + 7 * count),
+          Granularity.month => addMonths(start, count),
+          Granularity.quarter => addMonths(start, 3 * count),
+          Granularity.year => addMonths(start, 12 * count),
+        },
+      );
+
   /// Lesbare Bezeichnung, z. B. „KW 46“, „November“, „Q4 2026“, bei Tagen „Heute“ und „Morgen“.
   /// Das Jahr entfällt, wenn es das heutige ist.
   String label(DateTime today) {
@@ -156,6 +168,30 @@ class Recurrence {
         'interval': interval,
         if (weekdays.isNotEmpty) 'weekdays': weekdays,
       };
+
+  /// Der nächste Zeitraum nach [period], der nicht schon vor [today] zu Ende war (wie Recurrence.next_period).
+  Period nextPeriod(Period period, DateTime today) {
+    final day0 = dateOnly(today);
+    final step = interval < 1 ? 1 : interval;
+    if (weekdays.isNotEmpty && unit == Granularity.week && period.granularity == Granularity.day) {
+      // Wochen zählen ab der Woche des bisherigen Tags, damit „alle zwei Wochen“ im Takt bleibt.
+      final start = period.start;
+      final anchor = DateTime(start.year, start.month, start.day - (start.weekday - 1));
+      for (var offset = 1;; offset++) {
+        final day = DateTime(start.year, start.month, start.day + offset);
+        final weeks = (day.difference(anchor).inHours / 24).round() ~/ 7;
+        if (weeks % step == 0 && weekdays.contains(day.weekday - 1) && !day.isBefore(day0)) return Period.day(day);
+      }
+    }
+    var following = period.shiftBy(step, unit);
+    while (following.end.isBefore(day0)) {
+      final after = following.shiftBy(step, unit);
+      // Eine feinere Einheit als der Zeitraum („täglich“ bei einer Woche) bewegt ihn nicht.
+      if (!after.start.isAfter(following.start)) break;
+      following = after;
+    }
+    return following;
+  }
 }
 
 class TaskStep {
@@ -254,6 +290,7 @@ class Task {
     this.created = '',
     this.completedAt,
     this.attachments = const [],
+    this.preview = false,
   });
 
   final String id;
@@ -274,6 +311,10 @@ class Task {
   final String created;
   final String? completedAt;
   final List<TaskAttachment> attachments;
+
+  /// Vorschau eines kommenden Vorkommens einer wiederkehrenden Aufgabe im Tagesplan: Es gibt sie noch nicht,
+  /// sie entsteht erst beim Abhaken der jetzigen. Sie trägt deren Kennung.
+  final bool preview;
 
   factory Task.fromJson(Map<String, dynamic> json) => Task(
         id: json['id'] as String,
@@ -311,7 +352,62 @@ class Task {
   }
 
   bool isOverdue(DateTime today) => !completed && due != null && due!.end.isBefore(dateOnly(today));
+
+  /// Die Fälligkeiten, die eine wiederkehrende Aufgabe nach der jetzigen bekommt, bis zu denen, die an [until]
+  /// beginnen: was wiederholtes Abhaken anlegen würde. Leer ohne Wiederholung und für Erledigtes.
+  List<Period> projectedPeriods(DateTime until, DateTime today, {int limit = 2000}) {
+    if (recurrence == null || due == null || completed) return const [];
+    final last = dateOnly(until);
+    final periods = <Period>[];
+    var period = due!;
+    while (periods.length < limit) {
+      final next = recurrence!.nextPeriod(period, today);
+      if (!next.start.isAfter(period.start) || next.start.isAfter(last)) break;
+      periods.add(next);
+      period = next;
+    }
+    return periods;
+  }
+
+  /// Diese Aufgabe als Vorschau mit der Fälligkeit [due].
+  Task previewAt(Period due) => Task(
+        id: id,
+        listId: listId,
+        title: title,
+        notes: notes,
+        priority: priority,
+        due: due,
+        dueTime: dueTime,
+        recurrence: recurrence,
+        steps: [for (final s in steps) TaskStep(id: s.id, title: s.title)],
+        categories: categories,
+        position: position,
+        created: created,
+        attachments: attachments,
+        preview: true,
+      );
 }
+
+/// Alles, was an [day] fällig ist: Aufgaben, deren Zeitraum den Tag enthält, und Vorschauen wiederkehrender
+/// Aufgaben, die dann fällig werden, aber noch nicht existieren (wie dayTasks in thask-common.js).
+List<Task> dayTasks(Iterable<Task> tasks, DateTime day, DateTime today) {
+  final d = dateOnly(day);
+  return [
+    for (final task in tasks) ...[
+      if (task.due != null && task.due!.contains(d)) task,
+      for (final due in task.projectedPeriods(d, today).where((p) => p.contains(d)).take(1)) task.previewAt(due),
+    ],
+  ];
+}
+
+/// Reihenfolge innerhalb eines Tages: Uhrzeit, dann Priorität, dann die manuelle Reihenfolge.
+List<Task> sortByTime(Iterable<Task> tasks) => _stable(
+      tasks.toList()..sort((a, b) => a.position.compareTo(b.position)),
+      (a, b) {
+        final byTime = (a.dueTime ?? '99').compareTo(b.dueTime ?? '99');
+        return byTime != 0 ? byTime : b.priority.compareTo(a.priority);
+      },
+    );
 
 /// Aufgaben nach dem Sortiermodus einer Liste ordnen; Gleiche behalten die manuelle Reihenfolge.
 List<Task> sortTasks(Iterable<Task> tasks, String mode) {
