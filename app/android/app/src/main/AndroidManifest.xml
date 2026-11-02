@@ -21,6 +21,9 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
+            <!-- Widget-Links (thask://…) wertet home_widget aus; Flutters eigenes Deep-Linking
+                 würde sie sonst als benannte Route pushen und an der fehlenden Route scheitern. -->
+            <meta-data android:name="flutter_deeplinking_enabled" android:value="false" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
