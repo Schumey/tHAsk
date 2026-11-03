@@ -44,6 +44,7 @@ const STRINGS = {
     opt_auto_clear: "Erledigte automatisch löschen", opt_auto_clear_days: "Tage nach dem Abhaken (0 = nie)", opt_auto_clear_hint: "Geprüft beim Start von Home Assistant und jede Nacht. Gelöschte Aufgaben lassen sich nicht wiederherstellen.",
     opt_hidden_views: "Ansichten ausblenden", opt_hidden_views_hint: "Angehakte Ansichten erscheinen nicht in der Navigation, auch nicht in den Apps und im Widget. „Heute“ bleibt immer.",
     settings: "Einstellungen", saved: "Gespeichert", opt_overdue_in_today: "Überfällige Aufgaben in „Heute“", overdue_in_today_section: "Oben in einem eigenen Abschnitt „Überfällig“", overdue_in_today_mixed: "Zwischen den heutigen Aufgaben", overdue_in_today_separate: "Nicht in „Heute“, sondern in einer eigenen Ansicht „Überfällig“", opt_week_mode: "„Diese Woche“", week_mode_calendar: "Kalenderwoche (Montag bis Sonntag)", week_mode_rolling: "Heute und die nächsten 7 Tage", opt_views_apart: "Ansichten trennen", opt_separate_week: "„Heute“ und „Diese Woche“ trennen", opt_separate_week_hint: "„Heute“ zeigt nur Aufgaben mit einem festen Tag (und Überfälliges); Zeiträume wie „KW 44“ stehen in „Diese Woche“, das nichts zeigt, was schon in „Heute“ steht.", opt_separate_month: "„Diesen Monat“ trennen", opt_separate_month_hint: "„Diesen Monat“ zeigt nur, was nach dieser Woche bis Monatsende fällig ist.", opt_reminder_targets: "Erinnerungen senden an", opt_reminder_targets_hint: "Push über die Companion-App (mit Knopf „Erledigt“) oder persistent_notification für die Glocke in Home Assistant. Die Windows-App zeigt Erinnerungen selbst, solange sie läuft.", no_notify: "Keine Benachrichtigungsdienste gefunden.",
+    custom_periods: "Eigene Zeiträume", custom_periods_hint: "Zeiträume aus einem Kalender, z. B. ein „X-Block“ nach der Nachtschicht. Aufgaben bekommen ihn unter Fälligkeit, in der Schnelleingabe („nächster X-Block“, „jeden X-Block“) oder mit thask.add_task (due_period).", period_add: "Zeitraum hinzufügen", period_name: "Name", period_calendar: "Kalender", period_anchor: "Nach einem Termin, dessen Titel enthält", period_anchor_any: "leer = jeder Termin", anchor_part_end: "am letzten Tag des Termins", anchor_part_start: "am ersten Tag des Termins", period_weekdays: "nur wenn dieser Tag ist", period_start: "Beginn (Tage danach)", period_end: "Ende (Tage danach)", period_max: "Höchstens so viele Termine im Zeitraum", period_max_hint: "leer = egal", period_count_match: "Dabei nur Termine zählen, deren Titel enthält", period_horizon: "Tage vorausschauen", period_found: "Gefunden", period_none: "Noch kein Zeitraum gefunden.", period_refresh: "Neu suchen", period_delete_confirm: "Zeitraum „{0}“ löschen? Aufgaben behalten ihre Daten.", period_example: "Beispiel X-Block: Nachtschicht endet am Mi, Beginn 1 (Do), Ende 9 (übernächster Fr), höchstens 3 Termine.", rec_custom: "Jeder eigene Zeitraum", rec_custom_x: "Jeder {0}",
   },
   en: {
     attachments: "Attachments", add_file: "Add file", uploading: "Uploading …", delete_attachment_confirm: "Delete attachment “{0}”?", drop_files: "Drop files here",
@@ -87,6 +88,7 @@ const STRINGS = {
     opt_auto_clear: "Delete completed tasks automatically", opt_auto_clear_days: "days after ticking off (0 = never)", opt_auto_clear_hint: "Checked when Home Assistant starts and every night. Deleted tasks cannot be restored.",
     opt_hidden_views: "Hide views", opt_hidden_views_hint: "Ticked views do not appear in the navigation, nor in the apps and the widget. “Today” always stays.",
     settings: "Settings", saved: "Saved", opt_overdue_in_today: "Overdue tasks in “Today”", overdue_in_today_section: "At the top in a section “Overdue”", overdue_in_today_mixed: "Among today's tasks", overdue_in_today_separate: "Not in “Today” but in a view “Overdue” of their own", opt_week_mode: "“This week”", week_mode_calendar: "Calendar week (Monday to Sunday)", week_mode_rolling: "Today and the next 7 days", opt_views_apart: "Keep views apart", opt_separate_week: "Keep “Today” and “This week” apart", opt_separate_week_hint: "“Today” only shows tasks due on a specific day (and overdue ones); periods such as “week 44” are in “This week”, which leaves out what “Today” shows.", opt_separate_month: "Keep “This month” apart", opt_separate_month_hint: "“This month” only shows what is due after this week until the end of the month.", opt_reminder_targets: "Send reminders to", opt_reminder_targets_hint: "Push via the companion app (with a “Done” button) or persistent_notification for the bell in Home Assistant. The Windows app shows reminders on its own while it is running.", no_notify: "No notify services found.",
+    custom_periods: "Custom periods", custom_periods_hint: "Periods from a calendar, e.g. an “X-Block” after night shifts. Tasks get them under Due, in the quick entry (“next X-Block”, “every X-Block”) or with thask.add_task (due_period).", period_add: "Add period", period_name: "Name", period_calendar: "Calendar", period_anchor: "After an event whose title contains", period_anchor_any: "empty = any event", anchor_part_end: "on the event's last day", anchor_part_start: "on the event's first day", period_weekdays: "only if that day is a", period_start: "Start (days after)", period_end: "End (days after)", period_max: "At most this many events in the period", period_max_hint: "empty = any number", period_count_match: "Only count events whose title contains", period_horizon: "Days to look ahead", period_found: "Found", period_none: "No period found yet.", period_refresh: "Search again", period_delete_confirm: "Delete the period “{0}”? Tasks keep their dates.", period_example: "Example X-Block: night shift ends on Wed, start 1 (Thu), end 9 (the Friday after next), at most 3 events.", rec_custom: "Every custom period", rec_custom_x: "Every {0}",
   },
   nl: {
     attachments: "Bijlagen", add_file: "Bestand toevoegen", uploading: "Bezig met uploaden …", delete_attachment_confirm: "Bijlage „{0}” verwijderen?", drop_files: "Sleep bestanden hierheen",
@@ -130,6 +132,7 @@ const STRINGS = {
     opt_auto_clear: "Voltooide taken automatisch verwijderen", opt_auto_clear_days: "dagen na het afvinken (0 = nooit)", opt_auto_clear_hint: "Gecontroleerd bij het starten van Home Assistant en elke nacht. Verwijderde taken kunnen niet worden hersteld.",
     opt_hidden_views: "Weergaven verbergen", opt_hidden_views_hint: "Aangevinkte weergaven verschijnen niet in de navigatie, ook niet in de apps en de widget. „Vandaag” blijft altijd.",
     settings: "Instellingen", saved: "Opgeslagen", opt_overdue_in_today: "Te late taken in „Vandaag”", overdue_in_today_section: "Bovenaan in een sectie „Te laat”", overdue_in_today_mixed: "Tussen de taken van vandaag", overdue_in_today_separate: "Niet in „Vandaag”, maar in een eigen weergave „Te laat”", opt_week_mode: "„Deze week”", week_mode_calendar: "Kalenderweek (maandag tot zondag)", week_mode_rolling: "Vandaag en de komende 7 dagen", opt_views_apart: "Weergaven scheiden", opt_separate_week: "„Vandaag” en „Deze week” scheiden", opt_separate_week_hint: "„Vandaag” toont alleen taken op een vaste dag (en te late); periodes zoals „week 44” staan in „Deze week”, die niets toont wat al in „Vandaag” staat.", opt_separate_month: "„Deze maand” scheiden", opt_separate_month_hint: "„Deze maand” toont alleen wat na deze week tot het einde van de maand moet.", opt_reminder_targets: "Herinneringen sturen naar", opt_reminder_targets_hint: "Push via de Companion-app (met een knop „Klaar”) of persistent_notification voor de bel in Home Assistant. De Windows-app toont herinneringen zelf zolang hij draait.", no_notify: "Geen meldingsdiensten gevonden.",
+    custom_periods: "Eigen periodes", custom_periods_hint: "Periodes uit een agenda, bijv. een „X-Block” na nachtdiensten. Taken krijgen ze onder Uiterlijk, in de snelinvoer („volgende X-Block”, „elke X-Block”) of met thask.add_task (due_period).", period_add: "Periode toevoegen", period_name: "Naam", period_calendar: "Agenda", period_anchor: "Na een afspraak waarvan de titel bevat", period_anchor_any: "leeg = elke afspraak", anchor_part_end: "op de laatste dag van de afspraak", anchor_part_start: "op de eerste dag van de afspraak", period_weekdays: "alleen als die dag is", period_start: "Begin (dagen erna)", period_end: "Einde (dagen erna)", period_max: "Hoogstens zoveel afspraken in de periode", period_max_hint: "leeg = maakt niet uit", period_count_match: "Alleen afspraken tellen waarvan de titel bevat", period_horizon: "Dagen vooruitkijken", period_found: "Gevonden", period_none: "Nog geen periode gevonden.", period_refresh: "Opnieuw zoeken", period_delete_confirm: "Periode „{0}” verwijderen? Taken houden hun datums.", period_example: "Voorbeeld X-Block: nachtdienst eindigt op wo, begin 1 (do), einde 9 (vrijdag over anderhalve week), hoogstens 3 afspraken.", rec_custom: "Elke eigen periode", rec_custom_x: "Elke {0}",
   },
   fr: {
     attachments: "Pièces jointes", add_file: "Ajouter un fichier", uploading: "Envoi …", delete_attachment_confirm: "Supprimer la pièce jointe « {0} » ?", drop_files: "Déposez des fichiers ici",
@@ -173,6 +176,7 @@ const STRINGS = {
     opt_auto_clear: "Supprimer automatiquement les tâches terminées", opt_auto_clear_days: "jours après les avoir cochées (0 = jamais)", opt_auto_clear_hint: "Vérifié au démarrage de Home Assistant et chaque nuit. Les tâches supprimées ne peuvent pas être restaurées.",
     opt_hidden_views: "Masquer des vues", opt_hidden_views_hint: "Les vues cochées n'apparaissent pas dans la navigation, ni dans les applications et le widget. « Aujourd'hui » reste toujours.",
     settings: "Paramètres", saved: "Enregistré", opt_overdue_in_today: "Tâches en retard dans « Aujourd'hui »", overdue_in_today_section: "En haut, dans une section « En retard »", overdue_in_today_mixed: "Parmi les tâches du jour", overdue_in_today_separate: "Pas dans « Aujourd'hui », mais dans une vue « En retard » à part", opt_week_mode: "« Cette semaine »", week_mode_calendar: "Semaine calendaire (lundi à dimanche)", week_mode_rolling: "Aujourd'hui et les 7 prochains jours", opt_views_apart: "Séparer les vues", opt_separate_week: "Séparer « Aujourd'hui » et « Cette semaine »", opt_separate_week_hint: "« Aujourd'hui » n'affiche que les tâches d'un jour précis (et celles en retard) ; les périodes comme « semaine 44 » sont dans « Cette semaine », qui n'affiche pas ce qui est déjà dans « Aujourd'hui ».", opt_separate_month: "Séparer « Ce mois-ci »", opt_separate_month_hint: "« Ce mois-ci » n'affiche que ce qui est à faire après cette semaine jusqu'à la fin du mois.", opt_reminder_targets: "Envoyer les rappels à", opt_reminder_targets_hint: "Push via l'application Companion (avec un bouton « Terminé ») ou persistent_notification pour la cloche de Home Assistant. L'application Windows affiche elle-même les rappels tant qu'elle est ouverte.", no_notify: "Aucun service de notification trouvé.",
+    custom_periods: "Périodes personnalisées", custom_periods_hint: "Des périodes tirées d'un calendrier, p. ex. un « X-Block » après les nuits. Les tâches les reçoivent sous Échéance, dans la saisie rapide (« prochain X-Block », « chaque X-Block ») ou avec thask.add_task (due_period).", period_add: "Ajouter une période", period_name: "Nom", period_calendar: "Calendrier", period_anchor: "Après un événement dont le titre contient", period_anchor_any: "vide = tout événement", anchor_part_end: "le dernier jour de l'événement", anchor_part_start: "le premier jour de l'événement", period_weekdays: "seulement si ce jour est un", period_start: "Début (jours après)", period_end: "Fin (jours après)", period_max: "Au plus autant d'événements dans la période", period_max_hint: "vide = peu importe", period_count_match: "Ne compter que les événements dont le titre contient", period_horizon: "Jours à l'avance", period_found: "Trouvé", period_none: "Aucune période trouvée pour l'instant.", period_refresh: "Rechercher à nouveau", period_delete_confirm: "Supprimer la période « {0} » ? Les tâches gardent leurs dates.", period_example: "Exemple X-Block : la nuit finit le mer., début 1 (jeu.), fin 9 (le vendredi de la semaine suivante), au plus 3 événements.", rec_custom: "Chaque période personnalisée", rec_custom_x: "Chaque {0}",
   },
   es: {
     attachments: "Adjuntos", add_file: "Añadir archivo", uploading: "Subiendo …", delete_attachment_confirm: "¿Eliminar el adjunto «{0}»?", drop_files: "Suelta archivos aquí",
@@ -216,6 +220,7 @@ const STRINGS = {
     opt_auto_clear: "Eliminar tareas completadas automáticamente", opt_auto_clear_days: "días después de marcarlas (0 = nunca)", opt_auto_clear_hint: "Se comprueba al iniciar Home Assistant y cada noche. Las tareas eliminadas no se pueden recuperar.",
     opt_hidden_views: "Ocultar vistas", opt_hidden_views_hint: "Las vistas marcadas no aparecen en la navegación, tampoco en las apps ni en el widget. «Hoy» siempre se mantiene.",
     settings: "Ajustes", saved: "Guardado", opt_overdue_in_today: "Tareas vencidas en «Hoy»", overdue_in_today_section: "Arriba, en una sección «Vencidas»", overdue_in_today_mixed: "Entre las tareas de hoy", overdue_in_today_separate: "No en «Hoy», sino en una vista propia «Vencidas»", opt_week_mode: "«Esta semana»", week_mode_calendar: "Semana natural (lunes a domingo)", week_mode_rolling: "Hoy y los próximos 7 días", opt_views_apart: "Separar vistas", opt_separate_week: "Separar «Hoy» y «Esta semana»", opt_separate_week_hint: "«Hoy» solo muestra tareas de un día concreto (y las vencidas); los periodos como «semana 44» están en «Esta semana», que no muestra lo que ya está en «Hoy».", opt_separate_month: "Separar «Este mes»", opt_separate_month_hint: "«Este mes» solo muestra lo que vence después de esta semana hasta final de mes.", opt_reminder_targets: "Enviar recordatorios a", opt_reminder_targets_hint: "Push mediante la app Companion (con un botón «Hecho») o persistent_notification para la campana de Home Assistant. La app de Windows muestra los recordatorios por sí misma mientras está abierta.", no_notify: "No se encontraron servicios de notificación.",
+    custom_periods: "Periodos propios", custom_periods_hint: "Periodos de un calendario, p. ej. un «X-Block» tras los turnos de noche. Las tareas los reciben en Vencimiento, en la entrada rápida («próximo X-Block», «cada X-Block») o con thask.add_task (due_period).", period_add: "Añadir periodo", period_name: "Nombre", period_calendar: "Calendario", period_anchor: "Tras un evento cuyo título contiene", period_anchor_any: "vacío = cualquier evento", anchor_part_end: "el último día del evento", anchor_part_start: "el primer día del evento", period_weekdays: "solo si ese día es", period_start: "Inicio (días después)", period_end: "Fin (días después)", period_max: "Como máximo tantos eventos en el periodo", period_max_hint: "vacío = da igual", period_count_match: "Contar solo eventos cuyo título contiene", period_horizon: "Días por adelantado", period_found: "Encontrado", period_none: "Aún no se ha encontrado ningún periodo.", period_refresh: "Buscar de nuevo", period_delete_confirm: "¿Eliminar el periodo «{0}»? Las tareas conservan sus fechas.", period_example: "Ejemplo X-Block: el turno de noche termina el mié, inicio 1 (jue), fin 9 (el viernes de la semana siguiente), como máximo 3 eventos.", rec_custom: "Cada periodo propio", rec_custom_x: "Cada {0}",
   },
 };
 
@@ -248,7 +253,7 @@ const {
   MONTHS, MONTHS_SHORT, WEEKDAYS_SHORT, GRANULARITIES, pad, toISO, parseISO, addDays,
   addMonths, weekdayIndex, periodStart, periodEnd, isoWeek, makePeriod, shiftPeriod, periodEndOf,
   periodStatus, periodLabel, periodRange, sortTasks, esc, dueBy, completedSince, isOverdue,
-  matchesSmart, sortByDue, splitDone, language, dateLocale, dayTasks, sortByTime,
+  matchesSmart, sortByDue, splitDone, language, dateLocale, dayTasks, sortByTime, customUpcoming, customAdjacent,
 } = await import(`./thask-common.js?v=${VERSION}`);
 
 const CONDITION_KINDS = ["state", "calendar", "time"];
@@ -298,6 +303,8 @@ class ThaskPanel extends HTMLElement {
     this._hiddenViews = []; // smart views left out of the navigation
     this._importantPriority = "high"; // "Important": high | medium (medium and high)
     this._settings = null; // settings page: { options, notify_services } once loaded
+    this._periods = []; // custom periods from the snapshot: [{ id, name, instances: [period] }]
+    this._periodRules = null; // settings page: the rules of the custom periods, with what they found
     this._overdueCollapsed = false;
     try {
       this._overdueCollapsed = localStorage.getItem(OVERDUE_COLLAPSED_KEY) === "1";
@@ -388,6 +395,7 @@ class ThaskPanel extends HTMLElement {
       this._me = event.me ?? this._hass?.user?.id ?? null;
       this._tasks = new Map(event.tasks.map((task) => [task.id, task]));
       this._setOptions(event.options || {});
+      this._periods = event.periods || [];
       this._loaded = true;
       this._error = null;
       if (this._view.type === "list" && !this._lists.some((l) => l.id === this._view.id)) {
@@ -398,6 +406,8 @@ class ThaskPanel extends HTMLElement {
       this._today = parseISO(event.today);
     } else if (event.type === "options") {
       this._setOptions(event);
+    } else if (event.type === "periods") {
+      this._periods = event.periods || [];
     } else if (event.type === "change") {
       this._applyChange(event);
     }
@@ -514,7 +524,7 @@ class ThaskPanel extends HTMLElement {
     const visible = new Set(this._visibleLists().map((l) => l.id));
     if (view.type === "smart" && view.key === "day_view" && !searching) {
       const mine = [...this._tasks.values()].filter((task) => visible.has(task.list_id));
-      const tasks = dayTasks(mine, this._day, this._today);
+      const tasks = dayTasks(mine, this._day, this._today, this._periods);
       // Today also shows what is overdue, like "Today".
       if (this._day.getTime() === this._today.getTime()) tasks.push(...mine.filter((task) => this._isOverdue(task)));
       return splitDone(sortByTime(tasks));
@@ -925,6 +935,7 @@ class ThaskPanel extends HTMLElement {
 
   _recurrenceLabel(recurrence) {
     if (!recurrence) return "";
+    if (recurrence.unit === "custom") return this.t("rec_custom");
     const label = recurrence.interval > 1
       ? this.t("rec_every", recurrence.interval, this.t(`units_${recurrence.unit}`))
       : this.t(`rec_${recurrence.unit}`);
@@ -960,11 +971,17 @@ class ThaskPanel extends HTMLElement {
         <div class="row"><input type="date" class="field" data-field="due-day" value="${esc(task.due.start)}">
         <input type="time" class="field time" data-field="due-time" value="${esc(task.due_time || "")}" title="${esc(this.t("time"))}"></div>`;
     } else if (task.due) {
+      // A custom period steps through the periods its rule found.
+      const custom = granularity === "custom";
+      const step = (shift, icon) => {
+        const off = custom && !customAdjacent(this._periods, task.due, shift, this._today);
+        return `<button class="icon-button" data-action="due-shift" data-shift="${shift}" ${off ? "disabled" : ""}><ha-icon icon="${icon}"></ha-icon></button>`;
+      };
       dueEditor = `
         <div class="stepper">
-          <button class="icon-button" data-action="due-shift" data-shift="-1"><ha-icon icon="mdi:chevron-left"></ha-icon></button>
+          ${step(-1, "mdi:chevron-left")}
           <div class="stepper-label"><b>${esc(periodLabel(task.due, lang, this._today))}</b><span>${esc(periodRange(task.due, this._locale))}</span></div>
-          <button class="icon-button" data-action="due-shift" data-shift="1"><ha-icon icon="mdi:chevron-right"></ha-icon></button>
+          ${step(1, "mdi:chevron-right")}
         </div>`;
     }
     const quick = [
@@ -975,6 +992,10 @@ class ThaskPanel extends HTMLElement {
       ["this_month", makePeriod("month", this._today)],
       ["next_month", makePeriod("month", addMonths(this._today, 1))],
     ];
+    // Custom periods: the one running now or the next one found.
+    const customQuick = this._periods
+      .map((rule) => [rule.name, customUpcoming(this._periods, rule.id, this._today)[0]])
+      .filter(([, period]) => period);
 
     const refocusNewStep = this.shadowRoot.activeElement?.dataset?.field === "new-step";
     detail.innerHTML = `
@@ -1008,7 +1029,7 @@ class ThaskPanel extends HTMLElement {
           ${["", ...GRANULARITIES].map((g) => `<button class="${g === granularity ? "on" : ""}" data-action="due-granularity" data-granularity="${g}">${esc(this.t(g || "none"))}</button>`).join("")}
         </div>
         ${dueEditor}
-        <div class="quick-due">${quick.map(([key, period]) => `<button class="chip" data-action="due-set" data-period='${esc(JSON.stringify(period))}'>${esc(this.t(key))}</button>`).join("")}</div>
+        <div class="quick-due">${quick.map(([key, period]) => `<button class="chip" data-action="due-set" data-period='${esc(JSON.stringify(period))}'>${esc(this.t(key))}</button>`).join("")}${customQuick.map(([name, period]) => `<button class="chip custom ${task.due?.rule === period.rule && task.due?.start === period.start ? "on" : ""}" data-action="due-set" data-period='${esc(JSON.stringify(period))}' title="${esc(periodRange(period, this._locale))}"><ha-icon icon="mdi:calendar-star"></ha-icon>${esc(name)}</button>`).join("")}</div>
       </div>
       <div class="card">
         <div class="label"><ha-icon icon="mdi:bell-outline"></ha-icon>${esc(this.t("reminder"))}</div>
@@ -1021,8 +1042,9 @@ class ThaskPanel extends HTMLElement {
           <select class="field" data-field="recurrence-unit">
             <option value="">${esc(this.t("none"))}</option>
             ${GRANULARITIES.map((g) => `<option value="${g}" ${task.recurrence?.unit === g ? "selected" : ""}>${esc(this.t(`rec_${g}`))}</option>`).join("")}
+            ${granularity === "custom" || task.recurrence?.unit === "custom" ? `<option value="custom" ${task.recurrence?.unit === "custom" ? "selected" : ""}>${esc(granularity === "custom" && task.due.name ? this.t("rec_custom_x", task.due.name) : this.t("rec_custom"))}</option>` : ""}
           </select>
-          ${task.recurrence ? `<span class="muted">${esc(this.t("every"))}</span><input type="number" min="1" class="field number" data-field="recurrence-interval" value="${task.recurrence.interval}">` : ""}
+          ${task.recurrence && task.recurrence.unit !== "custom" ? `<span class="muted">${esc(this.t("every"))}</span><input type="number" min="1" class="field number" data-field="recurrence-interval" value="${task.recurrence.interval}">` : ""}
         </div>
         ${task.recurrence?.unit === "week" ? `
           <div class="row weekdays"><span class="muted">${esc(this.t("on_weekdays"))}</span>
@@ -1228,10 +1250,104 @@ class ThaskPanel extends HTMLElement {
   async _loadSettings() {
     try {
       this._settings = await this._hass.callWS({ type: "thask/options/get" });
+      this._periodRules = (await this._hass.callWS({ type: "thask/period_rules/get" })).rules;
     } catch (err) {
       this._settings = { error: err.message || String(err) };
     }
     if (this._view.type === "settings") this._render();
+  }
+
+  // ---- Custom periods: rules that find periods such as an "X block" in a calendar ------------
+
+  async _periodCall(type, fields = {}) {
+    try {
+      const result = await this._hass.callWS({ type, ...fields });
+      this._periodRules = result.rules;
+      if (type !== "thask/period_rules/refresh") this._toast(this.t("saved"));
+    } catch (err) {
+      this._toast(err.message || String(err));
+    }
+    if (this._view.type === "settings") this._render();
+  }
+
+  _savePeriodField(input) {
+    const rule = this._periodRules?.find((r) => r.id === input.dataset.ruleId);
+    if (!rule) return;
+    const key = input.dataset.pfield;
+    let value = input.type === "checkbox" ? input.checked : input.value;
+    if (["start_offset", "end_offset", "horizon_days"].includes(key)) value = parseInt(value, 10) || 0;
+    if (key === "max_events") value = value === "" ? null : Math.max(0, parseInt(value, 10) || 0);
+    if (key === "name" && !value.trim()) {
+      this._render();
+      return;
+    }
+    this._periodCall("thask/period_rule/update", { rule_id: rule.id, [key]: value });
+  }
+
+  _onPeriodAction(action, target) {
+    const rule = this._periodRules?.find((r) => r.id === target.dataset.ruleId);
+    switch (action) {
+      case "period-add":
+        // Prefilled with the example: night shift ends on Wednesday, Thursday to the Friday after next.
+        this._periodCall("thask/period_rule/create", {
+          name: "X-Block", anchor_match: "Nacht", anchor_part: "end", anchor_weekdays: [2], start_offset: 1, end_offset: 9, max_events: 3,
+        });
+        break;
+      case "period-refresh":
+        this._periodCall("thask/period_rules/refresh");
+        break;
+      case "period-delete":
+        if (rule && confirm(this.t("period_delete_confirm", rule.name))) this._periodCall("thask/period_rule/delete", { rule_id: rule.id });
+        break;
+      case "period-weekday": {
+        if (!rule) break;
+        const day = Number(target.dataset.weekday);
+        const days = rule.anchor_weekdays.includes(day) ? rule.anchor_weekdays.filter((d) => d !== day) : [...rule.anchor_weekdays, day];
+        this._periodCall("thask/period_rule/update", { rule_id: rule.id, anchor_weekdays: days.sort() });
+        break;
+      }
+    }
+  }
+
+  _periodRuleHtml(rule) {
+    const id = esc(rule.id);
+    const field = (key, type = "text", extra = "") =>
+      `<input class="field ${type === "number" ? "number" : ""}" type="${type}" data-pfield="${key}" data-rule-id="${id}" value="${esc(rule[key] ?? "")}" ${extra}>`;
+    const found = rule.instances.map((p) => `<span class="chip">${esc(periodRange({ ...p, granularity: "custom" }, this._locale))}</span>`).join("");
+    return `
+      <div class="period-rule ${rule.enabled ? "" : "disabled"}">
+        <div class="row">
+          <input type="checkbox" data-pfield="enabled" data-rule-id="${id}" ${rule.enabled ? "checked" : ""} title="${esc(this.t("enabled"))}">
+          ${field("name", "text", `placeholder="${esc(this.t("period_name"))}"`)}
+          <button class="icon-button danger" data-action="period-delete" data-rule-id="${id}" title="${esc(this.t("delete"))}"><ha-icon icon="mdi:delete-outline"></ha-icon></button>
+        </div>
+        <label class="muted">${esc(this.t("period_calendar"))}</label>
+        ${field("calendar", "text", `list="thask-period-calendars" placeholder="calendar.…"`)}
+        <label class="muted">${esc(this.t("period_anchor"))}</label>
+        <div class="row">
+          ${field("anchor_match", "text", `placeholder="${esc(this.t("period_anchor_any"))}"`)}
+          <select class="field" data-pfield="anchor_part" data-rule-id="${id}">
+            ${["end", "start"].map((part) => `<option value="${part}" ${rule.anchor_part === part ? "selected" : ""}>${esc(this.t(`anchor_part_${part}`))}</option>`).join("")}
+          </select>
+        </div>
+        <div class="row weekdays"><span class="muted">${esc(this.t("period_weekdays"))}</span>
+          <div class="segmented">${WEEKDAYS_SHORT[this._lang].map((name, d) => `<button class="${rule.anchor_weekdays.includes(d) ? "on" : ""}" data-action="period-weekday" data-rule-id="${id}" data-weekday="${d}">${esc(name)}</button>`).join("")}</div>
+        </div>
+        <div class="row">
+          <span class="muted">${esc(this.t("period_start"))}</span>${field("start_offset", "number", `min="-60" max="60"`)}
+          <span class="muted">${esc(this.t("period_end"))}</span>${field("end_offset", "number", `min="-60" max="60"`)}
+        </div>
+        <div class="row">
+          <span class="muted">${esc(this.t("period_max"))}</span>${field("max_events", "number", `min="0" placeholder="–" title="${esc(this.t("period_max_hint"))}"`)}
+        </div>
+        <label class="muted">${esc(this.t("period_count_match"))}</label>
+        ${field("count_match", "text", `placeholder="${esc(this.t("period_anchor_any"))}"`)}
+        <div class="row">
+          <span class="muted">${esc(this.t("period_horizon"))}</span>${field("horizon_days", "number", `min="7" max="365"`)}
+        </div>
+        ${rule.error ? `<div class="error-line"><ha-icon icon="mdi:alert-outline"></ha-icon>${esc(rule.error)}</div>` : ""}
+        <div class="period-found"><span class="muted">${esc(this.t("period_found"))}:</span> ${found || `<span class="muted">${esc(this.t("period_none"))}</span>`}</div>
+      </div>`;
   }
 
   async _saveOption(input) {
@@ -1291,6 +1407,15 @@ class ThaskPanel extends HTMLElement {
         <label class="option-choice"><input type="checkbox" value="${esc(service)}" data-option="reminder_targets" ${chosen.includes(service) ? "checked" : ""}>
           <span>notify.${esc(service)}</span></label>`).join("") : `<div class="muted option-hint">${esc(this.t("no_notify"))}</div>`}
       <div class="muted option-hint">${esc(this.t("opt_reminder_targets_hint"))}</div>
+      <div class="section-title">${esc(this.t("custom_periods"))}</div>
+      <div class="muted option-hint">${esc(this.t("custom_periods_hint"))}</div>
+      <datalist id="thask-period-calendars">${Object.keys(this._hass.states).filter((id) => id.startsWith("calendar.")).sort().map((id) => `<option value="${esc(id)}">${esc(this._hass.states[id].attributes.friendly_name || id)}</option>`).join("")}</datalist>
+      ${(this._periodRules || []).map((rule) => this._periodRuleHtml(rule)).join("")}
+      <div class="row">
+        <button class="chip" data-action="period-add"><ha-icon icon="mdi:plus"></ha-icon>${esc(this.t("period_add"))}</button>
+        ${this._periodRules?.length ? `<button class="chip" data-action="period-refresh"><ha-icon icon="mdi:refresh"></ha-icon>${esc(this.t("period_refresh"))}</button>` : ""}
+      </div>
+      <div class="muted option-hint">${esc(this.t("period_example"))}</div>
     </div>`;
   }
 
@@ -1581,6 +1706,12 @@ class ThaskPanel extends HTMLElement {
         ev.stopPropagation();
         this._onTriggerAction(action, target);
         break;
+      case "period-add":
+      case "period-refresh":
+      case "period-delete":
+      case "period-weekday":
+        this._onPeriodAction(action, target);
+        break;
       case "back-to-sidebar":
         this._pane = "sidebar";
         this._render();
@@ -1641,9 +1772,12 @@ class ThaskPanel extends HTMLElement {
         }
         break;
       }
-      case "due-shift":
-        this._updateTask(task, { due: shiftPeriod(task.due, Number(target.dataset.shift)) });
+      case "due-shift": {
+        const shift = Number(target.dataset.shift);
+        const due = task.due.granularity === "custom" ? customAdjacent(this._periods, task.due, shift, this._today) : shiftPeriod(task.due, shift);
+        if (due) this._updateTask(task, { due });
         break;
+      }
       case "due-set":
         this._updateTask(task, { due: JSON.parse(target.dataset.period) });
         break;
@@ -1752,6 +1886,10 @@ class ThaskPanel extends HTMLElement {
       this._saveOption(ev.target);
       return;
     }
+    if (ev.target.dataset?.pfield) {
+      this._savePeriodField(ev.target);
+      return;
+    }
     const field = ev.target.dataset?.field;
     if (field === "important-range") {
       this._importantRange = ev.target.value;
@@ -1789,7 +1927,7 @@ class ThaskPanel extends HTMLElement {
         this._updateTask(task, { reminder: value || null });
         break;
       case "recurrence-unit":
-        this._updateTask(task, { recurrence: value ? { unit: value, interval: task.recurrence?.interval || 1 } : null });
+        this._updateTask(task, { recurrence: value ? { unit: value, interval: value === "custom" ? 1 : task.recurrence?.interval || 1 } : null });
         break;
       case "recurrence-interval":
         if (Number(value) >= 1) this._updateTask(task, { recurrence: { ...task.recurrence, interval: Number(value) } });
@@ -2105,6 +2243,7 @@ const STYLE = `
   .stepper-label { flex: 1; display: flex; flex-direction: column; align-items: center; }
   .stepper-label span { font-size: 12px; color: var(--thask-muted); }
   .quick-due { display: flex; flex-wrap: wrap; gap: 6px; }
+  .quick-due .chip.custom.on { background: color-mix(in srgb, var(--thask-accent) 25%, transparent); }
   .field { flex: 1; min-width: 0; padding: 6px 8px; border: 1px solid var(--thask-divider); border-radius: 6px; background: var(--thask-bg); }
   .field.time { flex: 0 0 110px; }
   .field.number { flex: 0 0 64px; }
@@ -2127,6 +2266,10 @@ const STYLE = `
   .option-choice { display: flex; align-items: center; gap: 10px; padding: 6px 4px; cursor: pointer; }
   .option-choice input { margin: 0; accent-color: var(--primary-color, #03a9f4); }
   .option-hint { padding: 0 4px 8px 30px; }
+  .period-rule { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 12px; padding: 10px; border: 1px solid var(--thask-divider); border-radius: 8px; }
+  .period-rule.disabled { opacity: 0.6; }
+  .period-rule .row { flex-wrap: wrap; }
+  .period-found { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; font-size: 13px; }
   .task.trigger.disabled .task-title { color: var(--thask-muted); }
   .test-result { font-size: 12px; margin-top: 4px; color: var(--thask-danger); }
   .test-result.ok { color: var(--thask-accent); }

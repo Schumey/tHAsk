@@ -106,6 +106,10 @@
           "name": "Due date",
           "description": "Any day within the period."
         },
+        "due_period": {
+          "name": "Custom period",
+          "description": "Name of a custom period (e.g. “X-Block”): due in the next one found. With a date: in the first one that ends on or after it."
+        },
         "priority": {
           "name": "Priority",
           "description": "0 = none, 1 = low, 2 = medium, 3 = high."

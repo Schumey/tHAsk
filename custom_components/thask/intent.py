@@ -76,7 +76,7 @@ class AddTaskIntent(intent.IntentHandler):
             task_list = mine[0] if mine else data.collection.default_list()
         if task_list is None:
             raise intent.IntentHandleError("There is no task list to add the task to")
-        result = parse(text, data.today)
+        result = parse(text, data.today, custom=data.custom_periods())
         fields = {"priority": result.priority}
         if result.due:
             fields["due"] = result.due.as_dict()

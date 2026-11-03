@@ -1,4 +1,8 @@
-"""Fuzzy due dates: a task is due on a day, or somewhere in a week, month, quarter or year."""
+"""Fuzzy due dates: a task is due on a day, or somewhere in a week, month, quarter or year.
+
+Or in a custom period: a named stretch of days found by a rule ("X block" from a shift calendar, see
+custom_periods.py). It has its own start and end and keeps them, even when the calendar changes later.
+"""
 
 from __future__ import annotations
 
@@ -17,6 +21,7 @@ class Granularity(StrEnum):
     MONTH = "month"
     QUARTER = "quarter"
     YEAR = "year"
+    CUSTOM = "custom"
 
 
 class PeriodStatus(StrEnum):
@@ -80,6 +85,7 @@ _DAY_FORMAT = {
     "fr": "{weekday} {day} {month}",
     "es": "{weekday}, {day} {month}",
 }
+_SHORT_DATE_FORMAT = {"de": "{day}. {month}", "en": "{month} {day}", "nl": "{day} {month}", "fr": "{day} {month}", "es": "{day} {month}"}
 _WEEK_FORMAT = {"de": "KW {week}", "en": "Week {week}", "nl": "Week {week}", "fr": "Semaine {week}", "es": "Semana {week}"}
 
 
@@ -93,7 +99,7 @@ def add_months(day: date, months: int) -> date:
 def period_start(granularity: Granularity, day: date) -> date:
     """Return the first day of the period of the given granularity containing day."""
     match granularity:
-        case Granularity.DAY:
+        case Granularity.DAY | Granularity.CUSTOM:
             return day
         case Granularity.WEEK:
             return day - timedelta(days=day.weekday())
@@ -107,15 +113,27 @@ def period_start(granularity: Granularity, day: date) -> date:
 
 @dataclass(frozen=True, slots=True)
 class Period:
-    """A due period. Any date inside the period may be passed; it is normalized to its start."""
+    """A due period. Any date inside the period may be passed; it is normalized to its start.
+
+    Custom periods also have `until` (last day), `name` and the id of the rule that found them.
+    """
 
     granularity: Granularity
     start: date
+    until: date | None = None
+    name: str = ""
+    rule: str | None = None
 
     def __post_init__(self) -> None:
         granularity = Granularity(self.granularity)
         object.__setattr__(self, "granularity", granularity)
         object.__setattr__(self, "start", period_start(granularity, self.start))
+        if granularity is Granularity.CUSTOM:
+            object.__setattr__(self, "until", max(self.until or self.start, self.start))
+        else:
+            object.__setattr__(self, "until", None)
+            object.__setattr__(self, "name", "")
+            object.__setattr__(self, "rule", None)
 
     @classmethod
     def day(cls, day: date) -> Period:
@@ -137,6 +155,10 @@ class Period:
     def year(cls, year: int) -> Period:
         return cls(Granularity.YEAR, date(year, 1, 1))
 
+    @classmethod
+    def custom(cls, start: date, end: date, name: str, rule: str | None = None) -> Period:
+        return cls(Granularity.CUSTOM, start, end, name, rule)
+
     @property
     def end(self) -> date:
         """Last day of the period (inclusive)."""
@@ -151,6 +173,8 @@ class Period:
                 return add_months(self.start, 3) - timedelta(days=1)
             case Granularity.YEAR:
                 return date(self.start.year, 12, 31)
+            case Granularity.CUSTOM:
+                return self.until
 
     def contains(self, day: date) -> bool:
         return self.start <= day <= self.end
@@ -166,8 +190,15 @@ class Period:
         return PeriodStatus.UPCOMING
 
     def shift(self, count: int, unit: Granularity | None = None) -> Period:
-        """Move the period by count units (default: its own granularity)."""
+        """Move the period by count units (default: its own granularity).
+
+        A custom period keeps its length; on its own it moves by that length (the rule's next period is
+        not known here).
+        """
+        length = (self.end - self.start).days + 1
         match unit or self.granularity:
+            case Granularity.CUSTOM:
+                start = self.start + timedelta(days=length * count)
             case Granularity.DAY:
                 start = self.start + timedelta(days=count)
             case Granularity.WEEK:
@@ -178,6 +209,8 @@ class Period:
                 start = add_months(self.start, 3 * count)
             case Granularity.YEAR:
                 start = add_months(self.start, 12 * count)
+        if self.granularity is Granularity.CUSTOM:
+            return Period.custom(start, start + timedelta(days=length - 1), self.name, self.rule)
         return Period(self.granularity, start)
 
     def label(self, lang: str = "de", today: date | None = None) -> str:
@@ -199,13 +232,25 @@ class Period:
                 text, year = f"Q{(start.month - 1) // 3 + 1}", start.year
             case Granularity.YEAR:
                 return str(start.year)
+            case Granularity.CUSTOM:
+                # "X block 6 Nov": the name alone would not tell one block from the next.
+                text = f"{self.name} {_SHORT_DATE_FORMAT[lang].format(day=start.day, month=_MONTHS_SHORT[lang][start.month - 1])}"
+                year = start.year
         if today is None or year != today.year:
             text = f"{text} {year}"
         return text
 
     def as_dict(self) -> dict[str, Any]:
-        return {"granularity": self.granularity.value, "start": self.start.isoformat()}
+        data: dict[str, Any] = {"granularity": self.granularity.value, "start": self.start.isoformat()}
+        if self.granularity is Granularity.CUSTOM:
+            data.update(end=self.end.isoformat(), name=self.name, rule=self.rule)
+        return data
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Period:
-        return cls(Granularity(data["granularity"]), date.fromisoformat(data["start"]))
+        granularity = Granularity(data["granularity"])
+        start = date.fromisoformat(data["start"])
+        if granularity is Granularity.CUSTOM:
+            end = date.fromisoformat(data["end"]) if data.get("end") else start
+            return cls.custom(start, end, data.get("name") or "", data.get("rule"))
+        return cls(granularity, start)

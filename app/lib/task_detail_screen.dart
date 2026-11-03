@@ -30,6 +30,7 @@ String _everyText(Recurrence r) {
 List<String> get _weekdayNames => L10n.weekdaysShort;
 
 String _recurrenceLabel(Recurrence r) {
+  if (r.unit == Granularity.custom) return tr('rec_custom');
   final label = switch (r.unit) {
     _ when r.interval == 1 => tr('rec_${r.unit.name}'),
     _ => _everyText(r),
@@ -225,6 +226,11 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
 
   // -- Fälligkeit ------------------------------------------------------------
 
+  /// Der vorige oder nächste Zeitraum; bei eigenen Zeiträumen der vorige oder nächste gefundene (sonst null).
+  Period? _shifted(Period due, int step) => due.granularity == Granularity.custom
+      ? customAdjacent(store.customPeriods, due, step, store.today)
+      : due.shift(step);
+
   void _setGranularity(Task task, Granularity? granularity) {
     if (granularity == null) {
       _update({'due': null, 'due_time': null});
@@ -283,7 +289,12 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
     final dueDay = task.due?.granularity == Granularity.day ? task.due!.start : null;
     final result = await showDialog<Recurrence>(
       context: context,
-      builder: (_) => _RecurrenceDialog(initial: task.recurrence, dueDay: dueDay),
+      builder: (_) => _RecurrenceDialog(
+        initial: task.recurrence,
+        dueDay: dueDay,
+        // „Jeder X-Block“ gibt es nur für Aufgaben, die in einem eigenen Zeitraum fällig sind.
+        customName: task.due?.granularity == Granularity.custom ? task.due!.name : null,
+      ),
     );
     if (result == null) return;
     final patch = <String, dynamic>{'recurrence': result.toJson()};
@@ -451,12 +462,21 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                       selected: due == null,
                       onSelected: (_) => _setGranularity(task, null),
                     ),
-                    for (final g in Granularity.values)
+                    for (final g in fixedGranularities)
                       ChoiceChip(
                         label: Text(_granularityName(g)),
                         selected: due?.granularity == g,
                         onSelected: (_) => _setGranularity(task, g),
                       ),
+                    // Eigene Zeiträume: der laufende oder der nächste, den die Regel gefunden hat.
+                    for (final custom in store.customPeriods)
+                      if (custom.upcoming(store.today).firstOrNull case final first?)
+                        ChoiceChip(
+                          avatar: const Icon(Icons.event_available, size: 18),
+                          label: Text(custom.name),
+                          selected: due?.rule == custom.id,
+                          onSelected: (_) => _update({'due': first.toJson(), 'due_time': null}),
+                        ),
                   ],
                 ),
               ),
@@ -465,7 +485,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                   leading: IconButton(
                     tooltip: tr('back'),
                     icon: const Icon(Icons.chevron_left),
-                    onPressed: () => _update({'due': due.shift(-1).toJson()}),
+                    onPressed: _shifted(due, -1) == null ? null : () => _update({'due': _shifted(due, -1)!.toJson()}),
                   ),
                   title: TextButton(
                     onPressed: due.granularity == Granularity.day ? () => _pickDay(task) : null,
@@ -479,7 +499,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                   trailing: IconButton(
                     tooltip: tr('forward'),
                     icon: const Icon(Icons.chevron_right),
-                    onPressed: () => _update({'due': due.shift(1).toJson()}),
+                    onPressed: _shifted(due, 1) == null ? null : () => _update({'due': _shifted(due, 1)!.toJson()}),
                   ),
                 ),
               if (due?.granularity == Granularity.day)
@@ -563,10 +583,13 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
 }
 
 class _RecurrenceDialog extends StatefulWidget {
-  const _RecurrenceDialog({this.initial, this.dueDay});
+  const _RecurrenceDialog({this.initial, this.dueDay, this.customName});
 
   final Recurrence? initial;
   final DateTime? dueDay;
+
+  /// Name des eigenen Zeitraums, in dem die Aufgabe fällig ist: bietet „Jeder X-Block“ an.
+  final String? customName;
 
   @override
   State<_RecurrenceDialog> createState() => _RecurrenceDialogState();
@@ -574,7 +597,13 @@ class _RecurrenceDialog extends StatefulWidget {
 
 class _RecurrenceDialogState extends State<_RecurrenceDialog> {
   late int _interval = widget.initial?.interval ?? 1;
-  late Granularity _unit = widget.initial?.unit ?? Granularity.week;
+  late Granularity _unit = widget.initial?.unit ?? (widget.customName != null ? Granularity.custom : Granularity.week);
+
+  bool get _custom => _unit == Granularity.custom;
+
+  String _unitName(Granularity g) => g == Granularity.custom
+      ? tr('rec_custom_x', [widget.customName ?? tr('custom_period')])
+      : (_interval == 1 ? _unitNames(g).$1 : _unitNames(g).$2);
   // Ohne Liste gilt der Wochentag des Fälligkeitstags.
   late final Set<int> _weekdays = {
     ...?widget.initial?.weekdays,
@@ -583,13 +612,14 @@ class _RecurrenceDialogState extends State<_RecurrenceDialog> {
 
   Recurrence get _result => Recurrence(
         _unit,
-        _interval,
+        _custom ? 1 : _interval,
         _unit == Granularity.week && _weekdays.isNotEmpty ? (_weekdays.toList()..sort()) : const [],
       );
 
   @override
   Widget build(BuildContext context) {
     final (one, many) = _unitNames(_unit);
+    final units = [...fixedGranularities, if (widget.customName != null || _custom) Granularity.custom];
     return AlertDialog(
       title: Text(tr('recurrence')),
       content: Column(
@@ -598,23 +628,21 @@ class _RecurrenceDialogState extends State<_RecurrenceDialog> {
         children: [
           Row(
             children: [
-              Text(tr('every')),
-              IconButton(
-                icon: const Icon(Icons.remove),
-                onPressed: _interval > 1 ? () => setState(() => _interval--) : null,
-              ),
-              Text('$_interval'),
-              IconButton(icon: const Icon(Icons.add), onPressed: () => setState(() => _interval++)),
+              if (!_custom) ...[
+                Text(tr('every')),
+                IconButton(
+                  icon: const Icon(Icons.remove),
+                  onPressed: _interval > 1 ? () => setState(() => _interval--) : null,
+                ),
+                Text('$_interval'),
+                IconButton(icon: const Icon(Icons.add), onPressed: () => setState(() => _interval++)),
+              ],
               Expanded(
                 child: DropdownButton<Granularity>(
                   isExpanded: true,
                   value: _unit,
                   items: [
-                    for (final g in Granularity.values)
-                      DropdownMenuItem(
-                        value: g,
-                        child: Text(_interval == 1 ? _unitNames(g).$1 : _unitNames(g).$2),
-                      ),
+                    for (final g in units) DropdownMenuItem(value: g, child: Text(_unitName(g))),
                   ],
                   onChanged: (g) => setState(() => _unit = g ?? _unit),
                 ),
@@ -653,9 +681,11 @@ class _RecurrenceDialogState extends State<_RecurrenceDialog> {
         TextButton(onPressed: () => Navigator.pop(context), child: Text(tr('cancel'))),
         FilledButton(
           onPressed: () => Navigator.pop(context, _result),
-          child: Text(_unit == Granularity.week && _weekdays.length > 1
-              ? _recurrenceLabel(_result)
-              : tr('every_many', [_interval, _interval == 1 ? one : many])),
+          child: Text(_custom
+              ? _unitName(_unit)
+              : _unit == Granularity.week && _weekdays.length > 1
+                  ? _recurrenceLabel(_result)
+                  : tr('every_many', [_interval, _interval == 1 ? one : many])),
         ),
       ],
     );

@@ -24,6 +24,7 @@ INTEGRATION = ROOT / "custom_components" / "thask"
 sys.path.insert(0, str(INTEGRATION))
 
 from core.collection import NotFoundError, TaskCollection  # noqa: E402
+from core.custom_periods import PeriodBook, PeriodRule  # noqa: E402
 from core.models import Attachment, Task, TaskList, new_id  # noqa: E402
 from core.parser import parse  # noqa: E402
 from core.period import Granularity, Period  # noqa: E402
@@ -88,6 +89,7 @@ PAGE = """<!doctype html>
     states: Object.fromEntries([
       state("calendar.arbeit", "off", "Arbeit"),
       state("calendar.familie", "off", "Familie"),
+      state("calendar.schichtplan", "off", "Schichtplan"),
       state("person.max", "home", "Max"),
       state("binary_sensor.waschmaschine", "off", "Waschmaschine"),
       state("sensor.aussentemperatur", "4.5", "Außentemperatur"),
@@ -101,7 +103,7 @@ PAGE = """<!doctype html>
     callWS: async (message) => {
       if (message.type === "auth/sign_path") return { path: message.path };
       const result = await call(message);
-      if (!["thask/data", "thask/parse", "thask/info", "thask/trigger/test"].includes(message.type)) broadcast();
+      if (!["thask/data", "thask/parse", "thask/info", "thask/trigger/test", "thask/period_rules/get"].includes(message.type)) broadcast();
       return result;
     },
     connection: {
@@ -170,6 +172,7 @@ class FakeSource:
         self.calendar = {
             "calendar.arbeit": [CalendarEvent("Frühschicht", tomorrow.replace(hour=6), tomorrow.replace(hour=14))],
             "calendar.familie": [CalendarEvent("Geburtstag Oma", today + timedelta(days=3), today + timedelta(days=4))],
+            "calendar.schichtplan": shift_plan(today),
         }
         self.states = {
             "person.max": EntityState("home", datetime.now().astimezone() - timedelta(hours=2)),
@@ -184,6 +187,24 @@ class FakeSource:
         if entity_id not in self.calendar:
             raise ValueError(f"{entity_id} not found")
         return self.calendar[entity_id]
+
+
+def shift_plan(today: date) -> list[CalendarEvent]:
+    """A three week rotation: nights Mon and Tue (ending Wednesday), then a free stretch; early shifts;
+    late shifts. Every other rotation has a training day in the free stretch, so not every one is an X block."""
+    monday = today - timedelta(days=today.weekday()) - timedelta(weeks=3)
+    tz = datetime.now().astimezone().tzinfo
+    events: list[CalendarEvent] = []
+    for rotation in range(10):
+        week = monday + timedelta(weeks=3 * rotation)
+        for offset in (0, 1):
+            start = datetime.combine(week + timedelta(days=offset), datetime.min.time(), tz).replace(hour=20)
+            events.append(CalendarEvent("Nachtschicht", start, start + timedelta(hours=10)))
+        free = [week + timedelta(days=8)] + ([week + timedelta(days=9), week + timedelta(days=10), week + timedelta(days=11)] if rotation % 2 else [])
+        events += [CalendarEvent("Schulung", day, day + timedelta(days=1)) for day in free]
+        for offset in range(14, 19):
+            events.append(CalendarEvent("Frühschicht", week + timedelta(days=offset), week + timedelta(days=offset + 1)))
+    return events
 
 
 def seed_triggers(book: TriggerBook, collection: TaskCollection) -> None:
@@ -208,11 +229,33 @@ class Backend:
         self.source = FakeSource(self.today)
         self.last_check: str | None = None
         seed_triggers(self.triggers, self.collection)
+        self.periods = PeriodBook()
+        self.collection.custom_resolver = lambda rule, after, today: self.periods.next_after(rule, after, today)
+        self.periods.create({"name": "X-Block", "calendar": "calendar.schichtplan", "anchor_match": "Nacht", "anchor_weekdays": [2]})
+        self.refresh_periods()
         # Options of the integration; "dev/options" changes them, e.g. {"overdue_in_today": "separate"}.
         self.options: dict[str, Any] = {
             "overdue_in_today": "section", "separate_week": False, "separate_month": False, "week_mode": "calendar", "hidden_views": [], "auto_clear_days": 0, "important_priority": "high",
             "reminder_targets": [],
         }
+
+    def refresh_periods(self, rule_ids: list[str] | None = None) -> None:
+        asyncio.run(self.periods.refresh(self.source, self.today, datetime.now().astimezone().tzinfo, rule_ids))
+
+    def period_rules(self) -> dict[str, Any]:
+        return {
+            "rules": [
+                {
+                    **rule.as_dict(),
+                    "instances": [p.as_dict() for p in self.periods.upcoming(rule.id, self.today)],
+                    "error": self.periods.errors.get(rule.id),
+                }
+                for rule in self.periods.sorted_rules()
+            ]
+        }
+
+    def custom(self) -> list[tuple[str, list[Period]]]:
+        return [(rule.name, self.periods.upcoming(rule.id, self.today)) for rule in self.periods.sorted_rules() if rule.enabled]
 
     def handle(self, msg: dict[str, Any]) -> Any:
         collection, today = self.collection, self.today
@@ -225,6 +268,7 @@ class Backend:
                     "options": self.options,
                     "lists": [item.as_dict() for item in collection.sorted_lists()],
                     "tasks": [task.as_dict() for task in collection.tasks.values()],
+                    "periods": self.periods.public(today),
                 }
             case "dev/options" | "thask/options/update":
                 self.options.update({key: value for key, value in msg.items() if key not in ("type", "id")})
@@ -234,7 +278,23 @@ class Backend:
             case "thask/options/get":
                 return {"options": self.options, "notify_services": ["mobile_app_pixel_7", "persistent_notification"]}
             case "thask/parse":
-                return parse(msg["text"], today, set(msg.get("disabled", []))).as_dict(LANGUAGE, today)
+                return parse(msg["text"], today, set(msg.get("disabled", [])), self.custom()).as_dict(LANGUAGE, today)
+            case "thask/period_rules/get":
+                return self.period_rules()
+            case "thask/period_rule/create":
+                rule = self.periods.create(pick(PeriodRule.EDITABLE))
+                self.refresh_periods([rule.id])
+                return {**self.period_rules(), "rule_id": rule.id}
+            case "thask/period_rule/update":
+                self.periods.update(msg["rule_id"], pick(PeriodRule.EDITABLE))
+                self.refresh_periods([msg["rule_id"]])
+                return self.period_rules()
+            case "thask/period_rule/delete":
+                self.periods.delete(msg["rule_id"])
+                return self.period_rules()
+            case "thask/period_rules/refresh":
+                self.refresh_periods()
+                return self.period_rules()
             case "thask/list/create":
                 fields = pick(TaskList.EDITABLE)
                 return collection.create_list(fields.pop("name"), **fields).as_dict()

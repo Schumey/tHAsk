@@ -18,7 +18,7 @@ Aktueller Stand: **0.9.1** (siehe [Releases](https://github.com/Schumey/tHAsk/re
 
 ### Funktionen
 
-- Fälligkeit als Tag, Woche, Monat, Quartal oder Jahr, optional mit Uhrzeit; Wiederholungen (auch an mehreren Wochentagen); Erinnerungen; Schritte; Notizen; Priorität (Niedrig, Mittel, Hoch); Kategorien.
+- Fälligkeit als Tag, Woche, Monat, Quartal, Jahr oder **eigener Zeitraum** aus einem Kalender (z. B. „X-Block“ nach der Nachtschicht), optional mit Uhrzeit; Wiederholungen (auch an mehreren Wochentagen); Erinnerungen; Schritte; Notizen; Priorität (Niedrig, Mittel, Hoch); Kategorien.
 - Intelligente Listen: **Heute**, **Überfällig** (optional), **Wichtig**, **Geplant**, **Tagesplan**, **Diese Woche**, **Diesen Monat**, dazu eigene Listen mit Gruppen.
 - **Schnelleingabe mit Erkennung**: „Steuer KW 47 !!!“, „Blumen gießen jeden Mi und Sa“, „Zahnarzt morgen um 9:30“ – auch auf Englisch, Niederländisch, Französisch und Spanisch („Dentist next Friday“, „Tandarts morgen om 9 uur“, „Impôts semaine 47“, „Leche mañana a las 9“).
 - **Sprachen**: Deutsch, Englisch, Niederländisch, Französisch und Spanisch. Weboberfläche und Karte folgen der Sprache in Home Assistant, die Apps der des Geräts.
@@ -184,6 +184,34 @@ Auf der Trigger-Seite: Haken = aktiv, Kolben = **Testen** (zeigt, ob die Bedingu
 
 Bei jeder angelegten Aufgabe feuert das Event `thask_trigger_fired`. Gespeichert werden die Trigger in `.storage/thask.triggers`.
 
+## Eigene Zeiträume
+
+Neben Tag, Woche, Monat, Quartal und Jahr kann eine Aufgabe in einem **eigenen Zeitraum** fällig sein, den eine Regel in einem Kalender findet. Beispiel aus dem Schichtdienst, der **X-Block**: Endet eine Nachtschicht an einem Mittwoch und stehen von Donnerstag bis zum übernächsten Freitag höchstens 3 Termine im Schichtplan, ist Donnerstag bis Freitag ein X-Block.
+
+Einrichten in der Weboberfläche unter **Einstellungen → Eigene Zeiträume** (nur Administratoren). „Zeitraum hinzufügen“ legt genau dieses Beispiel an; dann nur noch den Kalender wählen:
+
+| Feld | X-Block |
+|---|---|
+| Name | `X-Block` |
+| Kalender | `calendar.schichtplan` |
+| Nach einem Termin, dessen Titel enthält | `Nacht`, *am letzten Tag des Termins* (oder am ersten) |
+| nur wenn dieser Tag ist | Mi (keiner gewählt = jeder Tag) |
+| Beginn / Ende (Tage danach) | 1 (Donnerstag) / 9 (übernächster Freitag) |
+| Höchstens so viele Termine im Zeitraum | 3 (leer = egal); der auslösende Termin zählt nicht mit |
+| Dabei nur Termine zählen, deren Titel enthält | leer = jeder Termin |
+| Tage vorausschauen | 120 (bis 365) |
+
+Darunter steht, welche Zeiträume die Regel gerade findet. tHAsk fragt den Kalender beim Start, alle 15 Minuten, nach Mitternacht und nach jeder Änderung der Regel; „Neu suchen“ fragt sofort.
+
+So bekommen Aufgaben einen X-Block:
+
+- **Detailbereich**: Unter Fälligkeit gibt es einen Chip „X-Block“ (der laufende oder der nächste). Die Pfeile springen zum vorigen bzw. nächsten gefundenen Block.
+- **Schnelleingabe** (Weboberfläche, Karte, Apps, Assist): „Rasen mähen im X-Block“ (laufender oder nächster), „… nächster X-Block“ (einer, der noch nicht begonnen hat), „… übernächster X-Block“; auch „next X-Block“.
+- **Wiederholung** „Jeder X-Block“ (Schnelleingabe: „Großeinkauf jeden X-Block“): Beim Abhaken entsteht die Aufgabe im nächsten gefundenen Block. Findet die Regel noch keinen, kommt sie direkt danach mit gleicher Länge. Der Tagesplan zeigt Vorschauen nur für gefundene Blöcke.
+- **Service** `thask.add_task` mit `due_period: X-Block` (optional mit `due_date`: der erste Block, der an dem Tag oder später endet).
+
+Eine Aufgabe behält ihren Zeitraum (Anfang, Ende, Name), auch wenn sich der Kalender später ändert. Angezeigt wird er mit Anfangsdatum, z. B. „X-Block 5. Nov.“; in Home Assistant steht wie bei anderen Zeiträumen der letzte Tag. Gespeichert werden die Regeln in `.storage/thask.periods`.
+
 ## Was in Home Assistant entsteht
 
 | Entity | Inhalt |
@@ -201,7 +229,7 @@ Aufgaben aus Automationen legt man am einfachsten mit `todo.add_item` an, mit Ze
 
 ### Services
 
-- `thask.add_task` – Aufgabe mit Zeitraum anlegen, z. B. `due_granularity: week` (ohne Datum = aktuelle Woche).
+- `thask.add_task` – Aufgabe mit Zeitraum anlegen, z. B. `due_granularity: week` (ohne Datum = aktuelle Woche) oder `due_period: X-Block` (nächster [eigener Zeitraum](#eigene-zeiträume)).
 - `thask.get_tasks` – Aufgaben abfragen (`due: today | this_week | this_month | overdue | all`), liefert eine Antwort für Automationen und Skripte.
 - `thask.clear_completed` – erledigte Aufgaben einer Liste (oder aller Listen) löschen, optional nur ältere als `older_than_days`. Gut für eine nächtliche Aufräum-Automation.
 - `thask.import_ms_todo` – Import aus Microsoft To Do (siehe unten).
@@ -312,7 +340,7 @@ Die Apps, die Weboberfläche und die Karte nutzen diese Befehle über die normal
 |---|---|
 | `thask/info` | – |
 | `thask/data` | – (alle Listen und Aufgaben) |
-| `thask/subscribe` | – (Snapshot mit `options`, danach jede Änderung als Event; `options` nach einer Änderung der Optionen; `reminder` mit der Aufgabe zum Erinnerungszeitpunkt) |
+| `thask/subscribe` | – (Snapshot mit `options` und `periods`, danach jede Änderung als Event; `options` nach einer Änderung der Optionen; `periods` mit den eigenen Zeiträumen `{id, name, instances}`, wenn sich gefundene Zeiträume ändern; `reminder` mit der Aufgabe zum Erinnerungszeitpunkt) |
 | `thask/list/create`, `thask/list/update`, `thask/list/delete` | `name`, `group`, `color`, `icon`, `position`, `sort` (`manual`, `priority`, `due`, `title`, `created`), `members` (HA-Benutzer-IDs, leer = alle) / `list_id` |
 | `thask/attachment/delete` | `task_id`, `attachment_id`. Hochladen per HTTP: `POST /api/thask/attachments/<task_id>` (multipart, Feld `file`), Abrufen: `GET /api/thask/attachments/<task_id>/<attachment_id>` (Bearer-Token oder mit `auth/sign_path` signierter Pfad) |
 | `thask/users` | – (aktive HA-Benutzer `{id, name}` und `me`, für die Auswahl „Für wen“) |
@@ -327,9 +355,11 @@ Die Apps, die Weboberfläche und die Karte nutzen diese Befehle über die normal
 | `thask/trigger/check` | – (alle Trigger jetzt prüfen) |
 | `thask/trigger/undo` | `run_id` |
 | `thask/options/get` | – (alle Optionen und die Benachrichtigungsdienste); nur Administratoren |
+| `thask/period_rules/get`, `thask/period_rules/refresh` | – (Regeln der eigenen Zeiträume mit `instances` und `error`; refresh fragt die Kalender sofort); nur Administratoren, wie alle `thask/period_rule*` |
+| `thask/period_rule/create`, `thask/period_rule/update`, `thask/period_rule/delete` | `name`, `calendar`, `anchor_match`, `anchor_part` (`end`, `start`), `anchor_weekdays`, `start_offset`, `end_offset`, `max_events` (`null` = egal), `count_match`, `horizon_days`, `enabled` / `rule_id` |
 | `thask/options/update` | `overdue_in_today`, `week_mode`, `separate_week`, `separate_month`, `hidden_views`, `auto_clear_days`, `important_priority`, `reminder_targets`; nur Administratoren |
 
-Aufgabenfelder: `list_id`, `title`, `notes`, `completed`, `priority` (0 keine, 1 niedrig, 2 mittel, 3 hoch), `due` (`{"granularity": "day|week|month|quarter|year", "start": "2026-11-09"}`), `due_time` (`"HH:MM"`, nur bei Tagen), `reminder` (ISO-Datum mit Uhrzeit), `recurrence` (`{"unit": "month", "interval": 1}`, wöchentlich an mehreren Tagen: `{"unit": "week", "interval": 1, "weekdays": [2, 5]}` mit 0 = Montag), `steps`, `categories`. `my_day` wird noch angenommen, hat aber keine Wirkung mehr („Heute“ richtet sich nach der Fälligkeit).
+Aufgabenfelder: `list_id`, `title`, `notes`, `completed`, `priority` (0 keine, 1 niedrig, 2 mittel, 3 hoch), `due` (`{"granularity": "day|week|month|quarter|year", "start": "2026-11-09"}`; eigene Zeiträume: `{"granularity": "custom", "start": "2026-11-05", "end": "2026-11-13", "name": "X-Block", "rule": "<rule_id>"}`), `due_time` (`"HH:MM"`, nur bei Tagen), `reminder` (ISO-Datum mit Uhrzeit), `recurrence` (`{"unit": "month", "interval": 1}`, „jeder X-Block“: `{"unit": "custom"}`, wöchentlich an mehreren Tagen: `{"unit": "week", "interval": 1, "weekdays": [2, 5]}` mit 0 = Montag), `steps`, `categories`. `my_day` wird noch angenommen, hat aber keine Wirkung mehr („Heute“ richtet sich nach der Fälligkeit).
 
 Wird eine wiederkehrende Aufgabe erledigt, entsteht eine neue Aufgabe für den nächsten Zeitraum, der noch nicht vorbei ist.
 

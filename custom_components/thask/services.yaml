@@ -27,6 +27,10 @@ add_task:
     due_date:
       selector:
         date:
+    due_period:
+      example: "X-Block"
+      selector:
+        text:
     priority:
       default: 0
       selector:

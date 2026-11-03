@@ -106,6 +106,10 @@
           "name": "Fälligkeitsdatum",
           "description": "Ein beliebiger Tag innerhalb des Zeitraums."
         },
+        "due_period": {
+          "name": "Eigener Zeitraum",
+          "description": "Name eines eigenen Zeitraums (z. B. „X-Block“): fällig im nächsten gefundenen. Mit Datum: im ersten, der nach diesem Datum endet."
+        },
         "priority": {
           "name": "Priorität",
           "description": "0 = keine, 1 = niedrig, 2 = mittel, 3 = hoch."

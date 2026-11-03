@@ -32,17 +32,21 @@ from .const import (
     OVERDUE_MODES,
     SIGNAL_DAY_CHANGED,
     SIGNAL_OPTIONS_CHANGED,
+    SIGNAL_PERIODS_CHANGED,
     SIGNAL_REMINDER,
     SIGNAL_TRIGGERS_CHANGED,
     WEEK_MODES,
 )
 from .core.collection import Change, NotFoundError
+from .core.custom_periods import PeriodRule
 from .core.models import Task, TaskList
 from .core.parser import KIND_DUE, KIND_PRIORITY, KIND_RECURRENCE, KIND_TIME, parse
 from .core.triggers import Trigger
 from .data import ThaskData, async_get_data
 from .schema import (
     LIST_FIELDS,
+    PERIOD_RULE_FIELDS,
+    PERIOD_RULE_NAME,
     TASK_FIELDS,
     TASK_TEMPLATE_SCHEMA,
     TRIGGER_CONDITIONS,
@@ -84,6 +88,11 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
         ws_options_update,
         ws_users,
         ws_attachment_delete,
+        ws_period_rules_get,
+        ws_period_rule_create,
+        ws_period_rule_update,
+        ws_period_rule_delete,
+        ws_period_rules_refresh,
     ):
         websocket_api.async_register_command(hass, command)
 
@@ -115,6 +124,8 @@ def _snapshot(data: ThaskData, connection: websocket_api.ActiveConnection) -> di
         "options": data.options,
         "lists": [task_list.as_dict() for task_list in data.collection.sorted_lists()],
         "tasks": [task.as_dict() for task in data.collection.tasks.values()],
+        # Custom periods ("X block") with the periods their rules found.
+        "periods": data.periods.public(data.today),
     }
 
 
@@ -153,6 +164,12 @@ def ws_subscribe(hass, connection, msg, data: ThaskData) -> None:
         connection.send_message(websocket_api.event_message(msg["id"], {"type": "options", **data.options}))
 
     @callback
+    def forward_periods() -> None:
+        connection.send_message(
+            websocket_api.event_message(msg["id"], {"type": "periods", "periods": data.periods.public(data.today)})
+        )
+
+    @callback
     def forward_reminder(info: dict[str, Any]) -> None:
         # The desktop app shows these as notifications.
         connection.send_message(websocket_api.event_message(msg["id"], {"type": "reminder", "task": info}))
@@ -162,6 +179,7 @@ def ws_subscribe(hass, connection, msg, data: ThaskData) -> None:
         async_dispatcher_connect(hass, SIGNAL_DAY_CHANGED, forward_day_changed),
         async_dispatcher_connect(hass, SIGNAL_OPTIONS_CHANGED, forward_options),
         async_dispatcher_connect(hass, SIGNAL_REMINDER, forward_reminder),
+        async_dispatcher_connect(hass, SIGNAL_PERIODS_CHANGED, forward_periods),
     ]
 
     @callback
@@ -286,7 +304,7 @@ def ws_task_move(hass, connection, msg, data: ThaskData) -> None:
 @_with_data
 def ws_parse(hass, connection, msg, data: ThaskData) -> None:
     """Quick entry preview: split typed text into title and structured fields."""
-    result = parse(msg["text"], data.today, set(msg["disabled"]))
+    result = parse(msg["text"], data.today, set(msg["disabled"]), data.custom_periods())
     connection.send_result(msg["id"], result.as_dict(data.language, data.today))
 
 
@@ -464,3 +482,71 @@ def ws_options_update(hass, connection, msg, data: ThaskData) -> None:
     options = {**DEFAULT_OPTIONS, **entry.options, **patch}
     hass.config_entries.async_update_entry(entry, options=options)
     connection.send_result(msg["id"], {"options": options})
+
+
+# -- custom periods -------------------------------------------------------------------------------
+
+
+def _period_rules(data: ThaskData) -> dict[str, Any]:
+    """Rules with everything they found and the errors of the last refresh, for the settings page."""
+    return {
+        "rules": [
+            {
+                **rule.as_dict(),
+                "instances": [period.as_dict() for period in data.periods.upcoming(rule.id, data.today)],
+                "error": data.periods.errors.get(rule.id),
+            }
+            for rule in data.periods.sorted_rules()
+        ]
+    }
+
+
+@websocket_api.websocket_command({vol.Required("type"): "thask/period_rules/get"})
+@websocket_api.require_admin
+@_with_data
+def ws_period_rules_get(hass, connection, msg, data: ThaskData) -> None:
+    connection.send_result(msg["id"], _period_rules(data))
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "thask/period_rule/create",
+        **{key: value for key, value in PERIOD_RULE_FIELDS.items() if key != "name"},
+        vol.Required("name"): PERIOD_RULE_NAME,
+    }
+)
+@websocket_api.require_admin
+@_async_with_data
+async def ws_period_rule_create(hass, connection, msg, data: ThaskData) -> None:
+    """Add a rule and look it up in its calendar at once; answers with all rules."""
+    rule = data.periods.create(_patch(msg, PeriodRule.EDITABLE))
+    await data.async_refresh_periods(rule_ids=[rule.id])
+    connection.send_result(msg["id"], {**_period_rules(data), "rule_id": rule.id})
+
+
+@websocket_api.websocket_command(
+    {vol.Required("type"): "thask/period_rule/update", vol.Required("rule_id"): str, **PERIOD_RULE_FIELDS}
+)
+@websocket_api.require_admin
+@_async_with_data
+async def ws_period_rule_update(hass, connection, msg, data: ThaskData) -> None:
+    data.periods.update(msg["rule_id"], _patch(msg, PeriodRule.EDITABLE))
+    await data.async_refresh_periods(rule_ids=[msg["rule_id"]])
+    connection.send_result(msg["id"], _period_rules(data))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "thask/period_rule/delete", vol.Required("rule_id"): str})
+@websocket_api.require_admin
+@_with_data
+def ws_period_rule_delete(hass, connection, msg, data: ThaskData) -> None:
+    data.periods.delete(msg["rule_id"])
+    connection.send_result(msg["id"], _period_rules(data))
+
+
+@websocket_api.websocket_command({vol.Required("type"): "thask/period_rules/refresh"})
+@websocket_api.require_admin
+@_async_with_data
+async def ws_period_rules_refresh(hass, connection, msg, data: ThaskData) -> None:
+    """Look all rules up in their calendars now."""
+    await data.async_refresh_periods(rule_ids=list(data.periods.rules))
+    connection.send_result(msg["id"], _period_rules(data))

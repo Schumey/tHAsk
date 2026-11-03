@@ -106,6 +106,10 @@
           "name": "Vervaldatum",
           "description": "Een willekeurige dag binnen de periode."
         },
+        "due_period": {
+          "name": "Eigen periode",
+          "description": "Naam van een eigen periode (bijv. „X-Block”): uiterlijk in de volgende gevonden. Met een datum: in de eerste die op of na die datum eindigt."
+        },
         "priority": {
           "name": "Prioriteit",
           "description": "0 = geen, 1 = laag, 2 = gemiddeld, 3 = hoog."

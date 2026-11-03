@@ -106,6 +106,10 @@
           "name": "Échéance",
           "description": "N'importe quel jour de la période."
         },
+        "due_period": {
+          "name": "Période personnalisée",
+          "description": "Nom d'une période personnalisée (p. ex. « X-Block ») : à faire dans la prochaine trouvée. Avec une date : dans la première qui se termine à cette date ou après."
+        },
         "priority": {
           "name": "Priorité",
           "description": "0 = aucune, 1 = basse, 2 = moyenne, 3 = haute."

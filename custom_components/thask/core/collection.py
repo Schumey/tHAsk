@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from typing import Any, Literal
 
-from .models import Attachment, Task, TaskList, new_id, sort_tasks, utc_now_iso
+from .models import Attachment, CustomResolver, Task, TaskList, new_id, sort_tasks, utc_now_iso
 
 DATA_VERSION = 1
 
@@ -35,6 +35,8 @@ class TaskCollection:
         self.lists: dict[str, TaskList] = {}
         self.tasks: dict[str, Task] = {}
         self._listeners: list[Callable[[Change], None]] = []
+        # Finds the next custom period for "every X block" recurrences (set by the integration).
+        self.custom_resolver: CustomResolver | None = None
 
     # -- persistence -------------------------------------------------------
 
@@ -186,7 +188,7 @@ class TaskCollection:
             self._task_changed("created", task)
         else:
             self._task_changed("updated", task)
-        if task.completed and not was_completed and (following := task.next_occurrence(today)):
+        if task.completed and not was_completed and (following := task.next_occurrence(today, self.custom_resolver)):
             self.add_task(following)
         return task
 

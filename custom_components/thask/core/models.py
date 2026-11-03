@@ -2,12 +2,17 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta, timezone, tzinfo
 from typing import Any
 from uuid import uuid4
 
 from .period import Granularity, Period
+
+
+# The next found period of a custom period rule: (rule id, start after this day, today) -> period or None.
+type CustomResolver = Callable[[str, date, date], Period | None]
 
 
 def new_id() -> str:
@@ -23,7 +28,8 @@ class Recurrence:
     """Repeat every `interval` units. The next due period keeps the task's granularity.
 
     Weekly recurrences of a day can name several weekdays (0 = Monday): "every Wednesday and Saturday",
-    with an interval "every other week on Monday and Thursday".
+    with an interval "every other week on Monday and Thursday". The unit "custom" repeats in the next
+    period its rule finds ("every X block"); `interval` is then ignored.
     """
 
     unit: Granularity
@@ -33,8 +39,16 @@ class Recurrence:
     def __post_init__(self) -> None:
         self.weekdays = tuple(sorted({int(day) for day in self.weekdays if 0 <= int(day) <= 6}))
 
-    def next_period(self, period: Period, today: date) -> Period:
+    def next_period(self, period: Period, today: date, resolve: CustomResolver | None = None) -> Period:
         """The next period after `period` that has not already ended before today."""
+        if self.unit is Granularity.CUSTOM:
+            if period.rule and resolve and (found := resolve(period.rule, period.start, today)):
+                return found
+            # The rule found nothing (yet): keep the task due, right after the current period with its length.
+            following = period.shift(1)
+            while following.end < today:
+                following = following.shift(1)
+            return following
         if self.weekdays and self.unit is Granularity.WEEK and period.granularity is Granularity.DAY:
             return Period.day(self._next_weekday(period.start, today))
         following = period.shift(self.interval, self.unit)
@@ -314,11 +328,11 @@ class Task:
             return False
         return datetime.fromisoformat(self.completed_at).astimezone(tz).date() >= day
 
-    def next_occurrence(self, today: date) -> Task | None:
+    def next_occurrence(self, today: date, resolve: CustomResolver | None = None) -> Task | None:
         """A fresh copy for the next due period of a recurring task, or None."""
         if self.recurrence is None or self.due is None:
             return None
-        due = self.recurrence.next_period(self.due, today)
+        due = self.recurrence.next_period(self.due, today, resolve)
         reminder = None
         if self.reminder:
             offset = due.start - self.due.start

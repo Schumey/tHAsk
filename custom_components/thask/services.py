@@ -23,7 +23,7 @@ from .core.importers import FORMATS, merge_lists, read_export
 from .core.ms_todo import ImportOptions, ImportResult, import_export
 from .core.period import Granularity, Period, PeriodStatus
 from .data import ThaskData, async_get_data
-from .schema import GRANULARITIES
+from .schema import FIXED_GRANULARITIES
 
 SERVICE_ADD_TASK = "add_task"
 SERVICE_GET_TASKS = "get_tasks"
@@ -39,7 +39,9 @@ ADD_TASK_SCHEMA = vol.Schema(
         vol.Optional(ATTR_ENTITY_ID): cv.entity_id,
         vol.Required("title"): vol.All(cv.string, vol.Length(min=1)),
         vol.Optional("notes", default=""): cv.string,
-        vol.Optional("due_granularity"): vol.In(GRANULARITIES),
+        vol.Optional("due_granularity"): vol.In(FIXED_GRANULARITIES),
+        # Name of a custom period ("X-Block"): due in the next one its rule found.
+        vol.Optional("due_period"): cv.string,
         vol.Optional("due_date"): cv.date,
         vol.Optional("priority", default=0): vol.All(vol.Coerce(int), vol.In(PRIORITIES)),
         # Deprecated (the former "My Day"): due today unless a due date is given.
@@ -168,7 +170,9 @@ def async_setup_services(hass: HomeAssistant) -> None:
                 raise ServiceValidationError("There is no task list to add the task to")
             list_id = default.id
         fields: dict[str, Any] = {"notes": call.data["notes"], "priority": call.data["priority"]}
-        if "due_granularity" in call.data or "due_date" in call.data:
+        if "due_period" in call.data:
+            fields["due"] = data.next_custom_period(call.data["due_period"], call.data.get("due_date")).as_dict()
+        elif "due_granularity" in call.data or "due_date" in call.data:
             granularity = Granularity(call.data.get("due_granularity", Granularity.DAY))
             fields["due"] = Period(granularity, call.data.get("due_date", data.today)).as_dict()
         elif call.data["my_day"]:

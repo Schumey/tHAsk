@@ -3,7 +3,12 @@ library;
 
 import 'l10n.dart';
 
-enum Granularity { day, week, month, quarter, year }
+/// [custom]: ein eigener Zeitraum („X-Block“), den eine Regel der Integration in einem Kalender findet;
+/// er hat eigenen Anfang, eigenes Ende und einen Namen.
+enum Granularity { day, week, month, quarter, year, custom }
+
+/// Die Granularitäten, die sich aus einem Datum ergeben (ohne [Granularity.custom]).
+const fixedGranularities = [Granularity.day, Granularity.week, Granularity.month, Granularity.quarter, Granularity.year];
 
 DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
 
@@ -25,22 +30,39 @@ int isoWeekNumber(DateTime d) {
 
 int isoWeekYear(DateTime d) => dateOnly(d).add(Duration(days: 4 - d.weekday)).year;
 
-/// Ein Zeitraum, in dem eine Aufgabe fällig ist: Tag, Woche, Monat, Quartal oder Jahr.
+/// Ein Zeitraum, in dem eine Aufgabe fällig ist: Tag, Woche, Monat, Quartal, Jahr oder ein eigener Zeitraum.
 class Period {
-  const Period(this.granularity, this.start);
+  const Period(this.granularity, this.start, {this.until, this.name = '', this.rule});
+
+  /// Ein eigener Zeitraum von [start] bis [end] (wie Period.custom in core/period.py).
+  factory Period.custom(DateTime start, DateTime end, String name, String? rule) =>
+      Period(Granularity.custom, dateOnly(start), until: dateOnly(end).isBefore(start) ? dateOnly(start) : dateOnly(end), name: name, rule: rule);
 
   final Granularity granularity;
   final DateTime start;
 
-  factory Period.fromJson(Map<String, dynamic> json) => Period(
-        Granularity.values.byName(json['granularity'] as String),
-        dateOnly(DateTime.parse(json['start'] as String)),
-      );
+  /// Nur eigene Zeiträume: letzter Tag, Name und die Regel, die ihn gefunden hat.
+  final DateTime? until;
+  final String name;
+  final String? rule;
 
-  Map<String, dynamic> toJson() => {'granularity': granularity.name, 'start': isoDate(start)};
+  factory Period.fromJson(Map<String, dynamic> json) {
+    final granularity = Granularity.values.byName(json['granularity'] as String);
+    final start = dateOnly(DateTime.parse(json['start'] as String));
+    if (granularity != Granularity.custom) return Period(granularity, start);
+    final end = json['end'] as String?;
+    return Period.custom(start, end == null ? start : DateTime.parse(end), json['name'] as String? ?? '', json['rule'] as String?);
+  }
+
+  Map<String, dynamic> toJson() => {
+        'granularity': granularity.name,
+        'start': isoDate(start),
+        if (granularity == Granularity.custom) ...{'end': isoDate(end), 'name': name, 'rule': rule},
+      };
 
   /// Letzter Tag des Zeitraums.
   DateTime get end => switch (granularity) {
+        Granularity.custom => until ?? start,
         Granularity.day => start,
         Granularity.week => DateTime(start.year, start.month, start.day + 6),
         Granularity.month => DateTime(start.year, start.month + 1, 0),
@@ -73,7 +95,7 @@ class Period {
     return Period(
       granularity,
       switch (granularity) {
-        Granularity.day => d,
+        Granularity.day || Granularity.custom => d,
         Granularity.week => d.subtract(Duration(days: d.weekday - 1)),
         Granularity.month => DateTime(d.year, d.month, 1),
         Granularity.quarter => DateTime(d.year, ((d.month - 1) ~/ 3) * 3 + 1, 1),
@@ -82,10 +104,17 @@ class Period {
     );
   }
 
-  Period shift(int count) => Period(
+  int get _length => end.difference(start).inHours ~/ 24 + 1;
+
+  /// Ein eigener Zeitraum mit gleicher Länge ab [from].
+  Period _customFrom(DateTime from) => Period.custom(from, DateTime(from.year, from.month, from.day + _length - 1), name, rule);
+
+  Period shift(int count) => granularity == Granularity.custom
+      ? _customFrom(DateTime(start.year, start.month, start.day + _length * count))
+      : Period(
         granularity,
         switch (granularity) {
-          Granularity.day => DateTime(start.year, start.month, start.day + count),
+          Granularity.custom || Granularity.day => DateTime(start.year, start.month, start.day + count),
           Granularity.week => DateTime(start.year, start.month, start.day + 7 * count),
           Granularity.month => DateTime(start.year, start.month + count, 1),
           Granularity.quarter => DateTime(start.year, start.month + 3 * count, 1),
@@ -94,16 +123,18 @@ class Period {
       );
 
   /// Um [count] Einheiten [unit] verschieben; die Art des Zeitraums bleibt (wie Period.shift in core/period.py).
-  Period shiftBy(int count, Granularity unit) => Period.containing(
-        granularity,
-        switch (unit) {
-          Granularity.day => DateTime(start.year, start.month, start.day + count),
-          Granularity.week => DateTime(start.year, start.month, start.day + 7 * count),
-          Granularity.month => addMonths(start, count),
-          Granularity.quarter => addMonths(start, 3 * count),
-          Granularity.year => addMonths(start, 12 * count),
-        },
-      );
+  /// Ein eigener Zeitraum behält seine Länge.
+  Period shiftBy(int count, Granularity unit) {
+    if (unit == Granularity.custom) return shift(count);
+    final moved = switch (unit) {
+      Granularity.custom || Granularity.day => DateTime(start.year, start.month, start.day + count),
+      Granularity.week => DateTime(start.year, start.month, start.day + 7 * count),
+      Granularity.month => addMonths(start, count),
+      Granularity.quarter => addMonths(start, 3 * count),
+      Granularity.year => addMonths(start, 12 * count),
+    };
+    return granularity == Granularity.custom ? _customFrom(moved) : Period.containing(granularity, moved);
+  }
 
   /// Lesbare Bezeichnung, z. B. „KW 46“, „November“, „Q4 2026“, bei Tagen „Heute“ und „Morgen“.
   /// Das Jahr entfällt, wenn es das heutige ist.
@@ -128,16 +159,52 @@ class Period {
         year = start.year;
       case Granularity.year:
         return '${start.year}';
+      case Granularity.custom:
+        // „X-Block 6. Nov.“: am Namen allein ist ein Block nicht vom nächsten zu unterscheiden.
+        text = '$name ${L10n.shortDate(start)}'.trim();
+        year = start.year;
     }
     return year == today.year ? text : '$text $year';
   }
 
   @override
   bool operator ==(Object other) =>
-      other is Period && other.granularity == granularity && other.start == start;
+      other is Period && other.granularity == granularity && other.start == start && other.until == until && other.rule == rule;
 
   @override
-  int get hashCode => Object.hash(granularity, start);
+  int get hashCode => Object.hash(granularity, start, until, rule);
+}
+
+/// Ein eigener Zeitraum der Integration („X-Block“) mit den Zeiträumen, die seine Regel gefunden hat.
+class CustomPeriod {
+  const CustomPeriod({required this.id, required this.name, required this.instances});
+
+  final String id;
+  final String name;
+
+  /// Gefundene Zeiträume, die noch nicht vorbei sind, in Reihenfolge.
+  final List<Period> instances;
+
+  factory CustomPeriod.fromJson(Map<String, dynamic> json) => CustomPeriod(
+        id: json['id'] as String,
+        name: json['name'] as String? ?? '',
+        instances: [for (final p in json['instances'] as List? ?? const []) Period.fromJson((p as Map).cast<String, dynamic>())],
+      );
+
+  /// Gefundene Zeiträume, die vor [today] noch nicht zu Ende waren.
+  List<Period> upcoming(DateTime today) => [for (final p in instances) if (!p.end.isBefore(dateOnly(today))) p];
+}
+
+/// Die gefundenen Zeiträume der Regel von [period], die nicht vor [today] enden.
+List<Period> customUpcoming(List<CustomPeriod> periods, String? rule, DateTime today) =>
+    periods.where((p) => p.id == rule).firstOrNull?.upcoming(today) ?? const [];
+
+/// Der gefundene Zeitraum vor ([step] -1) oder nach ([step] 1) [period] in seiner Regel, sonst null.
+Period? customAdjacent(List<CustomPeriod> periods, Period period, int step, DateTime today) {
+  final found = customUpcoming(periods, period.rule, today);
+  return step > 0
+      ? found.where((p) => p.start.isAfter(period.start)).firstOrNull
+      : found.where((p) => p.start.isBefore(period.start)).lastOrNull;
 }
 
 String isoDate(DateTime d) =>
@@ -170,8 +237,19 @@ class Recurrence {
       };
 
   /// Der nächste Zeitraum nach [period], der nicht schon vor [today] zu Ende war (wie Recurrence.next_period).
-  Period nextPeriod(Period period, DateTime today) {
+  /// „Jeder X-Block“ ([Granularity.custom]) nimmt den nächsten, den die Regel gefunden hat ([periods]).
+  Period nextPeriod(Period period, DateTime today, [List<CustomPeriod> periods = const []]) {
     final day0 = dateOnly(today);
+    if (unit == Granularity.custom) {
+      final found = customUpcoming(periods, period.rule, today).where((p) => p.start.isAfter(period.start)).firstOrNull;
+      if (found != null) return found;
+      // Noch nichts gefunden: direkt danach, mit gleicher Länge.
+      var following = period.shift(1);
+      while (following.end.isBefore(day0)) {
+        following = following.shift(1);
+      }
+      return following;
+    }
     final step = interval < 1 ? 1 : interval;
     if (weekdays.isNotEmpty && unit == Granularity.week && period.granularity == Granularity.day) {
       // Wochen zählen ab der Woche des bisherigen Tags, damit „alle zwei Wochen“ im Takt bleibt.
@@ -355,18 +433,25 @@ class Task {
 
   /// Die Fälligkeiten, die eine wiederkehrende Aufgabe nach der jetzigen bekommt, bis zu denen, die an [until]
   /// beginnen: was wiederholtes Abhaken anlegen würde. Leer ohne Wiederholung und für Erledigtes.
-  List<Period> projectedPeriods(DateTime until, DateTime today, {int limit = 2000}) {
+  List<Period> projectedPeriods(DateTime until, DateTime today, {List<CustomPeriod> periods = const [], int limit = 2000}) {
     if (recurrence == null || due == null || completed) return const [];
     final last = dateOnly(until);
-    final periods = <Period>[];
+    // „Jeder X-Block“: nur die Blöcke, die die Regel gefunden hat, keine geratenen.
+    if (recurrence!.unit == Granularity.custom) {
+      return [
+        for (final p in customUpcoming(periods, due!.rule, today))
+          if (p.start.isAfter(due!.start) && !p.start.isAfter(last)) p,
+      ];
+    }
+    final result = <Period>[];
     var period = due!;
-    while (periods.length < limit) {
+    while (result.length < limit) {
       final next = recurrence!.nextPeriod(period, today);
       if (!next.start.isAfter(period.start) || next.start.isAfter(last)) break;
-      periods.add(next);
+      result.add(next);
       period = next;
     }
-    return periods;
+    return result;
   }
 
   /// Diese Aufgabe als Vorschau mit der Fälligkeit [due].
@@ -390,12 +475,13 @@ class Task {
 
 /// Alles, was an [day] fällig ist: Aufgaben, deren Zeitraum den Tag enthält, und Vorschauen wiederkehrender
 /// Aufgaben, die dann fällig werden, aber noch nicht existieren (wie dayTasks in thask-common.js).
-List<Task> dayTasks(Iterable<Task> tasks, DateTime day, DateTime today) {
+List<Task> dayTasks(Iterable<Task> tasks, DateTime day, DateTime today, [List<CustomPeriod> periods = const []]) {
   final d = dateOnly(day);
   return [
     for (final task in tasks) ...[
       if (task.due != null && task.due!.contains(d)) task,
-      for (final due in task.projectedPeriods(d, today).where((p) => p.contains(d)).take(1)) task.previewAt(due),
+      for (final due in task.projectedPeriods(d, today, periods: periods).where((p) => p.contains(d)).take(1))
+        task.previewAt(due),
     ],
   ];
 }

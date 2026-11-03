@@ -39,6 +39,14 @@ const DAY_FORMAT = {
   es: (w, d, m) => `${w}, ${d} ${m}`,
 };
 const WEEK_LABEL = { de: "KW", en: "Week", nl: "Week", fr: "Semaine", es: "Semana" };
+const SHORT_DATE_FORMAT = {
+  de: (d, m) => `${d}. ${m}`,
+  en: (d, m) => `${m} ${d}`,
+  nl: (d, m) => `${d} ${m}`,
+  fr: (d, m) => `${d} ${m}`,
+  es: (d, m) => `${d} ${m}`,
+};
+// The granularities a period gets from a single date. "custom" periods (X block) come from a rule with start and end.
 export const GRANULARITIES = ["day", "week", "month", "quarter", "year"];
 
 // ---- Dates and periods (same rules as core/period.py) ------------------------------------
@@ -89,19 +97,40 @@ export function makePeriod(granularity, d) {
 }
 
 // Move a period by `count` units (default: its own granularity); it keeps its granularity (Period.shift).
+// A custom period keeps its length; on its own it moves by that length.
 export function shiftPeriod(period, count, unit = period.granularity) {
   const start = parseISO(period.start);
+  const length = period.granularity === "custom" ? Math.round((periodEndOf(period) - start) / 864e5) + 1 : 0;
   const shifted = {
+    custom: () => addDays(start, length * count),
     day: () => addDays(start, count),
     week: () => addDays(start, 7 * count),
     month: () => addMonths(start, count),
     quarter: () => addMonths(start, 3 * count),
     year: () => addMonths(start, 12 * count),
   }[unit]();
+  if (period.granularity === "custom") return { ...period, start: toISO(shifted), end: toISO(addDays(shifted, length - 1)) };
   return makePeriod(period.granularity, shifted);
 }
 
-export const periodEndOf = (period) => periodEnd(period.granularity, parseISO(period.start));
+export const periodEndOf = (period) =>
+  period.granularity === "custom" ? parseISO(period.end || period.start) : periodEnd(period.granularity, parseISO(period.start));
+
+// ---- Custom periods ("X block"): found by rules in a calendar, sent as `periods` with the snapshot ----
+
+// Found periods of a rule that have not ended before today.
+export function customUpcoming(periods, ruleId, today) {
+  const rule = (periods || []).find((p) => p.id === ruleId);
+  const iso = toISO(today);
+  return rule ? rule.instances.filter((p) => (p.end || p.start) >= iso) : [];
+}
+
+// The found period before (step -1) or after (step 1) `period` of its rule, or null.
+export function customAdjacent(periods, period, step, today) {
+  const found = customUpcoming(periods, period.rule, today);
+  if (step > 0) return found.find((p) => p.start > period.start) || null;
+  return [...found].reverse().find((p) => p.start < period.start) || null;
+}
 
 export function periodStatus(period, today) {
   if (periodEndOf(period) < today) return "overdue";
@@ -131,6 +160,10 @@ export function periodLabel(period, lang, today) {
       break;
     case "quarter":
       text = `Q${Math.floor(start.getMonth() / 3) + 1}`;
+      break;
+    case "custom":
+      // "X block 6 Nov": the name alone would not tell one block from the next.
+      text = `${period.name || ""} ${SHORT_DATE_FORMAT[lang](start.getDate(), MONTHS_SHORT[lang][start.getMonth()])}`.trim();
       break;
     default:
       return String(year);
@@ -228,8 +261,17 @@ export function splitDone(tasks) {
 
 // ---- Recurrence (same rules as Recurrence in core/models.py) ---------------------------------
 
-// The next period after `period` that has not already ended before today.
-export function nextPeriod(recurrence, period, today) {
+// The next period after `period` that has not already ended before today. `periods`: the custom periods of the
+// snapshot, for "every X block".
+export function nextPeriod(recurrence, period, today, periods = []) {
+  if (recurrence.unit === "custom") {
+    const found = period.rule && customUpcoming(periods, period.rule, today).find((p) => p.start > period.start);
+    if (found) return found;
+    // The rule found nothing (yet): right after the current period, with its length.
+    let following = shiftPeriod(period, 1);
+    while (periodEndOf(following) < today) following = shiftPeriod(following, 1);
+    return following;
+  }
   const interval = recurrence.interval || 1;
   const weekdays = recurrence.unit === "week" ? recurrence.weekdays || [] : [];
   if (weekdays.length && period.granularity === "day") {
@@ -252,13 +294,17 @@ export function nextPeriod(recurrence, period, today) {
 
 // The due periods a recurring task will get after its current one, up to those starting on `until`:
 // what completing it again and again would create. Empty for tasks that do not repeat or are completed.
-export function projectedPeriods(task, until, today, limit = 2000) {
+export function projectedPeriods(task, until, today, customPeriods = [], limit = 2000) {
   if (!task.recurrence || !task.due || task.completed) return [];
   const last = toISO(until);
+  // "Every X block": only the blocks the rule found, no guesses.
+  if (task.recurrence.unit === "custom") {
+    return customUpcoming(customPeriods, task.due.rule, today).filter((p) => p.start > task.due.start && p.start <= last);
+  }
   const periods = [];
   let period = task.due;
   while (periods.length < limit) {
-    const next = nextPeriod(task.recurrence, period, today);
+    const next = nextPeriod(task.recurrence, period, today, customPeriods);
     if (next.start <= period.start || next.start > last) break;
     periods.push(next);
     period = next;
@@ -269,13 +315,13 @@ export function projectedPeriods(task, until, today, limit = 2000) {
 // Everything due on `day`: tasks whose due period contains it, plus previews of recurring tasks that will be due
 // then but do not exist yet (they are created when completing the current one). A preview is a copy of the task
 // with that due period and `preview: true`; it keeps the task's id.
-export function dayTasks(tasks, day, today) {
+export function dayTasks(tasks, day, today, periods = []) {
   const iso = toISO(day);
   const contains = (period) => period.start <= iso && toISO(periodEndOf(period)) >= iso;
   const result = [];
   for (const task of tasks) {
     if (task.due && contains(task.due)) result.push(task);
-    const due = projectedPeriods(task, day, today).find(contains);
+    const due = projectedPeriods(task, day, today, periods).find(contains);
     if (due) result.push({ ...task, due, preview: true });
   }
   return result;

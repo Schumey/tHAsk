@@ -180,6 +180,10 @@ class ThaskStore extends ChangeNotifier {
   /// Option der Integration, ab welcher Priorität „Wichtig“ zeigt: 'high' (nur Hoch) oder 'medium' (Mittel und Hoch).
   String importantPriority = 'high';
 
+  /// Eigene Zeiträume der Integration („X-Block“) mit den gefundenen Zeiträumen.
+  List<CustomPeriod> customPeriods = const [];
+  List<dynamic> _rawPeriods = const [];
+
   /// Letzter Tag von „Diese Woche“.
   DateTime get thisWeekEnd => weekMode == 'rolling'
       ? DateTime(today.year, today.month, today.day + 7)
@@ -263,7 +267,7 @@ class ThaskStore extends ChangeNotifier {
   /// Tagesplan für [planDay]: was an dem Tag fällig ist, mit Vorschauen wiederkehrender Aufgaben;
   /// heute auch Überfälliges.
   List<Task> get dayPlan {
-    final tasks = dayTasks(_visibleTasks, planDay, today);
+    final tasks = dayTasks(_visibleTasks, planDay, today, customPeriods);
     if (planDay == today) tasks.addAll(_visibleTasks.where((t) => t.isOverdue(today)));
     return sortByTime(tasks);
   }
@@ -345,6 +349,7 @@ class ThaskStore extends ChangeNotifier {
         },
         'lists': _rawLists.values.toList(),
         'tasks': _rawTasks.values.toList(),
+        'periods': _rawPeriods,
       }));
     });
   }
@@ -507,6 +512,7 @@ class ThaskStore extends ChangeNotifier {
         _setToday(dateOnly(DateTime.parse(event['today'] as String)));
         me = event['me'] as String? ?? me;
         _applyOptions((event['options'] as Map?)?.cast<String, dynamic>() ?? const {});
+        _applyPeriods(event['periods'] as List?);
         // Noch nicht gesendete Änderungen bleiben sichtbar, bis der Server sie bestätigt.
         for (final op in _outbox) {
           _applyOptimistic(op);
@@ -515,6 +521,8 @@ class ThaskStore extends ChangeNotifier {
         _setToday(dateOnly(DateTime.parse(event['today'] as String)));
       case 'options':
         _applyOptions(event);
+      case 'periods':
+        _applyPeriods(event['periods'] as List?);
       case 'change':
         final id = event['id'] as String;
         final item = (event['item'] as Map?)?.cast<String, dynamic>();
@@ -541,6 +549,11 @@ class ThaskStore extends ChangeNotifier {
       _scheduleSave();
     }
     notifyListeners();
+  }
+
+  void _applyPeriods(List<dynamic>? raw) {
+    _rawPeriods = raw ?? const [];
+    customPeriods = [for (final p in _rawPeriods) CustomPeriod.fromJson((p as Map).cast<String, dynamic>())];
   }
 
   // -- Aktionen --------------------------------------------------------------
@@ -782,7 +795,7 @@ class ThaskStore extends ChangeNotifier {
   /// deshalb geht das auch ohne Verbindung. Mit [dueToday] wird sie ohne erkannte Fälligkeit heute fällig,
   /// mit [dueDay] an diesem Tag.
   Future<void> addQuick(String listId, String text, {bool dueToday = false, DateTime? dueDay}) {
-    final parsed = parse(text, today);
+    final parsed = parse(text, today, custom: customPeriods);
     final title = parsed.title.isEmpty ? text.trim() : parsed.title;
     if (title.isEmpty) return Future.value();
     return _mutate(

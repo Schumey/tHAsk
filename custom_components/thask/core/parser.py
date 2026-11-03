@@ -625,15 +625,62 @@ _RULES[_first_time:_first_time] = _X_RECURRENCE_RULES + _X_TIME_RULES
 _RULES.extend(_X_DUE_RULES)
 
 
-def parse(text: str, today: date, disabled: Container[str] = ()) -> ParseResult:
-    """Extract structured data from a task title. Kinds in `disabled` are left in the title."""
+# Custom periods by name: "nächster X-Block", "im X-Block", "übernächster X-Block", "jeden X-Block".
+_CUSTOM_PREP = (
+    r"(?:(?:bis\s+(?:zum\s+|zur\s+)?|im\s+|in\s+der\s+|in\s+|am\s+|beim\s+|zum\s+|zur\s+|f" + _UE + r"r\s+|by\s+|in\s+the\s+|the\s+"
+    r"|in\s+het\s+|tijdens\s+|le\s+|la\s+|au\s+|el\s+|en\s+el\s+)?)"
+)
+_CUSTOM_NEXT = r"(?:" + _NEXT + r"|volgende|prochaine?|pr[oó]xim[oa])"
+_CUSTOM_EVERY = r"(?:" + _EVERY + r"|elke|ieder[e]?|chaque|cada)"
+
+
+def _custom_rules(custom: list[tuple[str, list[Period]]], today: date) -> list[tuple[str, re.Pattern[str], Handler]]:
+    """Rules for the names of custom periods; `custom` holds each name with its found periods in order."""
+    rules: list[tuple[str, re.Pattern[str], Handler]] = []
+    # Longer names first, so "X-Block lang" wins over "X-Block".
+    for name, periods in sorted(custom, key=lambda item: -len(item[0])):
+        upcoming = [period for period in periods if period.end >= today]
+        if not name.strip() or not upcoming:
+            continue
+        words = r"\s+".join(re.escape(word) for word in name.split())
+
+        def recurring(match: re.Match[str], today: date, upcoming: list[Period] = upcoming) -> dict[str, Any]:
+            return {"recurrence": Recurrence(Granularity.CUSTOM), "default_due": upcoming[0]}
+
+        def due(match: re.Match[str], today: date, upcoming: list[Period] = upcoming) -> dict[str, Any] | None:
+            # "im X-Block" may be the one running now, "nächster X-Block" is one that has not started yet.
+            later = [period for period in upcoming if period.start > today]
+            if match["after"]:
+                return {"due": later[1]} if len(later) > 1 else None
+            if match["next"]:
+                return {"due": later[0]} if later else None
+            return {"due": upcoming[0]}
+
+        rules.append(_rule(KIND_RECURRENCE, rf"{_B}{_CUSTOM_EVERY}\s+(?:{words}){_E}", recurring))
+        rules.append(
+            _rule(
+                KIND_DUE,
+                rf"{_B}{_CUSTOM_PREP}(?:(?P<after>{_AFTER_NEXT})\s+|(?P<next>{_CUSTOM_NEXT})\s+)?(?:{words}){_E}",
+                due,
+            )
+        )
+    return rules
+
+
+def parse(
+    text: str, today: date, disabled: Container[str] = (), custom: list[tuple[str, list[Period]]] | None = None
+) -> ParseResult:
+    """Extract structured data from a task title. Kinds in `disabled` are left in the title.
+
+    `custom` names the custom periods with their found periods, so "nächster X-Block" is understood too.
+    """
     fields: dict[str, Any] = {}
     tokens: list[Token] = []
 
     def free(start: int, end: int) -> bool:
         return all(end <= token.start or start >= token.end for token in tokens)
 
-    for kind, pattern, handler in _RULES:
+    for kind, pattern, handler in [*_custom_rules(custom or [], today), *_RULES]:
         if kind in disabled or (kind == KIND_DUE and "due" in fields) or (kind in fields):
             continue
         for match in pattern.finditer(text):

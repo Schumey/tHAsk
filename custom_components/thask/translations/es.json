@@ -106,6 +106,10 @@
           "name": "Fecha de vencimiento",
           "description": "Cualquier día del periodo."
         },
+        "due_period": {
+          "name": "Periodo propio",
+          "description": "Nombre de un periodo propio (p. ej. «X-Block»): vence en el próximo encontrado. Con fecha: en el primero que termine en esa fecha o después."
+        },
         "priority": {
           "name": "Prioridad",
           "description": "0 = ninguna, 1 = baja, 2 = media, 3 = alta."

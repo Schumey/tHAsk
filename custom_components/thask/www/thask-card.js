@@ -230,6 +230,7 @@ class ThaskCard extends HTMLElement {
         this._tasks = new Map(event.tasks.map((task) => [task.id, task]));
         this._overdueMode = event.options?.overdue_in_today || "section";
         this._options = event.options || {};
+        this._periods = event.periods || [];
         this._loaded = true;
         this._error = null;
         break;
@@ -240,6 +241,9 @@ class ThaskCard extends HTMLElement {
       case "options":
         this._overdueMode = event.overdue_in_today || "section";
         this._options = event;
+        break;
+      case "periods":
+        this._periods = event.periods || [];
         break;
       case "change":
         if (event.kind === "task") {
@@ -324,7 +328,7 @@ class ThaskCard extends HTMLElement {
       const pool = [...this._tasks.values()].filter((task) =>
         mine.has(task.list_id) && (!lists.length || lists.includes(task.list_id)) && filtered(task));
       // Previews keep the id of their task, so hide_duplicates only applies to real tasks.
-      const tasks = dayTasks(pool, this._day, this._today).filter((task) => task.preview || !skip?.has(task.id));
+      const tasks = dayTasks(pool, this._day, this._today, this._periods).filter((task) => task.preview || !skip?.has(task.id));
       if (this._day.getTime() === this._today.getTime()) {
         tasks.push(...pool.filter((task) => isOverdue(task, this._today) && !skip?.has(task.id)));
       }

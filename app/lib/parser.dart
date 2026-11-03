@@ -475,7 +475,7 @@ _Fields _xInN(RegExpMatch m, DateTime today) {
     Granularity.week => {'due': Period.containing(Granularity.week, _plusDays(today, 7 * count))},
     Granularity.month => {'due': Period.containing(Granularity.month, addMonths(today, count))},
     Granularity.quarter => {'due': Period.containing(Granularity.quarter, addMonths(today, 3 * count))},
-    Granularity.year => {'due': Period.containing(Granularity.year, addMonths(today, 12 * count))},
+    Granularity.year || Granularity.custom => {'due': Period.containing(Granularity.year, addMonths(today, 12 * count))},
   };
 }
 
@@ -616,15 +616,50 @@ String _trim(String text) {
   return text.substring(start, end);
 }
 
+// Eigene Zeiträume beim Namen: „nächster X-Block“, „im X-Block“, „übernächster X-Block“, „jeden X-Block“
+// (wie _custom_rules in core/parser.py).
+const _customPrep = r'(?:(?:bis\s+(?:zum\s+|zur\s+)?|im\s+|in\s+der\s+|in\s+|am\s+|beim\s+|zum\s+|zur\s+|f@UE@r\s+|by\s+|'
+    r'in\s+the\s+|the\s+|in\s+het\s+|tijdens\s+|le\s+|la\s+|au\s+|el\s+|en\s+el\s+)?)';
+const _customNext = r'(?:@NEXT@|volgende|prochaine?|pr[oó]xim[oa])';
+const _customEvery = r'(?:@EVERY@|elke|ieder[e]?|chaque|cada)';
+
+List<_Rule> _customRules(List<CustomPeriod> custom, DateTime today) {
+  final rules = <_Rule>[];
+  // Längere Namen zuerst, damit „X-Block lang“ vor „X-Block“ gewinnt.
+  for (final period in [...custom]..sort((a, b) => b.name.length.compareTo(a.name.length))) {
+    final upcoming = period.upcoming(today);
+    final words = period.name.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty).map(RegExp.escape).join(r'\s+');
+    if (words.isEmpty || upcoming.isEmpty) continue;
+    rules.add(_Rule(
+      kindRecurrence,
+      '@B@$_customEvery\\s+(?:$words)@E@',
+      (m, today) => {'recurrence': const Recurrence(Granularity.custom, 1), 'default_due': upcoming.first},
+    ));
+    rules.add(_Rule(
+      kindDue,
+      '@B@$_customPrep(?:(?<after>@AFTERNEXT@)\\s+|(?<next>$_customNext)\\s+)?(?:$words)@E@',
+      (m, today) {
+        // „im X-Block“ kann der laufende sein, „nächster X-Block“ einer, der noch nicht begonnen hat.
+        final later = [for (final p in upcoming) if (p.start.isAfter(today)) p];
+        if (m.namedGroup('after') != null) return later.length > 1 ? {'due': later[1]} : null;
+        if (m.namedGroup('next') != null) return later.isNotEmpty ? {'due': later.first} : null;
+        return {'due': upcoming.first};
+      },
+    ));
+  }
+  return rules;
+}
+
 /// Strukturierte Angaben aus einem Aufgabentitel holen. Arten in [disabled] bleiben im Titel stehen.
-ParseResult parse(String text, DateTime today, {Set<String> disabled = const {}}) {
+/// [custom]: die eigenen Zeiträume der Integration, damit auch „nächster X-Block“ verstanden wird.
+ParseResult parse(String text, DateTime today, {Set<String> disabled = const {}, List<CustomPeriod> custom = const []}) {
   today = dateOnly(today);
   final fields = <String, Object?>{};
   var tokens = <Token>[];
 
   bool free(int start, int end) => tokens.every((t) => end <= t.start || start >= t.end);
 
-  for (final rule in _rules) {
+  for (final rule in [..._customRules(custom, today), ..._rules]) {
     final kind = rule.kind;
     if (disabled.contains(kind) || (kind == kindDue && fields.containsKey('due')) || fields.containsKey(kind)) {
       continue;

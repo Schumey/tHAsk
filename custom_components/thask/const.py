@@ -4,6 +4,7 @@ DOMAIN = "thask"
 
 STORAGE_KEY = f"{DOMAIN}.data"
 STORAGE_KEY_TRIGGERS = f"{DOMAIN}.triggers"
+STORAGE_KEY_PERIODS = f"{DOMAIN}.periods"
 STORAGE_VERSION = 1
 SAVE_DELAY = 1
 
@@ -23,6 +24,12 @@ TRIGGER_INTERVAL_SECONDS = 60
 
 # Dispatched when triggers or their runs change, for the panel.
 SIGNAL_TRIGGERS_CHANGED = f"{DOMAIN}_triggers_changed"
+
+# Custom periods ("X block") are looked up in their calendars this often, and after every rule change.
+PERIOD_REFRESH_MINUTES = 15
+
+# Dispatched when custom period rules or the periods they found change.
+SIGNAL_PERIODS_CHANGED = f"{DOMAIN}_periods_changed"
 
 # Dispatched when the options of the entry change.
 SIGNAL_OPTIONS_CHANGED = f"{DOMAIN}_options_changed"

@@ -11,13 +11,14 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, callback
-from homeassistant.exceptions import HomeAssistantError
+from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.event import (
     async_track_point_in_utc_time,
     async_track_time_change,
     async_track_time_interval,
 )
+from homeassistant.helpers.start import async_at_started
 from homeassistant.helpers.storage import Store
 from homeassistant.util import dt as dt_util
 
@@ -41,18 +42,22 @@ from .const import (
     IMPORTANT_PRIORITIES,
     NOTIFY_ACTION_DONE,
     OVERDUE_MODES,
+    PERIOD_REFRESH_MINUTES,
     SAVE_DELAY,
     SIGNAL_DAY_CHANGED,
     SIGNAL_OPTIONS_CHANGED,
+    SIGNAL_PERIODS_CHANGED,
     SIGNAL_REMINDER,
     SIGNAL_TRIGGERS_CHANGED,
     STORAGE_KEY,
+    STORAGE_KEY_PERIODS,
     STORAGE_KEY_TRIGGERS,
     STORAGE_VERSION,
     TRIGGER_INTERVAL_SECONDS,
     WEEK_MODES,
 )
 from .core.collection import Change, TaskCollection
+from .core.custom_periods import PeriodBook
 from .core.files import ATTACHMENTS_DIR, remove_orphans, remove_task_files
 from .core.models import Task
 from .core.period import Period, language
@@ -88,6 +93,10 @@ class ThaskData:
         self.triggers = TriggerBook()
         self._trigger_store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, STORAGE_KEY_TRIGGERS)
         self._trigger_source = HassSource(hass)
+        self.periods = PeriodBook()
+        self._period_store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, STORAGE_KEY_PERIODS)
+        self._refreshing_periods = False
+        self.collection.custom_resolver = lambda rule, after, today: self.periods.next_after(rule, after, today)
         self.last_trigger_check: datetime | None = None
         self._checking = False
         self._reminders: dict[str, CALLBACK_TYPE] = {}
@@ -185,6 +194,17 @@ class ThaskData:
             self.hass.bus.async_listen("mobile_app_notification_action", self._on_notification_action)
         )
 
+        if data := await self._period_store.async_load():
+            self.periods.load(data)
+        self._unsubs.append(self.periods.subscribe(self._on_periods_change))
+        self._unsubs.append(
+            async_track_time_interval(
+                self.hass, self.async_refresh_periods, timedelta(minutes=PERIOD_REFRESH_MINUTES)
+            )
+        )
+        # Calendars may not be set up yet while Home Assistant starts.
+        self._unsubs.append(async_at_started(self.hass, self.async_refresh_periods))
+
         if data := await self._trigger_store.async_load():
             self.triggers.load(data)
         self._unsubs.append(self.triggers.subscribe(self._on_triggers_change))
@@ -211,6 +231,43 @@ class ThaskData:
         self._reminders.clear()
         await self._store.async_save(self.collection.dump())
         await self._trigger_store.async_save(self.triggers.dump())
+        await self._period_store.async_save(self.periods.dump())
+
+    # -- custom periods --------------------------------------------------------------------
+
+    @callback
+    def _on_periods_change(self) -> None:
+        self._period_store.async_delay_save(self.periods.dump, SAVE_DELAY)
+        async_dispatcher_send(self.hass, SIGNAL_PERIODS_CHANGED)
+
+    async def async_refresh_periods(self, _now: Any = None, rule_ids: list[str] | None = None) -> None:
+        """Look the custom periods up in their calendars again."""
+        if self._refreshing_periods and rule_ids is None:
+            return
+        self._refreshing_periods = True
+        try:
+            await self.periods.refresh(self._trigger_source, self.today, self.tz, rule_ids)
+        finally:
+            self._refreshing_periods = False
+
+    def custom_periods(self) -> list[tuple[str, list[Period]]]:
+        """Names and upcoming periods of the enabled rules, for the quick entry."""
+        return [
+            (rule.name, self.periods.upcoming(rule.id, self.today))
+            for rule in self.periods.sorted_rules()
+            if rule.enabled
+        ]
+
+    def next_custom_period(self, name: str, after: date | None = None) -> Period:
+        """The first period of the named rule that ends on or after `after` (default today)."""
+        rule = self.periods.find_by_name(name)
+        if rule is None:
+            raise ServiceValidationError(f"No custom period named {name}")
+        day = max(after or self.today, self.today)
+        found = next((period for period in self.periods.upcoming(rule.id, self.today) if period.end >= day), None)
+        if found is None:
+            raise ServiceValidationError(f"{name}: no upcoming period found in {rule.calendar}")
+        return found
 
     # -- triggers --------------------------------------------------------------------------
 
@@ -367,3 +424,4 @@ class ThaskData:
                 self.hass.bus.async_fire(EVENT_TASK_OVERDUE, self.task_info(task))
         self.auto_clear()
         async_dispatcher_send(self.hass, SIGNAL_DAY_CHANGED)
+        self.hass.async_create_task(self.async_refresh_periods())

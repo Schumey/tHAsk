@@ -37,6 +37,16 @@ class L10n {
 
   static String weekLabel(int week) => '${tr('week_label')} $week';
 
+  /// Kurzes Datum ohne Wochentag, z. B. „6. Nov.“ (für eigene Zeiträume wie „X-Block 6. Nov.“).
+  static String shortDate(DateTime d) {
+    final m = monthsShort[d.month - 1];
+    return switch (lang) {
+      'de' => '${d.day}. $m',
+      'en' => '$m ${d.day}',
+      _ => '${d.day} $m',
+    };
+  }
+
   /// Datum für die Kopfzeile, z. B. „Sonntag, 1. November“.
   static String longDate(DateTime d) {
     final w = _weekdaysLong[lang]![d.weekday - 1];
@@ -123,6 +133,7 @@ const _strings = <String, Map<String, String>>{
     'err_offline': 'Keine Verbindung zu Home Assistant.',
     'reminder': 'Erinnerung', 'done': 'Erledigt',
     'unit_day': 'Tag', 'unit_week': 'Woche', 'unit_month': 'Monat', 'unit_quarter': 'Quartal', 'unit_year': 'Jahr',
+    'rec_custom': 'Jeder eigene Zeitraum', 'rec_custom_x': 'Jeder {0}', 'custom_period': 'Eigener Zeitraum',
     'units_day': 'Tage', 'units_week': 'Wochen', 'units_month': 'Monate', 'units_quarter': 'Quartale', 'units_year': 'Jahre',
     'every_one': 'Jeden {0}', 'every_many': 'Alle {0} {1}', 'rec_day': 'Täglich', 'rec_week': 'Wöchentlich',
     'rec_month': 'Monatlich', 'rec_quarter': 'Vierteljährlich', 'rec_year': 'Jährlich',
@@ -168,6 +179,7 @@ const _strings = <String, Map<String, String>>{
     'err_offline': 'No connection to Home Assistant.',
     'reminder': 'Reminder', 'done': 'Done',
     'unit_day': 'day', 'unit_week': 'week', 'unit_month': 'month', 'unit_quarter': 'quarter', 'unit_year': 'year',
+    'rec_custom': 'Every custom period', 'rec_custom_x': 'Every {0}', 'custom_period': 'Custom period',
     'units_day': 'days', 'units_week': 'weeks', 'units_month': 'months', 'units_quarter': 'quarters', 'units_year': 'years',
     'every_one': 'Every {0}', 'every_many': 'Every {0} {1}', 'rec_day': 'Daily', 'rec_week': 'Weekly',
     'rec_month': 'Monthly', 'rec_quarter': 'Quarterly', 'rec_year': 'Yearly',
@@ -213,6 +225,7 @@ const _strings = <String, Map<String, String>>{
     'err_offline': 'Geen verbinding met Home Assistant.',
     'reminder': 'Herinnering', 'done': 'Klaar',
     'unit_day': 'dag', 'unit_week': 'week', 'unit_month': 'maand', 'unit_quarter': 'kwartaal', 'unit_year': 'jaar',
+    'rec_custom': 'Elke eigen periode', 'rec_custom_x': 'Elke {0}', 'custom_period': 'Eigen periode',
     'units_day': 'dagen', 'units_week': 'weken', 'units_month': 'maanden', 'units_quarter': 'kwartalen', 'units_year': 'jaar',
     'every_one': 'Elke {0}', 'every_many': 'Elke {0} {1}', 'rec_day': 'Dagelijks', 'rec_week': 'Wekelijks',
     'rec_month': 'Maandelijks', 'rec_quarter': 'Elk kwartaal', 'rec_year': 'Jaarlijks',
@@ -258,6 +271,7 @@ const _strings = <String, Map<String, String>>{
     'err_offline': 'Pas de connexion à Home Assistant.',
     'reminder': 'Rappel', 'done': 'Terminé',
     'unit_day': 'jour', 'unit_week': 'semaine', 'unit_month': 'mois', 'unit_quarter': 'trimestre', 'unit_year': 'an',
+    'rec_custom': 'Chaque période personnalisée', 'rec_custom_x': 'Chaque {0}', 'custom_period': 'Période personnalisée',
     'units_day': 'jours', 'units_week': 'semaines', 'units_month': 'mois', 'units_quarter': 'trimestres', 'units_year': 'ans',
     'every_one': 'Chaque {0}', 'every_many': 'Tous les {0} {1}', 'rec_day': 'Tous les jours', 'rec_week': 'Toutes les semaines',
     'rec_month': 'Tous les mois', 'rec_quarter': 'Tous les trimestres', 'rec_year': 'Tous les ans',
@@ -303,6 +317,7 @@ const _strings = <String, Map<String, String>>{
     'err_offline': 'Sin conexión con Home Assistant.',
     'reminder': 'Recordatorio', 'done': 'Hecho',
     'unit_day': 'día', 'unit_week': 'semana', 'unit_month': 'mes', 'unit_quarter': 'trimestre', 'unit_year': 'año',
+    'rec_custom': 'Cada periodo propio', 'rec_custom_x': 'Cada {0}', 'custom_period': 'Periodo propio',
     'units_day': 'días', 'units_week': 'semanas', 'units_month': 'meses', 'units_quarter': 'trimestres', 'units_year': 'años',
     'every_one': 'Cada {0}', 'every_many': 'Cada {0} {1}', 'rec_day': 'Diariamente', 'rec_week': 'Semanalmente',
     'rec_month': 'Mensualmente', 'rec_quarter': 'Trimestralmente', 'rec_year': 'Anualmente',

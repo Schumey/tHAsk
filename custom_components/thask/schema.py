@@ -9,11 +9,14 @@ import voluptuous as vol
 from homeassistant.helpers import config_validation as cv
 from homeassistant.util import dt as dt_util
 
+from .core.custom_periods import ANCHOR_PARTS, MAX_HORIZON_DAYS, MAX_OFFSET
 from .core.models import PRIORITIES, TASK_SORTS
 from .core.period import Granularity
 from .core.triggers import CALENDAR_PARTS, CONDITION_KINDS, DUE_OPTIONS, MAX_DAYS_AHEAD
 
 GRANULARITIES = [granularity.value for granularity in Granularity]
+# Granularities a period has from a single date (not "custom", which needs an end and comes from a rule).
+FIXED_GRANULARITIES = [granularity for granularity in GRANULARITIES if granularity != Granularity.CUSTOM]
 
 
 def iso_date(value: object) -> str:
@@ -30,7 +33,14 @@ def hh_mm(value: object) -> str:
 
 
 PERIOD_SCHEMA = vol.Schema(
-    {vol.Required("granularity"): vol.In(GRANULARITIES), vol.Required("start"): iso_date}
+    {
+        vol.Required("granularity"): vol.In(GRANULARITIES),
+        vol.Required("start"): iso_date,
+        # Only custom periods: last day, name and the rule that found them.
+        vol.Optional("end"): vol.Any(None, iso_date),
+        vol.Optional("name"): vol.Any(None, str),
+        vol.Optional("rule"): vol.Any(None, str),
+    }
 )
 
 RECURRENCE_SCHEMA = vol.Schema(
@@ -130,4 +140,28 @@ TRIGGER_FIELDS = {
     vol.Optional("window_to"): vol.Any("", hh_mm),
     vol.Optional("days_ahead"): vol.All(vol.Coerce(int), vol.Range(min=0, max=MAX_DAYS_AHEAD)),
     vol.Optional("paused_until"): vol.Any(None, iso_date),
+}
+
+
+def _calendar_entity(value: object) -> str:
+    value = str(value or "").strip()
+    if value and not value.startswith("calendar."):
+        raise vol.Invalid("A custom period needs a calendar entity")
+    return value
+
+
+PERIOD_RULE_NAME = vol.All(str, vol.Strip, vol.Length(min=1))
+
+PERIOD_RULE_FIELDS = {
+    vol.Optional("name"): PERIOD_RULE_NAME,
+    vol.Optional("calendar"): _calendar_entity,
+    vol.Optional("anchor_match"): vol.All(str, vol.Strip),
+    vol.Optional("anchor_part"): vol.In(ANCHOR_PARTS),
+    vol.Optional("anchor_weekdays"): [vol.All(vol.Coerce(int), vol.Range(min=0, max=6))],
+    vol.Optional("start_offset"): vol.All(vol.Coerce(int), vol.Range(min=-MAX_OFFSET, max=MAX_OFFSET)),
+    vol.Optional("end_offset"): vol.All(vol.Coerce(int), vol.Range(min=-MAX_OFFSET, max=MAX_OFFSET)),
+    vol.Optional("max_events"): vol.Any(None, vol.All(vol.Coerce(int), vol.Range(min=0))),
+    vol.Optional("count_match"): vol.All(str, vol.Strip),
+    vol.Optional("horizon_days"): vol.All(vol.Coerce(int), vol.Range(min=7, max=MAX_HORIZON_DAYS)),
+    vol.Optional("enabled"): bool,
 }
