@@ -8,6 +8,7 @@ import 'l10n.dart';
 import 'login_screen.dart';
 import 'snapshot_cache.dart';
 import 'store.dart';
+import 'updater.dart';
 import 'widget_bridge.dart';
 
 Future<void> main() async {
@@ -45,6 +46,9 @@ class ThaskApp extends StatefulWidget {
 }
 
 class _ThaskAppState extends State<ThaskApp> with WidgetsBindingObserver {
+  /// Nur in der echten App (mit Widget-Brücke), nicht in Tests.
+  late final Updater? _updater = widget.bridge != null && Updater.supported ? Updater() : null;
+
   @override
   void initState() {
     super.initState();
@@ -77,7 +81,7 @@ class _ThaskAppState extends State<ThaskApp> with WidgetsBindingObserver {
         builder: (context, _) {
           if (!widget.store.loaded) return const Scaffold(body: Center(child: CircularProgressIndicator()));
           if (!widget.store.hasCredentials) return LoginScreen(store: widget.store);
-          return HomeScreen(store: widget.store, launch: widget.bridge?.launch);
+          return HomeScreen(store: widget.store, launch: widget.bridge?.launch, updater: _updater);
         },
       ),
     );

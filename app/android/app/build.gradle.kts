@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -30,22 +32,41 @@ android {
         versionName = flutter.versionName
     }
 
+    // Schlüssel aus dem privaten Begleit-Repo (local/ im Repo oder tHAsk-local daneben).
+    val companion = listOf("../../local", "../../../tHAsk-local")
+        .map { rootProject.file("$it/android") }
+        .firstOrNull { it.isDirectory }
+    val releaseProps = companion?.resolve("release.properties")?.takeIf { it.exists() }?.let { file ->
+        Properties().apply { file.inputStream().use { load(it) } }
+    }
+
     signingConfigs {
-        // Gemeinsamer Debug-Schlüssel aus dem privaten Begleit-Repo (local/ im Repo oder tHAsk-local daneben),
-        // damit `adb install -r` von jedem PC aus ein Update ist. Fehlt er, nimmt Gradle den Schlüssel des PCs.
+        // Gemeinsamer Debug-Schlüssel, damit `adb install -r` von jedem PC aus ein Update ist.
+        // Fehlt er, nimmt Gradle den Schlüssel des PCs.
         getByName("debug") {
-            val shared = listOf("../../local", "../../../tHAsk-local")
-                .map { rootProject.file("$it/android/debug.keystore") }
-                .firstOrNull { it.exists() }
+            val shared = companion?.resolve("debug.keystore")?.takeIf { it.exists() }
             if (shared != null) storeFile = shared
+        }
+        // Schlüssel der veröffentlichten APKs (GitHub-Releases); Updates in der App gehen nur mit ihm.
+        if (releaseProps != null) {
+            create("release") {
+                storeFile = companion.resolve(releaseProps.getProperty("storeFile"))
+                storePassword = releaseProps.getProperty("storePassword")
+                keyAlias = releaseProps.getProperty("keyAlias")
+                keyPassword = releaseProps.getProperty("keyPassword")
+            }
         }
     }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            // Ohne den Release-Schlüssel (Bau aus dem öffentlichen Quellcode) mit dem Debug-Schlüssel.
+            signingConfig = signingConfigs.findByName("release") ?: signingConfigs.getByName("debug")
+        }
+        debug {
+            // Debug-Builds mit demselben Schlüssel wie die Releases, damit `adb install -r` die installierte
+            // Release-App ersetzt (und umgekehrt), ohne Anmeldung und vorgemerkte Änderungen zu verlieren.
+            signingConfigs.findByName("release")?.let { signingConfig = it }
         }
     }
 }

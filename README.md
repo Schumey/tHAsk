@@ -14,7 +14,7 @@ Gedacht als Ersatz für Microsoft To Do: Die Daten liegen in Home Assistant (und
 | **Android-App mit Widget** (`app/`) | Flutter-App mit Offline-Modus, Widget auf dem Startbildschirm |
 | **Windows-App** (`app/`) | dieselbe App für Windows, mit Installer, Benachrichtigungen und Zähler an der Taskleiste |
 
-Aktueller Stand: **0.9.1** (siehe [Releases](https://github.com/Schumey/tHAsk/releases)). Die Apps werden bisher nicht als fertige Pakete ausgeliefert, sondern aus dem Quellcode gebaut.
+Aktueller Stand: Integration **0.17.0**, Apps **0.9.15** (siehe [Releases](https://github.com/Schumey/tHAsk/releases)). Die Apps gibt es dort fertig als `thask-<Version>.apk` (Android) und `thask-setup-<Version>.exe` (Windows); danach aktualisieren sie sich selbst, siehe [Updates der Apps](#updates-der-apps).
 
 ### Funktionen
 
@@ -304,7 +304,9 @@ Erinnerungen kommen auf dem Handy über die Companion-App, siehe [Erinnerungen](
 
 **Anmeldung** mit der Adresse von Home Assistant und einem **langlebigen Zugriffstoken** (HA → Profil → Sicherheit), pro Gerät.
 
-**Bauen und installieren** (im Ordner `app`, Handy per USB mit USB-Debugging):
+**Installieren**: `thask-<Version>.apk` aus den [Releases](https://github.com/Schumey/tHAsk/releases) auf dem Handy öffnen. Android fragt einmal, ob der Browser (bzw. die Datei-App) Apps installieren darf. Updates holt die App danach selbst, siehe [Updates der Apps](#updates-der-apps).
+
+**Selbst bauen** (im Ordner `app`, Handy per USB mit USB-Debugging):
 
 ```bash
 flutter build apk --debug
@@ -314,7 +316,7 @@ flutter build apk --debug
 adb install -r build/app/outputs/flutter-apk/app-debug.apk
 ```
 
-`adb install -r` aktualisiert die App und behält Anmeldung, Zwischenspeicher und vorgemerkte Änderungen. `flutter install` dagegen deinstalliert vorher und löscht diese Daten.
+`adb install -r` aktualisiert die App und behält Anmeldung, Zwischenspeicher und vorgemerkte Änderungen. `flutter install` dagegen deinstalliert vorher und löscht diese Daten. Ein Update geht nur mit demselben Schlüssel: Eine selbst gebaute App lässt sich nicht über die aus den Releases installieren (und umgekehrt), ohne sie vorher zu deinstallieren.
 
 ## Windows-App
 
@@ -324,6 +326,8 @@ Solange die App läuft, zeigt sie Erinnerungen als Windows-Benachrichtigung (mit
 
 Das Schließen-Kreuz blendet das Fenster nur aus; die App bleibt mit ihrem Symbol im Infobereich der Taskleiste und meldet weiter Erinnerungen. Ein Klick auf das Symbol holt das Fenster zurück, „Beenden“ im Kontextmenü schließt die App wirklich.
 
+**Installieren**: `thask-setup-<Version>.exe` aus den [Releases](https://github.com/Schumey/tHAsk/releases) starten. Das Setup ist nicht signiert; Windows SmartScreen warnt deshalb beim ersten Mal („Der Computer wurde durch Windows geschützt“) – „Weitere Informationen“ → „Trotzdem ausführen“.
+
 Den Installer baut ein Skript. Es braucht Flutter mit den Visual Studio Build Tools (Desktopentwicklung mit C++, plus ATL) und [Inno Setup 6](https://jrsoftware.org/isinfo.php) (`winget install --id JRSoftware.InnoSetup --exact --scope user`):
 
 ```powershell
@@ -331,6 +335,15 @@ app\windows\installer\build_installer.ps1   # -> app\build\installer\thask-setup
 ```
 
 Das Setup installiert ohne Adminrechte für den aktuellen Benutzer nach `%LOCALAPPDATA%\Programs\tHAsk`, mit Startmenü-Eintrag. Optional legt es eine Desktop-Verknüpfung an und startet die App beim Anmelden im Infobereich der Taskleiste. Ein Update installiert man über das alte Setup drüber; eine laufende App wird dabei geschlossen. Anmeldung und zwischengespeicherte Daten liegen unter `%APPDATA%\de.schumey\tHAsk`, das Setup lässt sie auch beim Deinstallieren unangetastet. Deinstallieren geht über Windows-Einstellungen → Apps.
+
+## Updates der Apps
+
+Die Android- und die Windows-App suchen einmal am Tag beim Start in den [Releases](https://github.com/Schumey/tHAsk/releases) nach einer neueren Version und melden sie unten mit „Installieren“. Von Hand geht das im Menü oben rechts unter **Nach Updates suchen**. Die App lädt das Paket direkt von GitHub und prüft Größe und Prüfsumme:
+
+- **Android** öffnet danach die Paketinstallation. Beim ersten Mal fragt Android, ob tHAsk Apps installieren darf (Einstellungen → „Unbekannte Apps installieren“). Anmeldung und Daten bleiben erhalten.
+- **Windows** startet das Setup ohne Rückfragen, beendet die App und startet sie nach dem Update neu. Desktop-Verknüpfung und Autostart bleiben, wie sie waren.
+
+Die App-Version steht in den Dateinamen der Release-Pakete (`thask-0.9.15.apk`, `thask-setup-0.9.15.exe`) und ist unabhängig von der Version der Integration im Tag. Die Pakete für ein Release baut `tools\build_app_release.ps1` (mit `-Tag v0.17.0` lädt es sie gleich zum Release hoch); die APK wird dafür mit dem Release-Schlüssel aus dem privaten Begleit-Repo signiert.
 
 ## WebSocket-API
 

@@ -54,3 +54,5 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 
 [Run]
 Filename: "{app}\{#AppExe}"; Description: "{cm:LaunchProgram,{#AppName}}"; Flags: nowait postinstall skipifsilent
+; Update from within the app (setup started with /SILENT): start the app again afterwards
+Filename: "{app}\{#AppExe}"; Flags: nowait; Check: WizardSilent

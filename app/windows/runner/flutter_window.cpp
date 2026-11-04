@@ -65,6 +65,11 @@ bool FlutterWindow::OnCreate() {
         } else if (call.method_name() == "activate") {
           Restore(GetHandle());
           result->Success();
+        } else if (call.method_name() == "quit") {
+          // Like "Quit" in the tray menu, e.g. before the setup of an update replaces the files.
+          result->Success();
+          quitting_ = true;
+          ::PostMessage(GetHandle(), WM_CLOSE, 0, 0);
         } else if (call.method_name() == "setTray") {
           // {tooltip, open, quit} in the language of the app.
           const auto* args = std::get_if<flutter::EncodableMap>(call.arguments());

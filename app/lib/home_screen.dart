@@ -8,6 +8,8 @@ import 'priority.dart';
 import 'settings_screen.dart';
 import 'store.dart';
 import 'task_detail_screen.dart';
+import 'update_dialog.dart';
+import 'updater.dart';
 import 'views.dart';
 
 const _ranges = ['all', 'week', 'month', 'quarter', 'year'];
@@ -16,12 +18,15 @@ const _ranges = ['all', 'week', 'month', 'quarter', 'year'];
 const wideLayoutWidth = 900.0;
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key, required this.store, this.launch});
+  const HomeScreen({super.key, required this.store, this.launch, this.updater});
 
   final ThaskStore store;
 
   /// Aufforderung aus dem Android-Widget: Ansicht öffnen und Schnelleingabe fokussieren.
   final ValueNotifier<Uri?>? launch;
+
+  /// Updates aus GitHub (Android, Windows); ohne ihn kein Menüpunkt und keine Prüfung beim Start.
+  final Updater? updater;
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -51,6 +56,23 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     widget.launch?.addListener(_handleLaunch);
     WidgetsBinding.instance.addPostFrameCallback((_) => _handleLaunch());
+    _checkForUpdate();
+  }
+
+  /// Einmal am Tag beim Start; ein gefundenes Update meldet ein Hinweis unten.
+  Future<void> _checkForUpdate() async {
+    final updater = widget.updater;
+    if (updater == null) return;
+    final update = await updater.checkDaily();
+    if (update == null || !mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(tr('update_snack', [update.version])),
+      duration: const Duration(seconds: 10),
+      action: SnackBarAction(
+        label: tr('update_install'),
+        onPressed: () => showUpdateDialog(context, updater, update: update),
+      ),
+    ));
   }
 
   void _handleLaunch() {
@@ -294,6 +316,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 store.logout();
               } else if (value == 'settings') {
                 Navigator.push(context, MaterialPageRoute<void>(builder: (_) => SettingsScreen(store: store)));
+              } else if (value == 'update') {
+                showUpdateDialog(context, widget.updater!);
               } else if (list != null) {
                 _listMenu(value, list);
               }
@@ -320,6 +344,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 enabled: store.connection == LinkState.connected,
                 child: Text(tr('settings')),
               ),
+              if (widget.updater != null) PopupMenuItem(value: 'update', child: Text(tr('check_updates'))),
               PopupMenuItem(value: 'logout', child: Text(tr('logout'))),
             ],
           ),
