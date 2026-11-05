@@ -5,7 +5,7 @@ const STRINGS = {
   de: {
     attachments: "Anhänge", add_file: "Datei hinzufügen", uploading: "Wird hochgeladen …", delete_attachment_confirm: "Anhang „{0}“ löschen?", drop_files: "Dateien hierher ziehen",
     members: "Für wen", members_all: "Alle", show_other_lists: "Listen anderer zeigen ({0})", only_my_lists: "Nur meine Listen",
-    my_day: "Heute", day_view: "Tagesplan", in_period: "Im Zeitraum fällig", preview: "Vorschau", preview_hint: "Wiederholung: entsteht, wenn die aktuelle Aufgabe erledigt ist", prev_day: "Vorheriger Tag", next_day: "Nächster Tag", pick_day: "Tag wählen", important: "Wichtig", planned: "Geplant", this_week: "Diese Woche",
+    my_day: "Heute", day_view: "Tagesplan", in_period: "Im Zeitraum fällig", preview: "Vorschau", preview_hint: "Wiederholung: entsteht, wenn die aktuelle Aufgabe erledigt ist", occurrences: "Nächste Termine", occurrences_hint: "Abhaken erledigt einen Termin vorab, z. B. für die Zeit im Urlaub.", occurrence_done: "Vorab erledigen", occurrence_undo: "Wieder öffnen", show_more: "Mehr anzeigen", prev_day: "Vorheriger Tag", next_day: "Nächster Tag", pick_day: "Tag wählen", important: "Wichtig", planned: "Geplant", this_week: "Diese Woche",
     lists: "Listen", add_task: "Aufgabe hinzufügen", quick_hint: "z. B. „Reifen wechseln nächsten Monat !“",
     new_list: "Neue Liste", completed: "Erledigt", steps: "Schritte", add_step: "Nächster Schritt",
     range: "Zeitraum", range_all: "Alle", range_week: "Bis Ende der Woche", range_month: "Bis Ende des Monats",
@@ -49,7 +49,7 @@ const STRINGS = {
   en: {
     attachments: "Attachments", add_file: "Add file", uploading: "Uploading …", delete_attachment_confirm: "Delete attachment “{0}”?", drop_files: "Drop files here",
     members: "Who is it for", members_all: "Everyone", show_other_lists: "Show others' lists ({0})", only_my_lists: "Only my lists",
-    my_day: "Today", day_view: "Day plan", in_period: "Due within a period", preview: "Preview", preview_hint: "Repeats: created when the current task is completed", prev_day: "Previous day", next_day: "Next day", pick_day: "Pick a day", important: "Important", planned: "Planned", this_week: "This week",
+    my_day: "Today", day_view: "Day plan", in_period: "Due within a period", preview: "Preview", preview_hint: "Repeats: created when the current task is completed", occurrences: "Coming occurrences", occurrences_hint: "Tick one off to get it done ahead of time, e.g. while you are away.", occurrence_done: "Tick off ahead of time", occurrence_undo: "Reopen", show_more: "Show more", prev_day: "Previous day", next_day: "Next day", pick_day: "Pick a day", important: "Important", planned: "Planned", this_week: "This week",
     lists: "Lists", add_task: "Add a task", quick_hint: "e.g. “Change tyres next month !”",
     new_list: "New list", completed: "Completed", steps: "Steps", add_step: "Next step",
     range: "Period", range_all: "All", range_week: "By end of week", range_month: "By end of month",
@@ -93,7 +93,7 @@ const STRINGS = {
   nl: {
     attachments: "Bijlagen", add_file: "Bestand toevoegen", uploading: "Bezig met uploaden …", delete_attachment_confirm: "Bijlage „{0}” verwijderen?", drop_files: "Sleep bestanden hierheen",
     members: "Voor wie", members_all: "Iedereen", show_other_lists: "Lijsten van anderen tonen ({0})", only_my_lists: "Alleen mijn lijsten",
-    my_day: "Vandaag", day_view: "Dagplanning", in_period: "In een periode", preview: "Voorbeeld", preview_hint: "Herhaling: ontstaat als de huidige taak klaar is", prev_day: "Vorige dag", next_day: "Volgende dag", pick_day: "Dag kiezen", important: "Belangrijk", planned: "Gepland", this_week: "Deze week",
+    my_day: "Vandaag", day_view: "Dagplanning", in_period: "In een periode", preview: "Voorbeeld", preview_hint: "Herhaling: ontstaat als de huidige taak klaar is", occurrences: "Volgende keren", occurrences_hint: "Vink er een af om die vooraf af te ronden, bijv. tijdens je vakantie.", occurrence_done: "Vooraf afronden", occurrence_undo: "Weer openen", show_more: "Meer tonen", prev_day: "Vorige dag", next_day: "Volgende dag", pick_day: "Dag kiezen", important: "Belangrijk", planned: "Gepland", this_week: "Deze week",
     lists: "Lijsten", add_task: "Taak toevoegen", quick_hint: "bijv. „Banden wisselen volgende maand !”",
     new_list: "Nieuwe lijst", completed: "Voltooid", steps: "Stappen", add_step: "Volgende stap",
     range: "Periode", range_all: "Alle", range_week: "Tot eind van de week", range_month: "Tot eind van de maand",
@@ -137,7 +137,7 @@ const STRINGS = {
   fr: {
     attachments: "Pièces jointes", add_file: "Ajouter un fichier", uploading: "Envoi …", delete_attachment_confirm: "Supprimer la pièce jointe « {0} » ?", drop_files: "Déposez des fichiers ici",
     members: "Pour qui", members_all: "Tout le monde", show_other_lists: "Afficher les listes des autres ({0})", only_my_lists: "Seulement mes listes",
-    my_day: "Aujourd'hui", day_view: "Programme du jour", in_period: "Dans une période", preview: "Aperçu", preview_hint: "Répétition : créée lorsque la tâche actuelle est terminée", prev_day: "Jour précédent", next_day: "Jour suivant", pick_day: "Choisir un jour", important: "Important", planned: "Planifié", this_week: "Cette semaine",
+    my_day: "Aujourd'hui", day_view: "Programme du jour", in_period: "Dans une période", preview: "Aperçu", preview_hint: "Répétition : créée lorsque la tâche actuelle est terminée", occurrences: "Prochaines occurrences", occurrences_hint: "Cochez-en une pour la terminer à l'avance, p. ex. pendant vos vacances.", occurrence_done: "Terminer à l'avance", occurrence_undo: "Rouvrir", show_more: "Afficher plus", prev_day: "Jour précédent", next_day: "Jour suivant", pick_day: "Choisir un jour", important: "Important", planned: "Planifié", this_week: "Cette semaine",
     lists: "Listes", add_task: "Ajouter une tâche", quick_hint: "p. ex. « Changer les pneus le mois prochain ! »",
     new_list: "Nouvelle liste", completed: "Terminées", steps: "Étapes", add_step: "Étape suivante",
     range: "Période", range_all: "Toutes", range_week: "D'ici la fin de la semaine", range_month: "D'ici la fin du mois",
@@ -181,7 +181,7 @@ const STRINGS = {
   es: {
     attachments: "Adjuntos", add_file: "Añadir archivo", uploading: "Subiendo …", delete_attachment_confirm: "¿Eliminar el adjunto «{0}»?", drop_files: "Suelta archivos aquí",
     members: "Para quién", members_all: "Todos", show_other_lists: "Mostrar listas de otros ({0})", only_my_lists: "Solo mis listas",
-    my_day: "Hoy", day_view: "Plan del día", in_period: "Dentro de un periodo", preview: "Vista previa", preview_hint: "Repetición: se crea al completar la tarea actual", prev_day: "Día anterior", next_day: "Día siguiente", pick_day: "Elegir un día", important: "Importante", planned: "Planificado", this_week: "Esta semana",
+    my_day: "Hoy", day_view: "Plan del día", in_period: "Dentro de un periodo", preview: "Vista previa", preview_hint: "Repetición: se crea al completar la tarea actual", occurrences: "Próximas repeticiones", occurrences_hint: "Marca una para completarla por adelantado, p. ej. durante tus vacaciones.", occurrence_done: "Completar por adelantado", occurrence_undo: "Reabrir", show_more: "Mostrar más", prev_day: "Día anterior", next_day: "Día siguiente", pick_day: "Elegir un día", important: "Importante", planned: "Planificado", this_week: "Esta semana",
     lists: "Listas", add_task: "Añadir una tarea", quick_hint: "p. ej. «Cambiar neumáticos el próximo mes !»",
     new_list: "Nueva lista", completed: "Completadas", steps: "Pasos", add_step: "Siguiente paso",
     range: "Periodo", range_all: "Todas", range_week: "Hasta el final de la semana", range_month: "Hasta el final del mes",
@@ -254,6 +254,7 @@ const {
   addMonths, weekdayIndex, periodStart, periodEnd, isoWeek, makePeriod, shiftPeriod, periodEndOf,
   periodStatus, periodLabel, periodRange, sortTasks, esc, dueBy, completedSince, isOverdue,
   matchesSmart, sortByDue, splitDone, language, dateLocale, dayTasks, sortByTime, customUpcoming, customAdjacent,
+  comingOccurrences,
 } = await import(`./thask-common.js?v=${VERSION}`);
 
 const CONDITION_KINDS = ["state", "calendar", "time"];
@@ -273,6 +274,9 @@ const SMART_VIEWS = [
   { key: "this_month", icon: "mdi:calendar-month" },
 ];
 
+// Coming occurrences of a recurring task in the detail pane, and how many more "Show more" adds.
+const OCCURRENCES_SHOWN = 8;
+
 // ---- Panel --------------------------------------------------------------------------------
 
 class ThaskPanel extends HTMLElement {
@@ -285,6 +289,7 @@ class ThaskPanel extends HTMLElement {
     this._day = this._today; // the day shown in the day plan
     this._view = { type: "smart", key: "my_day" };
     this._selectedTask = null;
+    this._occurrenceCount = OCCURRENCES_SHOWN; // coming occurrences listed in the detail pane
     this._showCompleted = false;
     this._search = "";
     this._groupMenu = null; // null | "pick" | "new" | "members"
@@ -901,7 +906,7 @@ class ThaskPanel extends HTMLElement {
       <div class="task prio-${task.priority || 0} ${task.completed ? "completed" : ""} ${task.preview ? "preview" : ""} ${task.id === this._selectedTask ? "selected" : ""}"
         ${task.priority ? `title="${esc(this.t("priority"))}: ${esc(this.t(`priority_${task.priority}`))}"` : ""}
         data-action="select-task" data-task-id="${esc(task.id)}" ${draggable ? `draggable="true" data-drop="task"` : ""}>
-        ${task.preview ? `<span class="check preview" title="${esc(this.t("preview_hint"))}"></span>`
+        ${task.preview ? `<button class="check preview" data-action="occurrence-toggle" data-task-id="${esc(task.id)}" data-period='${esc(JSON.stringify(task.due))}' title="${esc(this.t("occurrence_done"))}"><ha-icon icon="mdi:check"></ha-icon></button>`
           : `<button class="check" data-action="toggle-complete" data-task-id="${esc(task.id)}" title="${esc(this.t("complete"))}">
           <ha-icon icon="mdi:check"></ha-icon></button>`}
         <div class="task-body">
@@ -1051,6 +1056,7 @@ class ThaskPanel extends HTMLElement {
             <div class="segmented">${WEEKDAYS_SHORT[lang].map((name, d) => `<button class="${this._recurrenceDays(task).includes(d) ? "on" : ""}" data-action="recurrence-weekday" data-weekday="${d}">${esc(name)}</button>`).join("")}</div>
           </div>` : ""}
       </div>
+      ${this._renderOccurrences(task)}
       <div class="card">
         <div class="label"><ha-icon icon="mdi:format-list-bulleted"></ha-icon>${esc(this.t("list"))}</div>
         <select class="field" data-field="list">
@@ -1079,6 +1085,48 @@ class ThaskPanel extends HTMLElement {
       </div>`;
     this._autosize(detail.querySelector(".title-input"));
     if (refocusNewStep) detail.querySelector('[data-field="new-step"]').focus();
+  }
+
+  // Coming occurrences of a recurring task: tick off ahead of time, e.g. while away.
+  _renderOccurrences(task) {
+    if (!task.recurrence || !task.due || task.completed) return "";
+    const tasks = [...this._tasks.values()];
+    const coming = comingOccurrences(task, tasks, this._occurrenceCount + 1, this._today, this._periods);
+    if (!coming.length) return "";
+    const more = coming.length > this._occurrenceCount;
+    const rows = coming.slice(0, this._occurrenceCount).map(({ due, done }) => {
+      const range = periodRange(due, this._locale);
+      const time = due.granularity === "day" && task.due_time ? ` · ${task.due_time}` : "";
+      return `
+        <div class="step occurrence ${done ? "completed" : ""}">
+          <button class="check small ${done ? "on" : ""}" data-action="occurrence-toggle" data-task-id="${esc(task.id)}" data-period='${esc(JSON.stringify(due))}' data-done="${done ? "1" : ""}" title="${esc(this.t(done ? "occurrence_undo" : "occurrence_done"))}"><ha-icon icon="mdi:check"></ha-icon></button>
+          <span class="occurrence-label">${esc(periodLabel(due, this._lang, this._today))}${esc(time)}${range ? ` <span class="muted">${esc(range)}</span>` : ""}</span>
+        </div>`;
+    }).join("");
+    return `
+      <div class="card occurrences">
+        <div class="label"><ha-icon icon="mdi:calendar-check-outline"></ha-icon>${esc(this.t("occurrences"))}</div>
+        <div class="muted">${esc(this.t("occurrences_hint"))}</div>
+        <div class="steps">${rows}</div>
+        ${more ? `<button class="link more" data-action="occurrence-more">${esc(this.t("show_more"))}</button>` : ""}
+      </div>`;
+  }
+
+  // Tick off (or untick) a coming occurrence: the server makes it a completed task of its own and the
+  // recurrence jumps over it. Shown right away, the server's change events follow.
+  _setOccurrence(task, due, done) {
+    const skipped = new Set(task.skipped || []);
+    if (done) skipped.add(due.start);
+    else {
+      skipped.delete(due.start);
+      const series = task.series || task.id;
+      for (const other of this._tasks.values()) {
+        if (other.id !== task.id && !other.recurrence && other.series === series && other.due?.start === due.start) this._tasks.delete(other.id);
+      }
+    }
+    this._tasks.set(task.id, { ...task, skipped: [...skipped].sort() });
+    this._render();
+    return this._call("thask/task/occurrence", { task_id: task.id, due, done });
   }
 
   _autosize(textarea) {
@@ -1661,6 +1709,7 @@ class ThaskPanel extends HTMLElement {
   // ---- Events -------------------------------------------------------------------------------
 
   _selectTask(taskId) {
+    if (taskId !== this._selectedTask) this._occurrenceCount = OCCURRENCES_SHOWN;
     this._selectedTask = taskId;
     if (this._narrow) this._pane = taskId ? "detail" : "list";
     this._render();
@@ -1728,6 +1777,14 @@ class ThaskPanel extends HTMLElement {
         break;
       case "priority-set":
         this._updateTask(task, { priority: Number(target.dataset.priority) });
+        break;
+      case "occurrence-toggle":
+        ev.stopPropagation();
+        if (task) this._setOccurrence(task, JSON.parse(target.dataset.period), !target.dataset.done).catch(() => {});
+        break;
+      case "occurrence-more":
+        this._occurrenceCount += OCCURRENCES_SHOWN;
+        this._renderDetail();
         break;
       case "toggle-completed":
         this._showCompleted = !this._showCompleted;
@@ -2181,6 +2238,10 @@ const STYLE = `
   .task.preview { background: none; border: 1px dashed var(--thask-divider); }
   .task.preview .task-title { color: var(--thask-muted); }
   .check.preview { border-style: dashed; opacity: 0.6; }
+  .check.preview:hover { opacity: 1; }
+  .occurrence-label { flex: 1; min-width: 0; }
+  .step.occurrence.completed .occurrence-label { text-decoration: line-through; color: var(--thask-muted); }
+  .card.occurrences .more { align-self: flex-start; color: var(--thask-accent); font-size: 13px; }
   .meta.preview-tag { font-style: italic; }
   .day-pick { border: 1px solid var(--thask-divider); border-radius: 6px; padding: 4px 6px; background: none; color: var(--thask-text); font: inherit; color-scheme: light dark; }
   .task.dragging { opacity: 0.4; }

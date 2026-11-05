@@ -40,12 +40,14 @@ from .const import (
 from .core.collection import Change, NotFoundError
 from .core.custom_periods import PeriodRule
 from .core.models import Task, TaskList
+from .core.period import Period
 from .core.parser import KIND_DUE, KIND_PRIORITY, KIND_RECURRENCE, KIND_TIME, parse
 from .core.triggers import Trigger
 from .data import ThaskData, async_get_data
 from .schema import (
     LIST_FIELDS,
     PERIOD_RULE_FIELDS,
+    PERIOD_SCHEMA,
     PERIOD_RULE_NAME,
     TASK_FIELDS,
     TASK_TEMPLATE_SCHEMA,
@@ -75,6 +77,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
         ws_task_update,
         ws_task_delete,
         ws_task_move,
+        ws_task_occurrence,
         ws_parse,
         ws_triggers_subscribe,
         ws_trigger_create,
@@ -292,6 +295,28 @@ def ws_task_delete(hass, connection, msg, data: ThaskData) -> None:
 def ws_task_move(hass, connection, msg, data: ThaskData) -> None:
     task = data.collection.move_task(msg["task_id"], msg.get("previous_id"))
     connection.send_result(msg["id"], task.as_dict())
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "thask/task/occurrence",
+        vol.Required("task_id"): str,
+        # Due period of the coming occurrence, as the clients project it.
+        vol.Required("due"): PERIOD_SCHEMA,
+        vol.Required("done"): bool,
+    }
+)
+@_with_data
+def ws_task_occurrence(hass, connection, msg, data: ThaskData) -> None:
+    """Tick off (or untick) a coming occurrence of a recurring task ahead of time."""
+    try:
+        occurrence = data.collection.set_occurrence(
+            msg["task_id"], Period.from_dict(msg["due"]), msg["done"], data.today
+        )
+    except ValueError as err:
+        connection.send_error(msg["id"], websocket_api.ERR_INVALID_FORMAT, str(err))
+        return
+    connection.send_result(msg["id"], occurrence.as_dict() if occurrence else None)
 
 
 @websocket_api.websocket_command(

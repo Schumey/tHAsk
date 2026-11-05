@@ -258,6 +258,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ? _PreviewTile(
             task: task,
             store: store,
+            guard: _guard,
             selected: wide && task.id == _selected,
             onOpen: () => _openTask(task, wide),
           )
@@ -786,10 +787,17 @@ class _TaskTile extends StatelessWidget {
 /// Kommendes Vorkommen einer wiederkehrenden Aufgabe im Tagesplan. Es gibt die Aufgabe so noch nicht, deshalb
 /// ohne Haken und ohne Wischen; Antippen öffnet die jetzige Aufgabe.
 class _PreviewTile extends StatelessWidget {
-  const _PreviewTile({required this.task, required this.store, required this.onOpen, this.selected = false});
+  const _PreviewTile({
+    required this.task,
+    required this.store,
+    required this.guard,
+    required this.onOpen,
+    this.selected = false,
+  });
 
   final Task task;
   final ThaskStore store;
+  final Future<void> Function(Future<void> Function()) guard;
   final VoidCallback onOpen;
   final bool selected;
 
@@ -805,7 +813,15 @@ class _PreviewTile extends StatelessWidget {
       child: ListTile(
         selected: selected,
         onTap: onOpen,
-        leading: SizedBox(width: 40, child: Icon(Icons.update, color: muted.withValues(alpha: 0.7))),
+        // Abhaken erledigt das Vorkommen vorab: eine eigene erledigte Aufgabe, die Wiederholung springt darüber.
+        leading: SizedBox(
+          width: 40,
+          child: IconButton(
+            tooltip: tr('occurrence_done'),
+            icon: Icon(Icons.radio_button_unchecked, color: muted.withValues(alpha: 0.7)),
+            onPressed: () => guard(() => store.setOccurrence(task, due, true)),
+          ),
+        ),
         title: Text(task.title, style: TextStyle(color: muted)),
         subtitle: Wrap(
           spacing: 12,

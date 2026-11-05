@@ -244,6 +244,12 @@ class Task:
     external_id: str | None = None
     # Files; changed only through the attachment endpoints, not by patches.
     attachments: list[Attachment] = field(default_factory=list)
+    # Recurring tasks: the id shared by all occurrences (the first task's id; None = this task's own id).
+    # An occurrence done ahead of time is a task of its own without recurrence and with this series.
+    series: str | None = None
+    # Recurring tasks: starts (ISO dates) of coming occurrences already done ahead of time; the recurrence
+    # jumps over them. Changed only through `TaskCollection.set_occurrence`, not by patches.
+    skipped: list[str] = field(default_factory=list)
     created: str = field(default_factory=utc_now_iso)
     modified: str = field(default_factory=utc_now_iso)
     completed_at: str | None = None
@@ -328,15 +334,49 @@ class Task:
             return False
         return datetime.fromisoformat(self.completed_at).astimezone(tz).date() >= day
 
+    @property
+    def series_id(self) -> str:
+        return self.series or self.id
+
     def next_occurrence(self, today: date, resolve: CustomResolver | None = None) -> Task | None:
-        """A fresh copy for the next due period of a recurring task, or None."""
+        """A fresh copy for the next due period of a recurring task, or None.
+
+        Occurrences done ahead of time (`skipped`) are left out: the copy gets the first one after them.
+        """
         if self.recurrence is None or self.due is None:
             return None
         due = self.recurrence.next_period(self.due, today, resolve)
-        reminder = None
+        for _ in range(1000):
+            if due.start.isoformat() not in self.skipped:
+                break
+            following = self.recurrence.next_period(due, today, resolve)
+            if following.start <= due.start:
+                break
+            due = following
+        task = self.occurrence_at(due)
+        task.recurrence = self.recurrence.copy()
+        task.skipped = [day for day in self.skipped if day > due.start.isoformat()]
         if self.reminder:
             offset = due.start - self.due.start
-            reminder = (datetime.fromisoformat(self.reminder) + timedelta(days=offset.days)).isoformat()
+            task.reminder = (datetime.fromisoformat(self.reminder) + timedelta(days=offset.days)).isoformat()
+        return task
+
+    def coming_occurrences(self, count: int, today: date, resolve: CustomResolver | None = None) -> list[Period]:
+        """The next `count` due periods after the current one, including those done ahead of time."""
+        if self.recurrence is None or self.due is None:
+            return []
+        result: list[Period] = []
+        period = self.due
+        while len(result) < count:
+            following = self.recurrence.next_period(period, today, resolve)
+            if following.start <= period.start:
+                break
+            result.append(following)
+            period = following
+        return result
+
+    def occurrence_at(self, due: Period) -> Task:
+        """A copy of this task due in `due`, without recurrence, reminder or attachments, in the same series."""
         return Task(
             id=new_id(),
             list_id=self.list_id,
@@ -344,12 +384,11 @@ class Task:
             notes=self.notes,
             priority=self.priority,
             due=due,
-            due_time=self.due_time,
-            reminder=reminder,
-            recurrence=self.recurrence.copy(),
+            due_time=self.due_time if due.granularity is Granularity.DAY else None,
             steps=[Step(new_id(), step.title) for step in self.steps],
             categories=list(self.categories),
             position=self.position,
+            series=self.series_id,
         )
 
     def as_dict(self) -> dict[str, Any]:
@@ -372,6 +411,8 @@ class Task:
             "position": self.position,
             "external_id": self.external_id,
             "attachments": [attachment.as_dict() for attachment in self.attachments],
+            "series": self.series,
+            "skipped": list(self.skipped),
             "created": self.created,
             "modified": self.modified,
             "completed_at": self.completed_at,
@@ -381,8 +422,9 @@ class Task:
     def from_dict(cls, data: dict[str, Any]) -> Task:
         task = cls(id=data["id"], list_id=data["list_id"], title=data["title"])
         task.apply(data)
-        for key in ("external_id", "created", "modified", "completed_at"):
+        for key in ("external_id", "series", "created", "modified", "completed_at"):
             if key in data:
                 setattr(task, key, data[key])
+        task.skipped = sorted(set(data.get("skipped") or ()))
         task.attachments = [Attachment.from_dict(item) for item in data.get("attachments") or []]
         return task

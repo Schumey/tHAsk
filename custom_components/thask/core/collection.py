@@ -8,6 +8,7 @@ from datetime import date, datetime
 from typing import Any, Literal
 
 from .models import Attachment, CustomResolver, Task, TaskList, new_id, sort_tasks, utc_now_iso
+from .period import Period
 
 DATA_VERSION = 1
 
@@ -191,6 +192,51 @@ class TaskCollection:
         if task.completed and not was_completed and (following := task.next_occurrence(today, self.custom_resolver)):
             self.add_task(following)
         return task
+
+    def find_occurrence(self, task: Task, start: date) -> Task | None:
+        """The task of its own for an occurrence of recurring `task` starting on `start` (done ahead), if any."""
+        series = task.series_id
+        return next(
+            (
+                other for other in self.tasks.values()
+                if other.id != task.id and other.recurrence is None and other.series == series
+                and other.due is not None and other.due.start == start
+            ),
+            None,
+        )
+
+    def set_occurrence(self, task_id: str, due: Period, done: bool, today: date) -> Task | None:
+        """Tick off (or untick) a coming occurrence of a recurring task ahead of time.
+
+        Ticking creates a completed task of its own for that period, in the same series, and the recurrence
+        then jumps over it. Unticking deletes that task again, so the occurrence comes back as usual.
+        Returns the task of the occurrence, None after unticking.
+        """
+        task = self.get_task(task_id)
+        if task.recurrence is None or task.due is None:
+            raise ValueError("Only recurring tasks with a due date have coming occurrences")
+        if due.start <= task.due.start:
+            raise ValueError("The occurrence has to come after the current one")
+        start = due.start.isoformat()
+        occurrence = self.find_occurrence(task, due.start)
+        if done:
+            if occurrence is None:
+                occurrence = task.occurrence_at(due)
+                occurrence.position = self.top_position(task.list_id)
+                occurrence.apply({"completed": True})
+                self.add_task(occurrence)
+            elif not occurrence.completed:
+                self.update_task(occurrence.id, {"completed": True}, today)
+            skipped = sorted({*task.skipped, start})
+        else:
+            if occurrence is not None:
+                self.delete_task(occurrence.id)
+            skipped = [day for day in task.skipped if day != start]
+        if skipped != task.skipped:
+            task.skipped = skipped
+            task.modified = utc_now_iso()
+            self._task_changed("updated", task)
+        return occurrence if done else None
 
     def add_attachment(self, task_id: str, attachment: Attachment) -> Task:
         task = self.get_task(task_id)

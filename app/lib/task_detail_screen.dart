@@ -63,6 +63,10 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
   final _notesFocus = FocusNode();
   Task? _last;
 
+  /// Wie viele kommende Vorkommen einer wiederkehrenden Aufgabe zu sehen sind; „Mehr anzeigen“ erhöht.
+  int _occurrenceCount = _occurrencesShown;
+  static const _occurrencesShown = 8;
+
   ThaskStore get store => widget.store;
 
   @override
@@ -158,6 +162,56 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
       ),
     );
     if (confirmed ?? false) await _guard(() => store.deleteAttachment(task, attachment));
+  }
+
+  /// Kommende Vorkommen einer wiederkehrenden Aufgabe, vorab abzuhaken (z. B. für die Zeit im Urlaub).
+  Widget _occurrences(Task task) {
+    final coming = task.comingOccurrences(store.allTasks, _occurrenceCount + 1, store.today, store.customPeriods);
+    if (coming.isEmpty) return const SizedBox.shrink();
+    final theme = Theme.of(context);
+    final muted = theme.colorScheme.onSurfaceVariant;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const Divider(height: 1),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          child: Text(tr('occurrences'), style: theme.textTheme.labelLarge),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 2, 16, 4),
+          child: Text(tr('occurrences_hint'), style: theme.textTheme.bodySmall?.copyWith(color: muted)),
+        ),
+        for (final o in coming.take(_occurrenceCount))
+          ListTile(
+            dense: true,
+            leading: Checkbox(
+              value: o.done,
+              shape: const CircleBorder(),
+              onChanged: (v) => _guard(() => store.setOccurrence(task, o.due, v ?? false)),
+            ),
+            title: Text(
+              [
+                o.due.label(store.today),
+                if (o.due.granularity == Granularity.day && task.dueTime != null) task.dueTime!,
+              ].join(' · '),
+              style: o.done ? TextStyle(decoration: TextDecoration.lineThrough, color: muted) : null,
+            ),
+            onTap: () => _guard(() => store.setOccurrence(task, o.due, !o.done)),
+          ),
+        if (coming.length > _occurrenceCount)
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: TextButton(
+                onPressed: () => setState(() => _occurrenceCount += _occurrencesShown),
+                child: Text(tr('show_more')),
+              ),
+            ),
+          ),
+      ],
+    );
   }
 
   Widget _attachments(Task task) {
@@ -540,6 +594,7 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                       ),
                 onTap: () => _pickRecurrence(task),
               ),
+              _occurrences(task),
               const Divider(height: 1),
               ListTile(
                 leading: const Icon(Icons.list),

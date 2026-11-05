@@ -368,6 +368,8 @@ class Task {
     this.created = '',
     this.completedAt,
     this.attachments = const [],
+    this.series,
+    this.skipped = const [],
     this.preview = false,
   });
 
@@ -389,6 +391,16 @@ class Task {
   final String created;
   final String? completedAt;
   final List<TaskAttachment> attachments;
+
+  /// Wiederkehrende Aufgaben: Kennung aller Vorkommen (die der ersten Aufgabe; null = die eigene). Ein vorab
+  /// erledigtes Vorkommen ist eine eigene Aufgabe ohne Wiederholung mit dieser Kennung.
+  final String? series;
+
+  /// Wiederkehrende Aufgaben: Beginn (ISO-Datum) kommender Vorkommen, die schon vorab erledigt sind; die
+  /// Wiederholung springt über sie hinweg.
+  final List<String> skipped;
+
+  String get seriesId => series ?? id;
 
   /// Vorschau eines kommenden Vorkommens einer wiederkehrenden Aufgabe im Tagesplan: Es gibt sie noch nicht,
   /// sie entsteht erst beim Abhaken der jetzigen. Sie trägt deren Kennung.
@@ -416,6 +428,8 @@ class Task {
         attachments: [
           for (final a in json['attachments'] as List? ?? const []) TaskAttachment.fromJson(a as Map<String, dynamic>),
         ],
+        series: json['series'] as String?,
+        skipped: [for (final d in json['skipped'] as List? ?? const []) d as String],
       );
 
   bool get isHighPriority => priority >= 3;
@@ -433,6 +447,7 @@ class Task {
 
   /// Die Fälligkeiten, die eine wiederkehrende Aufgabe nach der jetzigen bekommt, bis zu denen, die an [until]
   /// beginnen: was wiederholtes Abhaken anlegen würde. Leer ohne Wiederholung und für Erledigtes.
+  /// Vorab erledigte Vorkommen ([skipped]) fehlen: Sie sind eigene Aufgaben.
   List<Period> projectedPeriods(DateTime until, DateTime today, {List<CustomPeriod> periods = const [], int limit = 2000}) {
     if (recurrence == null || due == null || completed) return const [];
     final last = dateOnly(until);
@@ -440,19 +455,55 @@ class Task {
     if (recurrence!.unit == Granularity.custom) {
       return [
         for (final p in customUpcoming(periods, due!.rule, today))
-          if (p.start.isAfter(due!.start) && !p.start.isAfter(last)) p,
+          if (p.start.isAfter(due!.start) && !p.start.isAfter(last) && !skipped.contains(isoDate(p.start))) p,
       ];
     }
     final result = <Period>[];
     var period = due!;
-    while (result.length < limit) {
-      final next = recurrence!.nextPeriod(period, today);
+    for (var steps = 0; steps < limit; steps++) {
+      final next = recurrence!.nextPeriod(period, today, periods);
       if (!next.start.isAfter(period.start) || next.start.isAfter(last)) break;
-      result.add(next);
+      if (!skipped.contains(isoDate(next.start))) result.add(next);
       period = next;
     }
     return result;
   }
+
+  /// Die nächsten [count] Vorkommen nach dem jetzigen, auch die vorab erledigten (wie comingOccurrences in
+  /// thask-common.js). [own] ist die eigene Aufgabe eines vorab erledigten Vorkommens aus [tasks].
+  List<({Period due, bool done, Task? own})> comingOccurrences(
+    Iterable<Task> tasks,
+    int count,
+    DateTime today, [
+    List<CustomPeriod> periods = const [],
+  ]) {
+    if (recurrence == null || due == null || completed) return const [];
+    final List<Period> dues;
+    if (recurrence!.unit == Granularity.custom) {
+      dues = customUpcoming(periods, due!.rule, today).where((p) => p.start.isAfter(due!.start)).take(count).toList();
+    } else {
+      dues = [];
+      var period = due!;
+      while (dues.length < count) {
+        final next = recurrence!.nextPeriod(period, today, periods);
+        if (!next.start.isAfter(period.start)) break;
+        dues.add(next);
+        period = next;
+      }
+    }
+    return [
+      for (final d in dues)
+        if (occurrenceTask(tasks, d.start) case final own?)
+          (due: own.due ?? d, done: own.completed, own: own)
+        else
+          (due: d, done: skipped.contains(isoDate(d.start)), own: null),
+    ];
+  }
+
+  /// Die eigene Aufgabe des Vorkommens, das an [start] beginnt (vorab erledigt), falls es sie gibt.
+  Task? occurrenceTask(Iterable<Task> tasks, DateTime start) => tasks
+      .where((t) => t.id != id && t.recurrence == null && t.series == seriesId && t.due != null && t.due!.start == start)
+      .firstOrNull;
 
   /// Diese Aufgabe als Vorschau mit der Fälligkeit [due].
   Task previewAt(Period due) => Task(

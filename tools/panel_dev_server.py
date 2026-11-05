@@ -315,6 +315,9 @@ class Backend:
             case "thask/task/delete":
                 collection.delete_task(msg["task_id"])
                 return None
+            case "thask/task/occurrence":
+                occurrence = collection.set_occurrence(msg["task_id"], Period.from_dict(msg["due"]), msg["done"], today)
+                return occurrence.as_dict() if occurrence else None
             case "thask/attachment/delete":
                 collection.remove_attachment(msg["task_id"], msg["attachment_id"])
                 self.files.pop(msg["attachment_id"], None)

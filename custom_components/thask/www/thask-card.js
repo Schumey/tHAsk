@@ -11,7 +11,7 @@ const {
 
 const STRINGS = {
   de: {
-    my_day: "Heute", day_view: "Tagesplan", in_period: "Im Zeitraum fällig", preview: "Vorschau", prev_day: "Vorheriger Tag", next_day: "Nächster Tag", overdue: "Überfällig", important: "Wichtig", planned: "Geplant", this_week: "Diese Woche",
+    my_day: "Heute", day_view: "Tagesplan", in_period: "Im Zeitraum fällig", preview: "Vorschau", occurrence_done: "Vorab erledigen", prev_day: "Vorheriger Tag", next_day: "Nächster Tag", overdue: "Überfällig", important: "Wichtig", planned: "Geplant", this_week: "Diese Woche",
     this_month: "Diesen Monat", later: "Später", today: "Heute", tomorrow: "Morgen", empty: "Keine Aufgaben",
     completed: "Erledigt", add_task: "Aufgabe hinzufügen", more: "{0} weitere", loading: "Lade …",
     not_loaded: "tHAsk ist nicht geladen", unknown_list: "Unbekannte Liste", open_panel: "In tHAsk öffnen",
@@ -29,7 +29,7 @@ const STRINGS = {
     card_description: "Eine tHAsk-Ansicht oder -Liste mit Zeiträumen, Schnelleingabe und Schritten.",
   },
   en: {
-    my_day: "Today", day_view: "Day plan", in_period: "Due within a period", preview: "Preview", prev_day: "Previous day", next_day: "Next day", overdue: "Overdue", important: "Important", planned: "Planned", this_week: "This week",
+    my_day: "Today", day_view: "Day plan", in_period: "Due within a period", preview: "Preview", occurrence_done: "Tick off ahead of time", prev_day: "Previous day", next_day: "Next day", overdue: "Overdue", important: "Important", planned: "Planned", this_week: "This week",
     this_month: "This month", later: "Later", today: "Today", tomorrow: "Tomorrow", empty: "No tasks",
     completed: "Completed", add_task: "Add a task", more: "{0} more", loading: "Loading …",
     not_loaded: "tHAsk is not loaded", unknown_list: "Unknown list", open_panel: "Open in tHAsk",
@@ -46,7 +46,7 @@ const STRINGS = {
     card_description: "A tHAsk view or list with fuzzy due dates, quick add and steps.",
   },
   nl: {
-    my_day: "Vandaag", day_view: "Dagplanning", in_period: "In een periode", preview: "Voorbeeld", prev_day: "Vorige dag", next_day: "Volgende dag", overdue: "Te laat", important: "Belangrijk", planned: "Gepland", this_week: "Deze week",
+    my_day: "Vandaag", day_view: "Dagplanning", in_period: "In een periode", preview: "Voorbeeld", occurrence_done: "Vooraf afronden", prev_day: "Vorige dag", next_day: "Volgende dag", overdue: "Te laat", important: "Belangrijk", planned: "Gepland", this_week: "Deze week",
     this_month: "Deze maand", later: "Later", today: "Vandaag", tomorrow: "Morgen", empty: "Geen taken",
     completed: "Voltooid", add_task: "Taak toevoegen", more: "nog {0}", loading: "Laden …",
     not_loaded: "tHAsk is niet geladen", unknown_list: "Onbekende lijst", open_panel: "Openen in tHAsk",
@@ -63,7 +63,7 @@ const STRINGS = {
     card_description: "Een tHAsk-weergave of -lijst met vage vervaldatums, snel toevoegen en stappen.",
   },
   fr: {
-    my_day: "Aujourd'hui", day_view: "Programme du jour", in_period: "Dans une période", preview: "Aperçu", prev_day: "Jour précédent", next_day: "Jour suivant", overdue: "En retard", important: "Important", planned: "Planifié", this_week: "Cette semaine",
+    my_day: "Aujourd'hui", day_view: "Programme du jour", in_period: "Dans une période", preview: "Aperçu", occurrence_done: "Terminer à l'avance", prev_day: "Jour précédent", next_day: "Jour suivant", overdue: "En retard", important: "Important", planned: "Planifié", this_week: "Cette semaine",
     this_month: "Ce mois-ci", later: "Plus tard", today: "Aujourd'hui", tomorrow: "Demain", empty: "Aucune tâche",
     completed: "Terminées", add_task: "Ajouter une tâche", more: "{0} de plus", loading: "Chargement …",
     not_loaded: "tHAsk n'est pas chargé", unknown_list: "Liste inconnue", open_panel: "Ouvrir dans tHAsk",
@@ -80,7 +80,7 @@ const STRINGS = {
     card_description: "Une vue ou une liste tHAsk avec échéances souples, saisie rapide et étapes.",
   },
   es: {
-    my_day: "Hoy", day_view: "Plan del día", in_period: "Dentro de un periodo", preview: "Vista previa", prev_day: "Día anterior", next_day: "Día siguiente", overdue: "Vencidas", important: "Importante", planned: "Planificado", this_week: "Esta semana",
+    my_day: "Hoy", day_view: "Plan del día", in_period: "Dentro de un periodo", preview: "Vista previa", occurrence_done: "Completar por adelantado", prev_day: "Día anterior", next_day: "Día siguiente", overdue: "Vencidas", important: "Importante", planned: "Planificado", this_week: "Esta semana",
     this_month: "Este mes", later: "Más tarde", today: "Hoy", tomorrow: "Mañana", empty: "No hay tareas",
     completed: "Completadas", add_task: "Añadir una tarea", more: "{0} más", loading: "Cargando …",
     not_loaded: "tHAsk no está cargado", unknown_list: "Lista desconocida", open_panel: "Abrir en tHAsk",
@@ -553,10 +553,11 @@ class ThaskCard extends HTMLElement {
     if (task.notes) meta.push(`<span class="meta"><ha-icon icon="mdi:note-text-outline"></ha-icon></span>`);
     if (task.attachments?.length) meta.push(`<span class="meta"><ha-icon icon="mdi:paperclip"></ha-icon>${task.attachments.length}</span>`);
     if (task.preview) {
-      // A coming occurrence of a recurring task: it does not exist yet, so there is nothing to tick off or change.
+      // A coming occurrence of a recurring task: it does not exist yet. Ticking it off does it ahead of time
+      // (a completed task of its own; the recurrence then jumps over it).
       return `
       <div class="task preview" data-view="${esc(view.id)}">
-        <span class="check preview"></span>
+        <button class="check preview" data-action="occurrence" data-id="${esc(task.id)}" data-period='${esc(JSON.stringify(task.due))}' title="${esc(this.t("occurrence_done"))}"><ha-icon icon="mdi:check"></ha-icon></button>
         <div class="body">
           <div class="title">${esc(task.title)}</div>
           ${meta.length && !this._config.compact ? `<div class="metas">${meta.join("")}</div>` : ""}
@@ -653,6 +654,16 @@ class ThaskCard extends HTMLElement {
         ev.stopPropagation();
         if (task) this._update(task, { completed: !task.completed });
         break;
+      case "occurrence": {
+        ev.stopPropagation();
+        if (!task) break;
+        const due = JSON.parse(target.dataset.period);
+        // Hide the preview at once; the completed task of its own arrives as a change.
+        this._tasks.set(task.id, { ...task, skipped: [...new Set([...(task.skipped || []), due.start])].sort() });
+        this._render();
+        this._call("thask/task/occurrence", { task_id: task.id, due, done: true }).catch(() => {});
+        break;
+      }
       case "step": {
         ev.stopPropagation();
         if (!task) break;
@@ -1004,6 +1015,7 @@ const STYLE = `
   .task.preview { cursor: default; }
   .task.preview > .body > .title { color: var(--thask-muted); }
   .check.preview { border-style: dashed; opacity: 0.6; }
+  .check.preview:hover { opacity: 1; }
   .meta.preview-tag { font-style: italic; }
   .more { display: block; padding: 6px 16px 6px 24px; font-size: 13px; color: var(--thask-accent); }
   .empty { padding: 12px 16px 12px 24px; color: var(--thask-muted); }

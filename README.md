@@ -14,11 +14,11 @@ Gedacht als Ersatz für Microsoft To Do: Die Daten liegen in Home Assistant (und
 | **Android-App mit Widget** (`app/`) | Flutter-App mit Offline-Modus, Widget auf dem Startbildschirm |
 | **Windows-App** (`app/`) | dieselbe App für Windows, mit Installer, Benachrichtigungen und Zähler an der Taskleiste |
 
-Aktueller Stand: Integration **0.17.0**, Apps **0.9.15** (siehe [Releases](https://github.com/Schumey/tHAsk/releases)). Die Apps gibt es dort fertig als `thask-<Version>.apk` (Android) und `thask-setup-<Version>.exe` (Windows); danach aktualisieren sie sich selbst, siehe [Updates der Apps](#updates-der-apps).
+Aktueller Stand: Integration **0.18.0**, Apps **0.9.16** (siehe [Releases](https://github.com/Schumey/tHAsk/releases)). Die Apps gibt es dort fertig als `thask-<Version>.apk` (Android) und `thask-setup-<Version>.exe` (Windows); danach aktualisieren sie sich selbst, siehe [Updates der Apps](#updates-der-apps).
 
 ### Funktionen
 
-- Fälligkeit als Tag, Woche, Monat, Quartal, Jahr oder **eigener Zeitraum** aus einem Kalender (z. B. „X-Block“ nach der Nachtschicht), optional mit Uhrzeit; Wiederholungen (auch an mehreren Wochentagen); Erinnerungen; Schritte; Notizen; Priorität (Niedrig, Mittel, Hoch); Kategorien.
+- Fälligkeit als Tag, Woche, Monat, Quartal, Jahr oder **eigener Zeitraum** aus einem Kalender (z. B. „X-Block“ nach der Nachtschicht), optional mit Uhrzeit; Wiederholungen (auch an mehreren Wochentagen, kommende Termine vorab abhaken); Erinnerungen; Schritte; Notizen; Priorität (Niedrig, Mittel, Hoch); Kategorien.
 - Intelligente Listen: **Heute**, **Überfällig** (optional), **Wichtig**, **Geplant**, **Tagesplan**, **Diese Woche**, **Diesen Monat**, dazu eigene Listen mit Gruppen.
 - **Schnelleingabe mit Erkennung**: „Steuer KW 47 !!!“, „Blumen gießen jeden Mi und Sa“, „Zahnarzt morgen um 9:30“ – auch auf Englisch, Niederländisch, Französisch und Spanisch („Dentist next Friday“, „Tandarts morgen om 9 uur“, „Impôts semaine 47“, „Leche mañana a las 9“).
 - **Sprachen**: Deutsch, Englisch, Niederländisch, Französisch und Spanisch. Weboberfläche und Karte folgen der Sprache in Home Assistant, die Apps der des Geräts.
@@ -71,11 +71,11 @@ Nach dem Einrichten erscheint **tHAsk** in der HA-Seitenleiste:
   - **Heute**: alles, was bis heute fällig ist, inklusive Zeiträumen, die heute enden, und heute Erledigtem. Überfälliges je nach Option.
   - **Wichtig**: Priorität Hoch. Der Zeitraum oben rechts ist wählbar: alle oder fällig bis Ende der Woche, des Monats, des Quartals oder des Jahres; jedes Gerät merkt sich die Wahl.
   - **Geplant**: gruppiert nach Überfällig, Diese Woche, Diesen Monat und Später.
-  - **Tagesplan**: ein beliebiger Tag, mit Pfeilen oder Datumsauswahl gewählt. Er zeigt, was an diesem Tag fällig ist, darunter Zeiträume wie „KW 46“, die den Tag enthalten, und für heute auch Überfälliges. Wiederkehrende Aufgaben gibt es immer nur einmal (die nächste entsteht beim Abhaken); ihre kommenden Vorkommen erscheinen hier trotzdem, gestrichelt als **Vorschau**. Eine Vorschau lässt sich nicht abhaken, ein Klick öffnet die jetzige Aufgabe. Die Schnelleingabe legt am gewählten Tag an.
+  - **Tagesplan**: ein beliebiger Tag, mit Pfeilen oder Datumsauswahl gewählt. Er zeigt, was an diesem Tag fällig ist, darunter Zeiträume wie „KW 46“, die den Tag enthalten, und für heute auch Überfälliges. Wiederkehrende Aufgaben gibt es immer nur einmal (die nächste entsteht beim Abhaken); ihre kommenden Vorkommen erscheinen hier trotzdem, gestrichelt als **Vorschau**. Der Kreis einer Vorschau hakt dieses Vorkommen vorab ab (siehe [Kommende Termine vorab erledigen](#kommende-termine-vorab-erledigen)), ein Klick öffnet die jetzige Aufgabe. Die Schnelleingabe legt am gewählten Tag an.
   - **Diese Woche** und **Diesen Monat**: alles, was bis Sonntag bzw. Monatsende fällig ist, inklusive Überfälligem.
   - Darunter die eigenen Listen, mit Gruppen; Listen für andere Personen sind ausgeblendet (siehe [Listen für bestimmte Personen](#listen-für-bestimmte-personen)).
 - **Schnelleingabe** mit Erkennung, z. B. „Reifen wechseln nächsten Monat !“, „Steuer KW 47“, „Rechnungen ablegen jeden Monat“, „Training alle 2 Wochen Mo und Do“, „Zeitung werktags“. Erkanntes erscheint als Chip; ein Klick auf den Chip nimmt die Erkennung zurück.
-- **Detailbereich**: Schritte, Priorität, Fälligkeit als Tag/Woche/Monat/Quartal/Jahr mit Vor-/Zurück-Pfeilen, Erinnerung, Wiederholung (wöchentlich auch an mehreren Wochentagen), Liste, Notizen.
+- **Detailbereich**: Schritte, Priorität, Fälligkeit als Tag/Woche/Monat/Quartal/Jahr mit Vor-/Zurück-Pfeilen, Erinnerung, Wiederholung (wöchentlich auch an mehreren Wochentagen) mit den nächsten Terminen, Liste, Notizen.
 - Aufgaben per Drag & Drop sortieren oder auf eine andere Liste in der Seitenleiste ziehen.
 - **Suche** (oben in der Seitenleiste) über alle Listen, in Titel, Notizen, Schritten und Kategorien; mehrere Wörter müssen alle vorkommen. Auf dem Handy erscheinen die Treffer nach Enter bzw. der Such-Taste der Tastatur.
 - Listen anlegen (unten in der Seitenleiste), umbenennen (Klick auf den Titel), Gruppe wählen (vorhandene, „Keine Gruppe“ oder „Neue Gruppe …“), löschen und per Drag & Drop anordnen.
@@ -83,6 +83,15 @@ Nach dem Einrichten erscheint **tHAsk** in der HA-Seitenleiste:
 - **Erledigte löschen** (Besen-Symbol im Listenkopf).
 - **Trigger** (unten in der Seitenleiste, nur für Administratoren), siehe [Trigger](#trigger).
 - **Einstellungen** (darunter, nur für Administratoren): die [Optionen](#optionen) der Integration.
+
+### Kommende Termine vorab erledigen
+
+Bei einer wiederkehrenden Aufgabe zeigt der Detailbereich (Weboberfläche und Apps) unter der Wiederholung die **nächsten Termine**, zuerst acht, mit „Mehr anzeigen“ weitere. Jeder lässt sich schon jetzt abhaken, z. B. „Gelbe Säcke rausstellen“ oder „Blumen gießen“ für die Zeit im Urlaub, wenn das jemand anderes übernimmt.
+
+- Ein vorab abgehakter Termin wird zu einer eigenen, erledigten Aufgabe mit diesem Datum (ohne Wiederholung, Erinnerung und Anhänge). Sie steht bei den Erledigten der Liste und im Tagesplan an ihrem Tag.
+- Die Wiederholung springt darüber: Wird die jetzige Aufgabe erledigt, entsteht die nächste für den ersten Termin, der noch nicht vorab erledigt ist.
+- Erneutes Klicken in der Liste der Termine öffnet ihn wieder; die eigene Aufgabe verschwindet, und der Termin kommt wie gewohnt.
+- Auch im Tagesplan (Weboberfläche, Karte, Apps) hakt der Kreis einer Vorschau den Termin vorab ab. In den Apps geht das auch ohne Verbindung.
 
 ### Anhänge
 
@@ -361,6 +370,7 @@ Die Apps, die Weboberfläche und die Karte nutzen diese Befehle über die normal
 | `thask/list/clear_completed` | `list_id` (leer = alle), `older_than_days` |
 | `thask/task/create`, `thask/task/update`, `thask/task/delete` | siehe unten / `task_id` |
 | `thask/task/move` | `task_id`, `previous_id` |
+| `thask/task/occurrence` | `task_id`, `due` (Zeitraum eines kommenden Vorkommens), `done`: vorab abhaken bzw. wieder öffnen; Ergebnis ist die eigene Aufgabe des Vorkommens (bzw. `null`) |
 | `thask/parse` | `text`, `disabled` (Liste aus `due`, `time`, `recurrence`, `priority`) – Schnelleingabe |
 | `thask/triggers/subscribe` | – (Trigger, letzte Läufe und Prüfstatus, nach jeder Änderung erneut); nur Administratoren, wie alle `thask/trigger/*` |
 | `thask/trigger/create`, `thask/trigger/update`, `thask/trigger/delete` | `name`, `conditions`, `task`, `enabled`, `combine`, `window_from`, `window_to`, `days_ahead`, `paused_until` / `trigger_id` |
@@ -374,7 +384,7 @@ Die Apps, die Weboberfläche und die Karte nutzen diese Befehle über die normal
 
 Aufgabenfelder: `list_id`, `title`, `notes`, `completed`, `priority` (0 keine, 1 niedrig, 2 mittel, 3 hoch), `due` (`{"granularity": "day|week|month|quarter|year", "start": "2026-11-09"}`; eigene Zeiträume: `{"granularity": "custom", "start": "2026-11-05", "end": "2026-11-13", "name": "X-Block", "rule": "<rule_id>"}`), `due_time` (`"HH:MM"`, nur bei Tagen), `reminder` (ISO-Datum mit Uhrzeit), `recurrence` (`{"unit": "month", "interval": 1}`, „jeder X-Block“: `{"unit": "custom"}`, wöchentlich an mehreren Tagen: `{"unit": "week", "interval": 1, "weekdays": [2, 5]}` mit 0 = Montag), `steps`, `categories`. `my_day` wird noch angenommen, hat aber keine Wirkung mehr („Heute“ richtet sich nach der Fälligkeit).
 
-Wird eine wiederkehrende Aufgabe erledigt, entsteht eine neue Aufgabe für den nächsten Zeitraum, der noch nicht vorbei ist.
+Wird eine wiederkehrende Aufgabe erledigt, entsteht eine neue Aufgabe für den nächsten Zeitraum, der noch nicht vorbei ist und nicht vorab erledigt wurde. Alle Vorkommen teilen `series` (die Kennung der ersten Aufgabe; leer = die eigene); `skipped` nennt die Anfänge vorab erledigter Vorkommen, die als eigene Aufgaben mit derselben `series` existieren. Beide Felder ändert nur `thask/task/occurrence`.
 
 ## Entwicklung
 

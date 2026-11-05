@@ -87,6 +87,27 @@ void main() {
       expect(preview.due, day(11, 6));
       expect(preview.id, 'muell');
     });
+
+    test('Vorab erledigte Vorkommen: eigene Aufgabe statt Vorschau', () {
+      final today = DateTime(2026, 11, 3);
+      final bags = Task(
+        id: 'muell', listId: 'l', title: 'Müll', due: day(11, 3),
+        recurrence: const Recurrence(Granularity.week, 1, [1, 4]), skipped: const ['2026-11-10'],
+      );
+      final done = Task(id: 'vorab', listId: 'l', title: 'Müll', due: day(11, 10), completed: true, series: 'muell');
+      final tasks = [bags, done];
+      expect(bags.projectedPeriods(DateTime(2026, 11, 14), today), [day(11, 6), day(11, 13)]);
+      String describe(Task t) => '${t.id}${t.preview ? '*' : ''}';
+      expect(dayTasks(tasks, DateTime(2026, 11, 10), today).map(describe), ['vorab']);
+      expect(dayTasks(tasks, DateTime(2026, 11, 13), today).map(describe), ['muell*']);
+      final coming = bags.comingOccurrences(tasks, 3, today);
+      expect([for (final o in coming) (o.due, o.done, o.own?.id)], [
+        (day(11, 6), false, null),
+        (day(11, 10), true, 'vorab'),
+        (day(11, 13), false, null),
+      ]);
+      expect(done.comingOccurrences(tasks, 3, today), isEmpty);
+    });
   });
 
   test('sortTasks hält die manuelle Reihenfolge bei Gleichstand', () {
@@ -280,6 +301,31 @@ void main() {
       await store.deleteList(listId);
       expect(store.list(listId), isNull);
       expect(store.pendingCount, 0);
+    });
+
+    test('Vorkommen ohne Verbindung vorab abhaken und wieder öffnen', () async {
+      final nov4 = Period.day(DateTime(2026, 11, 4));
+      await store.updateTask(store.task('t1')!, {'due': nov4.toJson(), 'recurrence': const Recurrence(Granularity.week, 1).toJson()});
+      final week2 = Period.day(DateTime(2026, 11, 11));
+      await store.setOccurrence(store.task('t1')!, week2, true);
+      final series = store.task('t1')!;
+      expect(series.skipped, ['2026-11-11']);
+      final own = series.occurrenceTask(store.allTasks, week2.start)!;
+      expect(own.completed, isTrue);
+      expect(own.recurrence, isNull);
+      expect(own.series, 't1');
+      expect(dayTasks(store.allTasks, DateTime(2026, 11, 11), store.today).map((t) => (t.id, t.preview)), [(own.id, false)]);
+
+      await store.setOccurrence(store.task('t1')!, week2, false);
+      expect(store.task('t1')!.skipped, isEmpty);
+      expect(store.task('t1')!.occurrenceTask(store.allTasks, week2.start), isNull);
+      expect(store.pendingCount, 3);
+
+      connection.results['thask/task/occurrence'] = {'id': 'vorab-echt'};
+      await reconnect();
+      final sent = [for (final c in connection.calls) if (c.$1 == 'thask/task/occurrence') c.$2];
+      expect([for (final c in sent) c['done']], [true, false]);
+      expect(sent.first['due'], week2.toJson());
     });
 
     test('Erledigte ohne Verbindung löschen', () async {

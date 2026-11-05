@@ -294,22 +294,50 @@ export function nextPeriod(recurrence, period, today, periods = []) {
 
 // The due periods a recurring task will get after its current one, up to those starting on `until`:
 // what completing it again and again would create. Empty for tasks that do not repeat or are completed.
+// Occurrences done ahead of time (`skipped`) are left out: they are tasks of their own.
 export function projectedPeriods(task, until, today, customPeriods = [], limit = 2000) {
   if (!task.recurrence || !task.due || task.completed) return [];
   const last = toISO(until);
+  const skipped = task.skipped || [];
   // "Every X block": only the blocks the rule found, no guesses.
   if (task.recurrence.unit === "custom") {
-    return customUpcoming(customPeriods, task.due.rule, today).filter((p) => p.start > task.due.start && p.start <= last);
+    return customUpcoming(customPeriods, task.due.rule, today)
+      .filter((p) => p.start > task.due.start && p.start <= last && !skipped.includes(p.start));
   }
   const periods = [];
   let period = task.due;
-  while (periods.length < limit) {
+  for (let steps = 0; steps < limit; steps++) {
     const next = nextPeriod(task.recurrence, period, today, customPeriods);
     if (next.start <= period.start || next.start > last) break;
-    periods.push(next);
+    if (!skipped.includes(next.start)) periods.push(next);
     period = next;
   }
   return periods;
+}
+
+// The next `count` occurrences of a recurring task after its current one (Recurrence in core/models.py), with
+// those done ahead of time: [{ due, done, task }], `task` being the task of its own of such an occurrence.
+export function comingOccurrences(task, tasks, count, today, customPeriods = []) {
+  if (!task.recurrence || !task.due || task.completed) return [];
+  let dues;
+  if (task.recurrence.unit === "custom") {
+    dues = customUpcoming(customPeriods, task.due.rule, today).filter((p) => p.start > task.due.start).slice(0, count);
+  } else {
+    dues = [];
+    let period = task.due;
+    while (dues.length < count) {
+      const next = nextPeriod(task.recurrence, period, today, customPeriods);
+      if (next.start <= period.start) break;
+      dues.push(next);
+      period = next;
+    }
+  }
+  const series = task.series || task.id;
+  const skipped = task.skipped || [];
+  return dues.map((due) => {
+    const own = tasks.find((t) => t.id !== task.id && !t.recurrence && t.series === series && t.due?.start === due.start);
+    return { due: own?.due || due, task: own || null, done: own ? !!own.completed : skipped.includes(due.start) };
+  });
 }
 
 // Everything due on `day`: tasks whose due period contains it, plus previews of recurring tasks that will be due

@@ -290,3 +290,77 @@ def test_list_members_for_the_overview() -> None:
     old = task_list.as_dict()
     del old["members"]
     assert TaskList.from_dict(old).visible_to("carla")
+
+
+def weekly_bags(collection, list_id):
+    # Wednesday 4 Nov 2026, every week.
+    return collection.create_task(
+        list_id, "Gelbe Säcke", due=Period.day(date(2026, 11, 4)).as_dict(), due_time="19:00",
+        recurrence={"unit": "week"}, categories=["Haushalt"],
+    )
+
+
+def test_coming_occurrences(collection, list_id):
+    task = weekly_bags(collection, list_id)
+    assert [p.start for p in task.coming_occurrences(3, TODAY)] == [
+        date(2026, 11, 11), date(2026, 11, 18), date(2026, 11, 25)
+    ]
+    assert collection.create_task(list_id, "Einmal").coming_occurrences(3, TODAY) == []
+
+
+def test_tick_off_occurrence_ahead(collection, list_id):
+    task = weekly_bags(collection, list_id)
+    done = collection.set_occurrence(task.id, Period.day(date(2026, 11, 18)), True, TODAY)
+    assert done.completed and done.completed_at
+    assert done.recurrence is None and done.series == task.id
+    assert done.due == Period.day(date(2026, 11, 18)) and done.due_time == "19:00"
+    assert done.categories == ["Haushalt"]
+    assert task.skipped == ["2026-11-18"]
+    # Ticking twice keeps a single task.
+    assert collection.set_occurrence(task.id, Period.day(date(2026, 11, 18)), True, TODAY) is done
+    assert len(collection.tasks) == 2
+
+    # Completing the current one creates the 11th; completing that jumps over the 18th.
+    following = next_due(collection, task)
+    assert following.due.start == date(2026, 11, 11)
+    assert following.series == task.id and following.skipped == ["2026-11-18"]
+    after = next_due(collection, following)
+    assert after.due.start == date(2026, 11, 25)
+    assert after.skipped == [] and after.series == task.id
+
+
+def test_untick_occurrence(collection, list_id):
+    task = weekly_bags(collection, list_id)
+    collection.set_occurrence(task.id, Period.day(date(2026, 11, 11)), True, TODAY)
+    assert collection.set_occurrence(task.id, Period.day(date(2026, 11, 11)), False, TODAY) is None
+    assert task.skipped == [] and len(collection.tasks) == 1
+    assert next_due(collection, task).due.start == date(2026, 11, 11)
+
+
+def test_reopened_occurrence_stays_its_own_task(collection, list_id):
+    task = weekly_bags(collection, list_id)
+    done = collection.set_occurrence(task.id, Period.day(date(2026, 11, 11)), True, TODAY)
+    collection.update_task(done.id, {"completed": False}, TODAY)
+    # Ticking it again in the series completes that task instead of making another one.
+    assert collection.set_occurrence(task.id, Period.day(date(2026, 11, 11)), True, TODAY) is done
+    assert done.completed and len(collection.tasks) == 2
+
+
+def test_occurrence_needs_a_coming_period(collection, list_id):
+    task = weekly_bags(collection, list_id)
+    with pytest.raises(ValueError):
+        collection.set_occurrence(task.id, Period.day(date(2026, 11, 4)), True, TODAY)
+    single = collection.create_task(list_id, "Einmal", due=Period.day(TODAY).as_dict())
+    with pytest.raises(ValueError):
+        collection.set_occurrence(single.id, Period.day(date(2026, 11, 11)), True, TODAY)
+
+
+def test_series_and_skipped_round_trip(collection, list_id):
+    task = weekly_bags(collection, list_id)
+    collection.set_occurrence(task.id, Period.day(date(2026, 11, 25)), True, TODAY)
+    collection.set_occurrence(task.id, Period.day(date(2026, 11, 18)), True, TODAY)
+    restored = TaskCollection()
+    restored.load(collection.dump())
+    again = restored.get_task(task.id)
+    assert again.skipped == ["2026-11-18", "2026-11-25"]
+    assert {item.series for item in restored.tasks.values() if item.id != task.id} == {task.id}

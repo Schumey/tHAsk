@@ -138,6 +138,9 @@ class ThaskStore extends ChangeNotifier {
   /// Wie viele Listen nur anderen gehören.
   int get otherListCount => _lists.values.where((l) => !l.isFor(me)).length;
 
+  /// Alle Aufgaben aller Listen.
+  Iterable<Task> get allTasks => _tasks.values;
+
   /// Aufgaben der sichtbaren Listen, Grundlage der intelligenten Ansichten.
   Iterable<Task> get _visibleTasks {
     final ids = {for (final l in visibleLists) l.id};
@@ -681,6 +684,54 @@ class ThaskStore extends ChangeNotifier {
         final id = payload['task_id'] as String;
         _tasks.remove(id);
         _rawTasks.remove(id);
+      case 'thask/task/occurrence':
+        final id = payload['task_id'] as String;
+        final current = _rawTasks[id];
+        final task = _tasks[id];
+        if (current == null || task == null) return;
+        final due = Period.fromJson((payload['due'] as Map).cast<String, dynamic>());
+        final start = isoDate(due.start);
+        final done = payload['done'] == true;
+        final own = task.occurrenceTask(_tasks.values, due.start);
+        final skipped = {...task.skipped};
+        if (done) {
+          skipped.add(start);
+          if (own != null) {
+            final raw = Map<String, dynamic>.of(_rawTasks[own.id]!)
+              ..['completed'] = true
+              ..['completed_at'] = op.created;
+            _rawTasks[own.id] = raw;
+            _tasks[own.id] = Task.fromJson(raw);
+          } else if (op.tempId != null) {
+            // Wie Task.occurrence_at in der Integration: eine Kopie ohne Wiederholung, schon erledigt.
+            final raw = <String, dynamic>{
+              ...current,
+              'id': op.tempId,
+              'due': due.toJson(),
+              'due_time': due.granularity == Granularity.day ? current['due_time'] : null,
+              'reminder': null,
+              'recurrence': null,
+              'steps': [for (final s in task.steps) {'id': _newTempId(), 'title': s.title, 'completed': false}],
+              'attachments': const [],
+              'series': task.seriesId,
+              'skipped': const [],
+              'completed': true,
+              'completed_at': op.created,
+              'created': op.created,
+            };
+            _rawTasks[op.tempId!] = raw;
+            _tasks[op.tempId!] = Task.fromJson(raw);
+          }
+        } else {
+          skipped.remove(start);
+          if (own != null) {
+            _tasks.remove(own.id);
+            _rawTasks.remove(own.id);
+          }
+        }
+        final raw = Map<String, dynamic>.of(current)..['skipped'] = (skipped.toList()..sort());
+        _rawTasks[id] = raw;
+        _tasks[id] = Task.fromJson(raw);
       case 'thask/list/create':
         final id = op.tempId!;
         final position = _lists.values.fold<double>(-1, (max, l) => l.position > max ? l.position : max) + 1;
@@ -824,6 +875,15 @@ class ThaskStore extends ChangeNotifier {
   Future<void> setPriority(Task task, int priority) => updateTask(task, {'priority': priority});
 
   Future<void> deleteTask(Task task) => _mutate('thask/task/delete', {'task_id': task.id});
+
+  /// Ein kommendes Vorkommen einer wiederkehrenden Aufgabe vorab abhaken (oder wieder öffnen), z. B. für die
+  /// Zeit im Urlaub. Die Integration legt es als erledigte eigene Aufgabe an; die Wiederholung springt dann
+  /// darüber hinweg. Geht auch ohne Verbindung.
+  Future<void> setOccurrence(Task task, Period due, bool done) => _mutate(
+        'thask/task/occurrence',
+        {'task_id': task.id, 'due': due.toJson(), 'done': done},
+        tempId: done ? _newTempId() : null,
+      );
 
   // -- Anhänge (nur mit Verbindung) --------------------------------------------
 
