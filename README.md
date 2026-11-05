@@ -44,11 +44,33 @@ Eine neue Sprache braucht: `translations/<sprache>.json`, die Texte in `www/thas
 
 Voraussetzung: Home Assistant 2025.2 oder neuer. Das eigene Symbol der Integration (unter Geräte & Dienste) zeigt HA ab 2026.3.
 
-1. Ordner `custom_components/thask` nach `/config/custom_components/thask` kopieren (z. B. per Samba oder File-Editor; oder per HACS als benutzerdefiniertes Repository).
+### Über den Marketplace (empfohlen, ab Home Assistant 2026.11)
+
+Seit 2026.11 ist HACS als **Marketplace** in Home Assistant eingebaut. tHAsk steht (noch) nicht im Katalog, sondern wird einmalig über seinen GitHub-Link hinzugefügt:
+
+[![tHAsk im Marketplace öffnen](https://my.home-assistant.io/badges/marketplace_repository.svg)](https://my.home-assistant.io/redirect/marketplace_repository/?owner=Schumey&repository=tHAsk&category=integration)
+
+1. Den Knopf oben anklicken, oder in Home Assistant **Einstellungen → Marketplace** öffnen, oben rechts **„Add from link“** wählen und als GitHub-Link `Schumey/tHAsk` eintragen (Typ: Integration). Beim ersten Mal verbindet der Marketplace sich mit GitHub (Code auf github.com eingeben und bestätigen) und weist darauf hin, dass Home Assistant Inhalte von außerhalb des Katalogs nicht prüft.
+2. Auf der Seite von tHAsk **Install** wählen und die Version bestätigen.
+3. **Einstellungen → Geräte & Dienste → Integration hinzufügen → tHAsk**. Meist öffnet sich die Einrichtung schon direkt nach der Installation; falls Home Assistant einen Neustart verlangt, meldet es das unter Einstellungen → System → Reparaturen.
+
+**Updates** erscheinen danach wie die von Home Assistant selbst unter **Einstellungen → Updates** (der Marketplace prüft eigene Repositories etwa alle 48 Stunden). Nach dem Update bietet eine Reparaturmeldung den nötigen Neustart an; danach die tHAsk-Seite im Browser neu laden.
+
+Wer tHAsk schon per HACS installiert hatte, muss nichts tun: Beim ersten Start von 2026.11 übernimmt der Marketplace die HACS-Installation samt benutzerdefinierter Repositories und Updates.
+
+### Über HACS (Home Assistant vor 2026.11)
+
+In HACS über das Menü oben rechts **Benutzerdefinierte Repositories** `https://github.com/Schumey/tHAsk` mit dem Typ **Integration** hinzufügen, tHAsk herunterladen, Home Assistant neu starten und die Integration wie oben unter Geräte & Dienste einrichten. Updates kommen ebenfalls über HACS.
+
+### Von Hand
+
+1. Ordner `custom_components/thask` aus dem [neuesten Release](https://github.com/Schumey/tHAsk/releases/latest) nach `/config/custom_components/thask` kopieren (z. B. per Samba oder File-Editor).
 2. Home Assistant neu starten.
 3. **Einstellungen → Geräte & Dienste → Integration hinzufügen → tHAsk**.
 
-Beim ersten Start wird die Liste „Aufgaben“ angelegt. Für ein Update den Ordner ersetzen und HA neu starten.
+Für ein Update den Ordner ersetzen und HA neu starten.
+
+Beim ersten Start legt tHAsk die Liste „Aufgaben“ an.
 
 ### Optionen
 
