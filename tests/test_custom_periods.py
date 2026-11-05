@@ -71,6 +71,37 @@ def test_anchor_weekday_and_part():
     assert len(x_block_rule(anchor_part="start", anchor_weekdays=[1]).find(NIGHTS, TZ, TODAY)) == 1
 
 
+def test_several_anchor_texts_separated_by_commas():
+    # The night shift ending on Wednesday is called "NS" in the calendar, the others "Nachtschicht".
+    ns = CalendarEvent("NS", NIGHTS[1].start, NIGHTS[1].end)
+    events = [NIGHTS[0], ns]
+    assert x_block_rule(anchor_match="Nachtschicht").find(events, TZ, TODAY) == []
+    found = x_block_rule(anchor_match="Nachtschicht, NS").find(events, TZ, TODAY)
+    assert [p.start for p in found] == [date(2026, 11, 5)]
+    # Empty parts and case do not matter; the count filter takes commas as well.
+    assert x_block_rule(anchor_match=" ,ns,").find(events, TZ, TODAY) == found
+    busy = [*events, *(shift(name, date(2026, 11, 6) + timedelta(days=n)) for n, name in enumerate(["Früh", "Spät", "Früh", "Nacht"]))]
+    assert x_block_rule(anchor_match="NS").find(busy, TZ, TODAY) == []
+    assert x_block_rule(anchor_match="NS", count_match="Früh, Spät").find(busy, TZ, TODAY) == found
+
+
+def test_diagnosis_says_where_events_dropped_out():
+    rule = x_block_rule(anchor_match="Nachtschicht")
+    _, why = rule.scan([shift("Früh", date(2026, 11, 9))], TZ, TODAY)
+    assert (why.events, why.anchors) == (1, 0)
+    # Matching title, but the nights end on Tuesday and Wednesday, and only Monday is selected.
+    _, why = x_block_rule(anchor_weekdays=[0]).scan(NIGHTS, TZ, TODAY)
+    assert (why.anchors, why.on_weekday, why.other_weekdays) == (2, 0, {1, 2})
+    # Too many events in the period: the fewest in one is reported.
+    events = [*NIGHTS, *(shift("Früh", date(2026, 11, 6) + timedelta(days=n)) for n in range(4))]
+    found, why = x_block_rule().scan(events, TZ, TODAY)
+    assert found == [] and (why.on_weekday, why.too_busy, why.fewest_inside) == (1, 1, 4)
+    # Already over.
+    _, why = x_block_rule().scan(NIGHTS, TZ, date(2026, 11, 14))
+    assert why.past == 1
+    assert why.as_dict()["other_weekdays"] == [1]
+
+
 def test_running_period_is_kept_ended_one_dropped():
     found = x_block_rule().find(NIGHTS, TZ, date(2026, 11, 13))
     assert len(found) == 1
@@ -108,8 +139,10 @@ def test_book_refresh_keeps_periods_on_error_and_round_trips():
     rule = book.create(x_block_rule().as_dict() | {"name": "X-Block"})
     asyncio.run(book.refresh(FakeSource(NIGHTS), TODAY, TZ))
     assert [p.start for p in book.upcoming(rule.id, TODAY)] == [date(2026, 11, 5)]
+    assert book.diagnosis(rule.id)["on_weekday"] == 1
     asyncio.run(book.refresh(FakeSource([], fail=True), TODAY, TZ))
     assert book.errors[rule.id]
+    assert book.diagnosis(rule.id) is None
     assert len(book.upcoming(rule.id, TODAY)) == 1
 
     copy = PeriodBook()

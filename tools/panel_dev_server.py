@@ -249,6 +249,7 @@ class Backend:
                     **rule.as_dict(),
                     "instances": [p.as_dict() for p in self.periods.upcoming(rule.id, self.today)],
                     "error": self.periods.errors.get(rule.id),
+                    "diagnosis": self.periods.diagnosis(rule.id),
                 }
                 for rule in self.periods.sorted_rules()
             ]

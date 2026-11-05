@@ -225,14 +225,14 @@ Einrichten in der Weboberfläche unter **Einstellungen → Eigene Zeiträume** (
 |---|---|
 | Name | `X-Block` |
 | Kalender | `calendar.schichtplan` |
-| Nach einem Termin, dessen Titel enthält | `Nacht`, *am letzten Tag des Termins* (oder am ersten) |
+| Nach einem Termin, dessen Titel enthält | `Nacht`, *am letzten Tag des Termins* (oder am ersten); mehrere Texte mit Komma, z. B. `Nachtschicht, NS` (einer davon reicht, Groß-/Kleinschreibung egal) |
 | nur wenn dieser Tag ist | Mi (keiner gewählt = jeder Tag) |
 | Beginn / Ende (Tage danach) | 1 (Donnerstag) / 9 (übernächster Freitag) |
 | Höchstens so viele Termine im Zeitraum | 3 (leer = egal); der auslösende Termin zählt nicht mit |
-| Dabei nur Termine zählen, deren Titel enthält | leer = jeder Termin |
+| Dabei nur Termine zählen, deren Titel enthält | leer = jeder Termin; mehrere mit Komma wie oben |
 | Tage vorausschauen | 120 (bis 365) |
 
-Darunter steht, welche Zeiträume die Regel gerade findet. tHAsk fragt den Kalender beim Start, alle 15 Minuten, nach Mitternacht und nach jeder Änderung der Regel; „Neu suchen“ fragt sofort.
+Darunter steht, welche Zeiträume die Regel gerade findet. Findet sie keinen, steht dort auch, woran es liegt, z. B. „95 Termine im Kalender, aber keiner mit ‚NS‘ im Titel“ oder „20 passende Termine, aber keiner endet an einem gewählten Tag (sie enden am Fr, Mo)“. tHAsk fragt den Kalender beim Start, alle 15 Minuten, nach Mitternacht und nach jeder Änderung der Regel; „Neu suchen“ fragt sofort.
 
 So bekommen Aufgaben einen X-Block:
 
@@ -400,7 +400,7 @@ Die Apps, die Weboberfläche und die Karte nutzen diese Befehle über die normal
 | `thask/trigger/check` | – (alle Trigger jetzt prüfen) |
 | `thask/trigger/undo` | `run_id` |
 | `thask/options/get` | – (alle Optionen und die Benachrichtigungsdienste); nur Administratoren |
-| `thask/period_rules/get`, `thask/period_rules/refresh` | – (Regeln der eigenen Zeiträume mit `instances` und `error`; refresh fragt die Kalender sofort); nur Administratoren, wie alle `thask/period_rule*` |
+| `thask/period_rules/get`, `thask/period_rules/refresh` | – (Regeln der eigenen Zeiträume mit `instances`, `error` und `diagnosis`: Zahlen der letzten Suche `events`, `anchors`, `other_weekdays`, `on_weekday`, `past`, `too_busy`, `fewest_inside`; refresh fragt die Kalender sofort); nur Administratoren, wie alle `thask/period_rule*` |
 | `thask/period_rule/create`, `thask/period_rule/update`, `thask/period_rule/delete` | `name`, `calendar`, `anchor_match`, `anchor_part` (`end`, `start`), `anchor_weekdays`, `start_offset`, `end_offset`, `max_events` (`null` = egal), `count_match`, `horizon_days`, `enabled` / `rule_id` |
 | `thask/options/update` | `overdue_in_today`, `week_mode`, `separate_week`, `separate_month`, `hidden_views`, `auto_clear_days`, `important_priority`, `reminder_targets`; nur Administratoren |
 

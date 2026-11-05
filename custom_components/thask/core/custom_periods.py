@@ -36,7 +36,8 @@ class PeriodRule:
     name: str
     # calendar.* entity with the events.
     calendar: str = ""
-    # Anchor events: title contains this text ("" = every event), counted on their first or last day.
+    # Anchor events: title contains this text ("" = every event; several separated by commas, any of them
+    # matches), counted on their first or last day.
     anchor_match: str = ""
     anchor_part: Literal["start", "end"] = "end"
     # Only anchors on these weekdays (0 = Monday); empty = every day.
@@ -44,7 +45,8 @@ class PeriodRule:
     # The period, in days after the anchor day (Wednesday + 1 = Thursday, + 9 = the Friday after next).
     start_offset: int = 1
     end_offset: int = 9
-    # At most this many events in the period (None = no limit); only those whose title contains `count_match`.
+    # At most this many events in the period (None = no limit); only those whose title contains `count_match`
+    # (commas as for `anchor_match`).
     max_events: int | None = 3
     count_match: str = ""
     # How far ahead the calendar is asked.
@@ -72,28 +74,42 @@ class PeriodRule:
 
     def find(self, events: list[CalendarEvent], tz: Any, today: date) -> list[Period]:
         """The periods the events give that have not ended before today, in order."""
-        anchor_text = self.anchor_match.strip().casefold()
-        count_text = self.count_match.strip().casefold()
+        return self.scan(events, tz, today)[0]
+
+    def scan(self, events: list[CalendarEvent], tz: Any, today: date) -> tuple[list[Period], Diagnosis]:
+        """`find`, plus counts that say where the events dropped out (for "nothing found")."""
+        anchor_terms = match_terms(self.anchor_match)
+        count_terms = match_terms(self.count_match)
+        diagnosis = Diagnosis(events=len(events))
         found: dict[tuple[date, date], Period] = {}
         for anchor in events:
-            if anchor_text not in anchor.summary.casefold():
+            if not title_matches(anchor.summary, anchor_terms):
                 continue
+            diagnosis.anchors += 1
             first, last = anchor.days(tz)
             day = first if self.anchor_part == "start" else last
             if self.anchor_weekdays and day.weekday() not in self.anchor_weekdays:
+                diagnosis.other_weekdays.add(day.weekday())
                 continue
+            diagnosis.on_weekday += 1
             start, end = day + timedelta(days=self.start_offset), day + timedelta(days=self.end_offset)
-            if end < today or (start, end) in found:
+            if end < today:
+                diagnosis.past += 1
+                continue
+            if (start, end) in found:
                 continue
             if self.max_events is not None:
                 inside = [
                     event for event in events
-                    if event is not anchor and count_text in event.summary.casefold() and _overlaps(event, start, end, tz)
+                    if event is not anchor and title_matches(event.summary, count_terms) and _overlaps(event, start, end, tz)
                 ]
                 if len(inside) > self.max_events:
+                    diagnosis.too_busy += 1
+                    fewest = diagnosis.fewest_inside
+                    diagnosis.fewest_inside = len(inside) if fewest is None else min(fewest, len(inside))
                     continue
             found[start, end] = Period.custom(start, end, self.name, self.id)
-        return sorted(found.values(), key=lambda period: period.start)
+        return sorted(found.values(), key=lambda period: period.start), diagnosis
 
     def window(self, today: date) -> tuple[date, date]:
         """Days to ask the calendar for: back far enough for an anchor whose period is still running."""
@@ -129,6 +145,40 @@ class PeriodRule:
         return rule
 
 
+@dataclass(slots=True)
+class Diagnosis:
+    """Where the events of the last search dropped out, so the settings page can say why nothing was found."""
+
+    events: int = 0  # events the calendar returned
+    anchors: int = 0  # with an anchor text in the title
+    other_weekdays: set[int] = field(default_factory=set)  # anchor days that were not a selected weekday
+    on_weekday: int = 0  # anchors on a selected weekday (or every anchor without weekdays)
+    past: int = 0  # whose period has already ended
+    too_busy: int = 0  # whose period has more events than allowed
+    fewest_inside: int | None = None  # the fewest events in such a period
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "events": self.events,
+            "anchors": self.anchors,
+            "other_weekdays": sorted(self.other_weekdays),
+            "on_weekday": self.on_weekday,
+            "past": self.past,
+            "too_busy": self.too_busy,
+            "fewest_inside": self.fewest_inside,
+        }
+
+
+def match_terms(text: str) -> list[str]:
+    """The texts of a title filter: separated by commas, case does not matter; none = every title."""
+    return [term for part in (text or "").split(",") if (term := part.strip().casefold())]
+
+
+def title_matches(title: str, terms: list[str]) -> bool:
+    folded = title.casefold()
+    return not terms or any(term in folded for term in terms)
+
+
 def _overlaps(event: CalendarEvent, start: date, end: date, tz: Any) -> bool:
     first, last = event.days(tz)
     return first <= end and start <= last
@@ -142,6 +192,8 @@ class PeriodBook:
         self.instances: dict[str, list[Period]] = {}
         # Problems of the last refresh (unreachable calendar …), per rule id.
         self.errors: dict[str, str] = {}
+        # Counts of the last search per rule id (not stored; the next refresh fills them again).
+        self.diagnoses: dict[str, Diagnosis] = {}
         self._listeners: list[Callable[[], None]] = []
 
     def load(self, data: dict[str, Any]) -> None:
@@ -201,6 +253,7 @@ class PeriodBook:
         del self.rules[rule_id]
         self.instances.pop(rule_id, None)
         self.errors.pop(rule_id, None)
+        self.diagnoses.pop(rule_id, None)
         self._changed()
 
     def upcoming(self, rule_id: str, today: date) -> list[Period]:
@@ -223,15 +276,22 @@ class PeriodBook:
             if not rule.enabled or not rule.calendar:
                 self.instances[rule.id] = []
                 self.errors.pop(rule.id, None)
+                self.diagnoses.pop(rule.id, None)
                 continue
             start, end = rule.window(today)
             try:
                 events = await source.events(rule.calendar, start, end)
             except Exception as err:  # noqa: BLE001 - a failing calendar must not stop the other rules
                 self.errors[rule.id] = str(err) or type(err).__name__
+                self.diagnoses.pop(rule.id, None)
                 continue
             self.errors.pop(rule.id, None)
-            self.instances[rule.id] = rule.find(events, tz, today)
+            self.instances[rule.id], self.diagnoses[rule.id] = rule.scan(events, tz, today)
+
+    def diagnosis(self, rule_id: str) -> dict[str, Any] | None:
+        """Counts of the last search, for the settings page."""
+        found = self.diagnoses.get(rule_id)
+        return found.as_dict() if found else None
         self._changed()
 
     def public(self, today: date) -> list[dict[str, Any]]:

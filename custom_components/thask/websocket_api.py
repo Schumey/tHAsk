@@ -520,6 +520,7 @@ def _period_rules(data: ThaskData) -> dict[str, Any]:
                 **rule.as_dict(),
                 "instances": [period.as_dict() for period in data.periods.upcoming(rule.id, data.today)],
                 "error": data.periods.errors.get(rule.id),
+                "diagnosis": data.periods.diagnosis(rule.id),
             }
             for rule in data.periods.sorted_rules()
         ]
