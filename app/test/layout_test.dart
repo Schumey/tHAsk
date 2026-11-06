@@ -100,6 +100,26 @@ void main() {
     expect(find.byType(TaskDetailScreen), findsOneWidget);
     expect(find.byTooltip('Schließen'), findsNothing);
   });
+
+  testWidgets('Schritte lassen sich im Detailbereich umbenennen, leer bleibt der alte Titel', (tester) async {
+    await pumpHome(tester, const Size(400, 800));
+    await tester.tap(find.text('Steuer'));
+    await tester.pumpAndSettle();
+    final step = find.widgetWithText(TextField, 'Foto machen');
+    expect(step, findsOneWidget);
+
+    await tester.enterText(step, 'Passfoto machen');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    expect(store.task('t1')!.steps.single.title, 'Passfoto machen');
+    expect(store.task('t1')!.steps.single.id, 's1');
+
+    await tester.enterText(find.widgetWithText(TextField, 'Passfoto machen'), '   ');
+    await tester.testTextInput.receiveAction(TextInputAction.done);
+    await tester.pumpAndSettle();
+    expect(store.task('t1')!.steps.single.title, 'Passfoto machen');
+    expect(find.widgetWithText(TextField, 'Passfoto machen'), findsOneWidget);
+  });
 }
 
 class _Credentials implements CredentialStore {
@@ -121,7 +141,9 @@ class _Cache implements SnapshotCache {
           {'id': 'l1', 'name': 'Aufgaben', 'position': 1},
         ],
         'tasks': [
-          {'id': 't1', 'list_id': 'l1', 'title': 'Steuer', 'due': {'granularity': 'day', 'start': '2026-10-31'}},
+          {'id': 't1', 'list_id': 'l1', 'title': 'Steuer', 'due': {'granularity': 'day', 'start': '2026-10-31'}, 'steps': [
+            {'id': 's1', 'title': 'Foto machen', 'completed': false},
+          ]},
           {'id': 't2', 'list_id': 'l1', 'title': 'Alt', 'due': {'granularity': 'day', 'start': '2026-10-29'}},
         ],
       });

@@ -386,6 +386,19 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
         ],
       });
 
+  /// Wie im Panel: ein leerer oder unveränderter Titel ändert nichts.
+  void _renameStep(String stepId, String title) {
+    final task = store.task(widget.taskId);
+    final step = task?.steps.where((s) => s.id == stepId).firstOrNull;
+    final text = title.trim();
+    if (task == null || step == null || text.isEmpty || text == step.title) return;
+    _update({
+      'steps': [
+        for (final s in task.steps) s.id == step.id ? TaskStep(id: s.id, title: text, completed: s.completed).toJson() : s.toJson(),
+      ],
+    });
+  }
+
   void _removeStep(Task task, TaskStep step) =>
       _update({'steps': _stepsJson([for (final s in task.steps) if (s.id != step.id) s])});
 
@@ -453,15 +466,17 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
               const Divider(height: 1),
               for (final step in task.steps)
                 ListTile(
+                  key: ValueKey('step-${step.id}'),
                   dense: true,
                   leading: Checkbox(
                     value: step.completed,
                     shape: const CircleBorder(),
                     onChanged: (v) => _toggleStep(task, step, v ?? false),
                   ),
-                  title: Text(
-                    step.title,
-                    style: step.completed ? const TextStyle(decoration: TextDecoration.lineThrough) : null,
+                  title: _StepField(
+                    title: step.title,
+                    completed: step.completed,
+                    onSave: (text) => _renameStep(step.id, text),
                   ),
                   trailing: IconButton(
                     tooltip: tr('remove_step'),
@@ -745,4 +760,65 @@ class _RecurrenceDialogState extends State<_RecurrenceDialog> {
       ],
     );
   }
+}
+
+/// Titel eines Schritts zum Bearbeiten; speichert bei Enter und beim Verlassen des Felds.
+/// Änderungen von außen kommen nur an, solange das Feld nicht fokussiert ist.
+class _StepField extends StatefulWidget {
+  const _StepField({required this.title, required this.completed, required this.onSave});
+
+  final String title;
+  final bool completed;
+  final ValueChanged<String> onSave;
+
+  @override
+  State<_StepField> createState() => _StepFieldState();
+}
+
+class _StepFieldState extends State<_StepField> {
+  late final TextEditingController _controller = TextEditingController(text: widget.title);
+  final _focus = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(() {
+      if (!_focus.hasFocus) _save();
+    });
+  }
+
+  @override
+  void didUpdateWidget(_StepField old) {
+    super.didUpdateWidget(old);
+    if (!_focus.hasFocus && widget.title != _controller.text) _controller.text = widget.title;
+  }
+
+  void _save() {
+    final text = _controller.text.trim();
+    if (text.isEmpty) {
+      _controller.text = widget.title;
+    } else if (text != widget.title) {
+      widget.onSave(text);
+    }
+  }
+
+  @override
+  void dispose() {
+    if (_focus.hasFocus) _save();
+    _controller.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => TextField(
+        controller: _controller,
+        focusNode: _focus,
+        style: widget.completed ? const TextStyle(decoration: TextDecoration.lineThrough) : null,
+        decoration: const InputDecoration(border: InputBorder.none, isDense: true),
+        minLines: 1,
+        maxLines: 3,
+        textInputAction: TextInputAction.done,
+        onSubmitted: (_) => _focus.unfocus(),
+      );
 }
