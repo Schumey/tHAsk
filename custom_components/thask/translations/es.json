@@ -79,6 +79,15 @@
         "high": "Solo prioridad alta",
         "medium": "Prioridad media y alta"
       }
+    },
+    "view": {
+      "options": {
+        "my_day": "Hoy",
+        "overdue": "Vencidas",
+        "this_week": "Esta semana",
+        "this_month": "Este mes",
+        "important": "Importante"
+      }
     }
   },
   "services": {
@@ -128,9 +137,35 @@
           "name": "Vencimiento",
           "description": "Qué tareas devolver."
         },
+        "view": {
+          "name": "Vista",
+          "description": "Solo tareas de una vista inteligente, con las mismas opciones que la interfaz web. Una lista inteligente indicada como lista trae su propia vista."
+        },
         "include_completed": {
           "name": "Incluir completadas",
           "description": "Devolver también las tareas completadas."
+        },
+        "limit": {
+          "name": "Como máximo",
+          "description": "Devolver como máximo tantas tareas; «total» en la respuesta las cuenta todas."
+        },
+        "compact": {
+          "name": "Compacto",
+          "description": "Solo lo que muestra una pantalla pequeña: id, título, prioridad, lista y vencimiento (due_label, due_kind, due_days, due_time)."
+        }
+      }
+    },
+    "complete_task": {
+      "name": "Completar tarea",
+      "description": "Marca una tarea como hecha por su id, o la vuelve a abrir, esté en la lista que esté. Una tarea recurrente recibe su siguiente vez.",
+      "fields": {
+        "task_id": {
+          "name": "Id de la tarea",
+          "description": "El id de la tarea, p. ej. de thask.get_tasks."
+        },
+        "completed": {
+          "name": "Hecha",
+          "description": "Desactivado: volver a abrir la tarea."
         }
       }
     },

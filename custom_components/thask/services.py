@@ -16,8 +16,9 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN
+from .const import DOMAIN, VIEWS
 from .core.assist import LANGUAGES as SENTENCE_LANGUAGES, sentences
+from .core.collection import NotFoundError
 from .core.models import PRIORITIES, Task
 from .core.importers import FORMATS, merge_lists, read_export
 from .core.ms_todo import ImportOptions, ImportResult, import_export
@@ -27,6 +28,7 @@ from .schema import FIXED_GRANULARITIES
 
 SERVICE_ADD_TASK = "add_task"
 SERVICE_GET_TASKS = "get_tasks"
+SERVICE_COMPLETE_TASK = "complete_task"
 SERVICE_IMPORT_MS_TODO = "import_ms_todo"
 SERVICE_CLEAR_COMPLETED = "clear_completed"
 SERVICE_IMPORT_TASKS = "import_tasks"
@@ -49,14 +51,37 @@ ADD_TASK_SCHEMA = vol.Schema(
     }
 )
 
+def _one_entity_id(value: Any) -> str:
+    """One entity id, also as a list of one: Home Assistant makes a list of an action's target."""
+    if isinstance(value, list):
+        if len(value) != 1:
+            raise vol.Invalid("Exactly one entity")
+        value = value[0]
+    return cv.entity_id(value)
+
+
 GET_TASKS_SCHEMA = vol.Schema(
     {
-        vol.Optional(ATTR_ENTITY_ID): cv.entity_id,
+        vol.Optional(ATTR_ENTITY_ID): _one_entity_id,
         vol.Optional("due", default="all"): vol.In(DUE_FILTERS),
+        # A smart view with the options of the web interface; a smart list's entity brings its own.
+        vol.Optional("view"): vol.In(VIEWS),
         vol.Optional("include_completed", default=False): cv.boolean,
+        # At most this many tasks (a small screen); "total" in the answer still counts all of them.
+        vol.Optional("limit"): vol.All(vol.Coerce(int), vol.Range(min=1)),
+        # Only the fields a small screen shows (id, title, priority, list, due_label, due_kind, due_days, due_time).
+        vol.Optional("compact", default=False): cv.boolean,
     }
 )
 
+
+COMPLETE_TASK_SCHEMA = vol.Schema(
+    {
+        vol.Required("task_id"): cv.string,
+        # False opens it again (a tap undone on a wall panel).
+        vol.Optional("completed", default=True): cv.boolean,
+    }
+)
 
 CLEAR_COMPLETED_SCHEMA = vol.Schema(
     {
@@ -145,6 +170,16 @@ def _list_id_for(hass: HomeAssistant, data: ThaskData, entity_id: str | None) ->
     return entry.unique_id if entry.unique_id in data.collection.lists else None
 
 
+def _smart_view(hass: HomeAssistant, entity_id: str | None) -> str | None:
+    """The view behind a smart list entity (todo.thask_mein_tag), None for any other entity."""
+    if entity_id is None:
+        return None
+    entry = er.async_get(hass).async_get(entity_id)
+    if entry is None or entry.platform != DOMAIN:
+        return None
+    return next((view for view in VIEWS if entry.unique_id == f"{entry.config_entry_id}_{view}"), None)
+
+
 def _matches_due(task: Task, due: str, today: date) -> bool:
     match due:
         case "all":
@@ -182,7 +217,9 @@ def async_setup_services(hass: HomeAssistant) -> None:
 
     async def get_tasks(call: ServiceCall) -> ServiceResponse:
         data = async_get_data(hass)
-        list_id = _list_id_for(hass, data, call.data.get(ATTR_ENTITY_ID))
+        entity_id = call.data.get(ATTR_ENTITY_ID)
+        list_id = _list_id_for(hass, data, entity_id)
+        view = call.data.get("view") or _smart_view(hass, entity_id)
         today = data.today
         tasks = [
             task
@@ -190,9 +227,22 @@ def async_setup_services(hass: HomeAssistant) -> None:
             if (list_id is None or task.list_id == list_id)
             and (call.data["include_completed"] or not task.completed)
             and _matches_due(task, call.data["due"], today)
+            and (view is None or data.in_view(task, view, today))
         ]
         tasks.sort(key=lambda task: (task.due.end if task.due else date.max, -task.priority, task.position))
-        return {"tasks": [data.task_info(task) for task in tasks]}
+        total = len(tasks)
+        if "limit" in call.data:
+            tasks = tasks[: call.data["limit"]]
+        describe = data.task_brief if call.data["compact"] else data.task_info
+        return {"tasks": [describe(task) for task in tasks], "total": total}
+
+    async def complete_task(call: ServiceCall) -> None:
+        """Tick a task off (or open it again) by its id, whichever list or view it is shown in."""
+        data = async_get_data(hass)
+        try:
+            data.collection.update_task(call.data["task_id"], {"completed": call.data["completed"]}, data.today)
+        except NotFoundError:
+            raise ServiceValidationError(f"Task {call.data['task_id']} not found") from None
 
     async def clear_completed(call: ServiceCall) -> ServiceResponse:
         data = async_get_data(hass)
@@ -251,6 +301,7 @@ def async_setup_services(hass: HomeAssistant) -> None:
     hass.services.async_register(
         DOMAIN, SERVICE_GET_TASKS, get_tasks, schema=GET_TASKS_SCHEMA, supports_response=SupportsResponse.ONLY
     )
+    hass.services.async_register(DOMAIN, SERVICE_COMPLETE_TASK, complete_task, schema=COMPLETE_TASK_SCHEMA)
     hass.services.async_register(
         DOMAIN,
         SERVICE_IMPORT_MS_TODO,

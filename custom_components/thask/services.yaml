@@ -57,8 +57,40 @@ get_tasks:
             - this_month
             - overdue
             - all
+    view:
+      selector:
+        select:
+          translation_key: view
+          options:
+            - my_day
+            - overdue
+            - this_week
+            - this_month
+            - important
     include_completed:
       default: false
+      selector:
+        boolean:
+    limit:
+      selector:
+        number:
+          min: 1
+          max: 100
+          mode: box
+    compact:
+      default: false
+      selector:
+        boolean:
+
+complete_task:
+  fields:
+    task_id:
+      required: true
+      example: 3f1c0d2e9b8a4c7d8e6f5a4b3c2d1e0f
+      selector:
+        text:
+    completed:
+      default: true
       selector:
         boolean:
 

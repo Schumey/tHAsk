@@ -79,6 +79,15 @@
         "high": "Priorité haute uniquement",
         "medium": "Priorités moyenne et haute"
       }
+    },
+    "view": {
+      "options": {
+        "my_day": "Aujourd’hui",
+        "overdue": "En retard",
+        "this_week": "Cette semaine",
+        "this_month": "Ce mois-ci",
+        "important": "Important"
+      }
     }
   },
   "services": {
@@ -128,9 +137,35 @@
           "name": "Échéance",
           "description": "Quelles tâches renvoyer."
         },
+        "view": {
+          "name": "Vue",
+          "description": "Uniquement les tâches d’une vue intelligente, avec les mêmes options que l’interface web. Une liste intelligente donnée comme liste apporte sa propre vue."
+        },
         "include_completed": {
           "name": "Inclure les terminées",
           "description": "Renvoyer aussi les tâches terminées."
+        },
+        "limit": {
+          "name": "Au plus",
+          "description": "Renvoyer au plus ce nombre de tâches ; « total » dans la réponse les compte toutes."
+        },
+        "compact": {
+          "name": "Compact",
+          "description": "Seulement ce qu’un petit écran affiche : id, titre, priorité, liste et échéance (due_label, due_kind, due_days, due_time)."
+        }
+      }
+    },
+    "complete_task": {
+      "name": "Cocher une tâche",
+      "description": "Coche une tâche par son id, ou la rouvre, quelle que soit sa liste. Une tâche récurrente reçoit sa prochaine occurrence.",
+      "fields": {
+        "task_id": {
+          "name": "Id de la tâche",
+          "description": "L’id de la tâche, p. ex. de thask.get_tasks."
+        },
+        "completed": {
+          "name": "Terminée",
+          "description": "Désactivé : rouvrir la tâche."
         }
       }
     },

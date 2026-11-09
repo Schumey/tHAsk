@@ -79,6 +79,15 @@
         "high": "High priority only",
         "medium": "Medium and high priority"
       }
+    },
+    "view": {
+      "options": {
+        "my_day": "Today",
+        "overdue": "Overdue",
+        "this_week": "This week",
+        "this_month": "This month",
+        "important": "Important"
+      }
     }
   },
   "services": {
@@ -128,9 +137,35 @@
           "name": "Due",
           "description": "Which tasks to return."
         },
+        "view": {
+          "name": "View",
+          "description": "Only tasks of a smart view, with the same options as the web interface. A smart list given as the list brings its own view."
+        },
         "include_completed": {
           "name": "Include completed",
           "description": "Also return completed tasks."
+        },
+        "limit": {
+          "name": "At most",
+          "description": "Return at most this many tasks; \"total\" in the answer still counts all of them."
+        },
+        "compact": {
+          "name": "Compact",
+          "description": "Only what a small screen shows: id, title, priority, list and due (due_label, due_kind, due_days, due_time)."
+        }
+      }
+    },
+    "complete_task": {
+      "name": "Complete task",
+      "description": "Ticks a task off by its id, or opens it again, whichever list it is in. A recurring task gets its next occurrence.",
+      "fields": {
+        "task_id": {
+          "name": "Task id",
+          "description": "The id of the task, e.g. from thask.get_tasks."
+        },
+        "completed": {
+          "name": "Completed",
+          "description": "Off: open the task again."
         }
       }
     },

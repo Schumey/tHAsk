@@ -14,7 +14,7 @@ Gedacht als Ersatz für Microsoft To Do: Die Daten liegen in Home Assistant (und
 | **Android-App mit Widget** (`app/`) | Flutter-App mit Offline-Modus, Widget auf dem Startbildschirm |
 | **Windows-App** (`app/`) | dieselbe App für Windows, mit Installer, Benachrichtigungen und Zähler an der Taskleiste |
 
-Aktueller Stand: Integration **0.18.0**, Apps **0.9.16** (siehe [Releases](https://github.com/Schumey/tHAsk/releases)). Die Apps gibt es dort fertig als `thask-<Version>.apk` (Android) und `thask-setup-<Version>.exe` (Windows); danach aktualisieren sie sich selbst, siehe [Updates der Apps](#updates-der-apps).
+Aktueller Stand: Integration **0.18.2**, Apps **0.9.16** (siehe [Releases](https://github.com/Schumey/tHAsk/releases)). Die Apps gibt es dort fertig als `thask-<Version>.apk` (Android) und `thask-setup-<Version>.exe` (Windows); danach aktualisieren sie sich selbst, siehe [Updates der Apps](#updates-der-apps).
 
 ### Funktionen
 
@@ -261,7 +261,8 @@ Aufgaben aus Automationen legt man am einfachsten mit `todo.add_item` an, mit Ze
 ### Services
 
 - `thask.add_task` – Aufgabe mit Zeitraum anlegen, z. B. `due_granularity: week` (ohne Datum = aktuelle Woche) oder `due_period: X-Block` (nächster [eigener Zeitraum](#eigene-zeiträume)).
-- `thask.get_tasks` – Aufgaben abfragen (`due: today | this_week | this_month | overdue | all`), liefert eine Antwort für Automationen und Skripte.
+- `thask.get_tasks` – Aufgaben abfragen (`due: today | this_week | this_month | overdue | all`), liefert eine Antwort für Automationen und Skripte. `view: my_day | overdue | this_week | this_month | important` liefert genau eine intelligente Ansicht mit denselben Optionen wie die Weboberfläche; eine intelligente Liste als `entity_id` (z. B. `todo.thask_mein_tag`) bringt ihre Ansicht selbst mit. `limit` begrenzt die Anzahl, `total` in der Antwort zählt trotzdem alle. `compact: true` liefert nur, was ein kleiner Bildschirm braucht (`id`, `title`, `priority`, `list`, `due_label`, `due_kind`, `due_days`, `due_time`), z. B. für das [Tessera-Plugin](https://github.com/Schumey/tessera-plugin-thask).
+- `thask.complete_task` – Aufgabe über ihre `task_id` abhaken (`completed: false` öffnet sie wieder), egal in welcher Liste; eine wiederkehrende bekommt ihren nächsten Termin.
 - `thask.clear_completed` – erledigte Aufgaben einer Liste (oder aller Listen) löschen, optional nur ältere als `older_than_days`. Gut für eine nächtliche Aufräum-Automation.
 - `thask.import_ms_todo` – Import aus Microsoft To Do (siehe unten).
 - `thask.import_tasks` – Import aus Todoist, Google Tasks, TickTick, iCalendar und CSV (siehe unten).

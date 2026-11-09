@@ -79,6 +79,15 @@
         "high": "Nur Priorität Hoch",
         "medium": "Priorität Mittel und Hoch"
       }
+    },
+    "view": {
+      "options": {
+        "my_day": "Heute",
+        "overdue": "Überfällig",
+        "this_week": "Diese Woche",
+        "this_month": "Diesen Monat",
+        "important": "Wichtig"
+      }
     }
   },
   "services": {
@@ -128,9 +137,35 @@
           "name": "Fälligkeit",
           "description": "Welche Aufgaben geliefert werden."
         },
+        "view": {
+          "name": "Ansicht",
+          "description": "Nur Aufgaben einer intelligenten Liste, mit denselben Optionen wie die Weboberfläche. Eine intelligente Liste als Liste bringt ihre Ansicht selbst mit."
+        },
         "include_completed": {
           "name": "Erledigte einschließen",
           "description": "Auch erledigte Aufgaben liefern."
+        },
+        "limit": {
+          "name": "Höchstens",
+          "description": "Höchstens so viele Aufgaben liefern; „total“ in der Antwort zählt trotzdem alle."
+        },
+        "compact": {
+          "name": "Kompakt",
+          "description": "Nur, was ein kleiner Bildschirm zeigt: ID, Titel, Priorität, Liste und Fälligkeit (due_label, due_kind, due_days, due_time)."
+        }
+      }
+    },
+    "complete_task": {
+      "name": "Aufgabe abhaken",
+      "description": "Hakt eine Aufgabe über ihre ID ab oder öffnet sie wieder, egal in welcher Liste sie steht. Eine wiederkehrende Aufgabe bekommt dabei ihren nächsten Termin.",
+      "fields": {
+        "task_id": {
+          "name": "Aufgaben-ID",
+          "description": "Die ID der Aufgabe, z. B. aus thask.get_tasks."
+        },
+        "completed": {
+          "name": "Erledigt",
+          "description": "Aus: die Aufgabe wieder öffnen."
         }
       }
     },

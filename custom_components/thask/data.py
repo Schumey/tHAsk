@@ -54,12 +54,17 @@ from .const import (
     STORAGE_KEY_TRIGGERS,
     STORAGE_VERSION,
     TRIGGER_INTERVAL_SECONDS,
+    VIEW_IMPORTANT,
+    VIEW_MY_DAY,
+    VIEW_OVERDUE,
+    VIEW_THIS_MONTH,
+    VIEW_THIS_WEEK,
     WEEK_MODES,
 )
 from .core.collection import Change, TaskCollection
 from .core.custom_periods import PeriodBook
 from .core.files import ATTACHMENTS_DIR, remove_orphans, remove_task_files
-from .core.models import Task
+from .core.models import PRIORITY_HIGH, PRIORITY_MEDIUM, Task
 from .core.period import Period, language
 from .core.triggers import Evaluator, Match, TriggerBook, TriggerRun
 from .trigger_source import HassSource
@@ -149,6 +154,22 @@ class ThaskData:
             CONF_HIDDEN_VIEWS: self.hidden_views,
             CONF_IMPORTANT_PRIORITY: self.important_priority,
         }
+
+    def in_view(self, task: Task, view: str, today: date) -> bool:
+        """Whether a task belongs to a smart view, with the options the web interface uses."""
+        tz = self.tz
+        rolling = self.week_mode == "rolling"
+        if view == VIEW_MY_DAY:
+            return task.in_today(today, tz, overdue=self.overdue_mode != "separate", days_only=self.separate_week)
+        if view == VIEW_OVERDUE:
+            return task.overdue(today)
+        if view == VIEW_THIS_WEEK:
+            return task.in_this_week(today, tz, separate=self.separate_week, rolling=rolling)
+        if view == VIEW_THIS_MONTH:
+            return task.in_this_month(today, tz, separate=self.separate_month, rolling=rolling)
+        if view == VIEW_IMPORTANT:
+            return task.priority >= (PRIORITY_MEDIUM if self.important_priority == "medium" else PRIORITY_HIGH)
+        raise ValueError(f"Unknown view {view}")
 
     @property
     def attachments_root(self) -> Path:
@@ -339,6 +360,23 @@ class ThaskData:
         info["due_end"] = task.due.end.isoformat() if task.due else None
         info["due_status"] = task.due.status(self.today).value if task.due else None
         return info
+
+    def task_brief(self, task: Task) -> dict[str, Any]:
+        """The little a small screen shows of a task (a Tessera panel): what, how urgent, and when."""
+        today = self.today
+        brief: dict[str, Any] = {"id": task.id, "title": task.title, "priority": task.priority}
+        if task.completed:
+            brief["completed"] = True
+        if task_list := self.collection.lists.get(task.list_id):
+            brief["list"] = task_list.name
+        if task.due:
+            brief["due_label"] = task.due.label(self.language, today)
+            brief["due_kind"] = task.due.granularity.value
+            # Days from today to the period's last day: negative is overdue, 0 is due today.
+            brief["due_days"] = (task.due.end - today).days
+            if task.due_time:
+                brief["due_time"] = task.due_time
+        return brief
 
     @callback
     def _on_change(self, change: Change) -> None:

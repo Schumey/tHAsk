@@ -132,6 +132,7 @@ class Attachment:
 TASK_SORTS = ("manual", "priority", "due", "title", "created")
 # Priority levels: 0 none, 1 low (green), 2 medium (orange), 3 high (red).
 PRIORITIES = (0, 1, 2, 3)
+PRIORITY_MEDIUM = 2
 PRIORITY_HIGH = 3
 
 

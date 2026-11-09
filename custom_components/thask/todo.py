@@ -18,7 +18,7 @@ from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import DOMAIN, SIGNAL_DAY_CHANGED, SIGNAL_OPTIONS_CHANGED
+from .const import DOMAIN, SIGNAL_DAY_CHANGED, SIGNAL_OPTIONS_CHANGED, VIEW_MY_DAY, VIEW_OVERDUE, VIEW_THIS_WEEK
 from .core.collection import Change, NotFoundError
 from .core.models import Task
 from .core.period import Granularity, Period, PeriodStatus
@@ -33,9 +33,9 @@ PARALLEL_UPDATES = 0
 MAX_COMPLETED_ITEMS = 100
 
 # "Today" keeps the key of the former "My Day", so its entity id stays the same.
-SMART_MY_DAY = "my_day"
-SMART_THIS_WEEK = "this_week"
-SMART_OVERDUE = "overdue"
+SMART_MY_DAY = VIEW_MY_DAY
+SMART_THIS_WEEK = VIEW_THIS_WEEK
+SMART_OVERDUE = VIEW_OVERDUE
 
 
 async def async_setup_entry(
@@ -238,20 +238,9 @@ class ThaskSmartListEntity(ThaskTodoEntity):
         self._attr_translation_key = key
         self._attr_unique_id = f"{entry.entry_id}_{key}"
 
-    def _matches(self, task: Task, today: date) -> bool:
-        if self._key == SMART_MY_DAY:
-            return task.in_today(
-                today, self._data.tz, overdue=self._data.overdue_mode != "separate", days_only=self._data.separate_week
-            )
-        if self._key == SMART_OVERDUE:
-            return task.overdue(today)
-        return task.in_this_week(
-            today, self._data.tz, separate=self._data.separate_week, rolling=self._data.week_mode == "rolling"
-        )
-
     def _tasks(self) -> list[Task]:
         today = self._data.today
-        tasks = [task for task in self._data.collection.tasks.values() if self._matches(task, today)]
+        tasks = [task for task in self._data.collection.tasks.values() if self._data.in_view(task, self._key, today)]
         if self._key in (SMART_THIS_WEEK, SMART_OVERDUE):
             tasks.sort(key=lambda task: (task.due.end, -task.priority, task.position))
         else:

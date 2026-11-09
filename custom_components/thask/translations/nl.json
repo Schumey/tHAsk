@@ -79,6 +79,15 @@
         "high": "Alleen prioriteit hoog",
         "medium": "Prioriteit gemiddeld en hoog"
       }
+    },
+    "view": {
+      "options": {
+        "my_day": "Vandaag",
+        "overdue": "Te laat",
+        "this_week": "Deze week",
+        "this_month": "Deze maand",
+        "important": "Belangrijk"
+      }
     }
   },
   "services": {
@@ -128,9 +137,35 @@
           "name": "Te doen",
           "description": "Welke taken worden teruggegeven."
         },
+        "view": {
+          "name": "Weergave",
+          "description": "Alleen taken van een slimme lijst, met dezelfde opties als de webinterface. Een slimme lijst als lijst brengt haar eigen weergave mee."
+        },
         "include_completed": {
           "name": "Inclusief voltooide",
           "description": "Ook voltooide taken teruggeven."
+        },
+        "limit": {
+          "name": "Hoogstens",
+          "description": "Hoogstens zoveel taken leveren; \"total\" in het antwoord telt ze toch allemaal."
+        },
+        "compact": {
+          "name": "Compact",
+          "description": "Alleen wat een klein scherm toont: id, titel, prioriteit, lijst en vervaldatum (due_label, due_kind, due_days, due_time)."
+        }
+      }
+    },
+    "complete_task": {
+      "name": "Taak afvinken",
+      "description": "Vinkt een taak af via haar id of opent haar weer, in welke lijst ze ook staat. Een terugkerende taak krijgt haar volgende keer.",
+      "fields": {
+        "task_id": {
+          "name": "Taak-id",
+          "description": "De id van de taak, bijv. uit thask.get_tasks."
+        },
+        "completed": {
+          "name": "Klaar",
+          "description": "Uit: de taak weer openen."
         }
       }
     },

@@ -37,6 +37,14 @@ SIGNAL_OPTIONS_CHANGED = f"{DOMAIN}_options_changed"
 # Option: how "Today" shows overdue tasks. "section": at the top under their own heading,
 # "mixed": among today's tasks, "separate": not in "Today" but in a view "Overdue" of their own.
 CONF_OVERDUE = "overdue_in_today"
+# The smart views a task can be asked for (thask.get_tasks "view"); the first three also have an entity.
+VIEW_MY_DAY = "my_day"
+VIEW_OVERDUE = "overdue"
+VIEW_THIS_WEEK = "this_week"
+VIEW_THIS_MONTH = "this_month"
+VIEW_IMPORTANT = "important"
+VIEWS = (VIEW_MY_DAY, VIEW_OVERDUE, VIEW_THIS_WEEK, VIEW_THIS_MONTH, VIEW_IMPORTANT)
+
 OVERDUE_MODES = ("section", "mixed", "separate")
 DEFAULT_OVERDUE = "section"
 
