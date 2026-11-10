@@ -80,3 +80,8 @@ kotlin {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // Regelmäßige Aktualisierung des Widgets (WidgetRefreshWorker); home_widget bringt WorkManager nur intern mit.
+    implementation("androidx.work:work-runtime-ktx:2.11.2")
+}

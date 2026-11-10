@@ -16,11 +16,19 @@ class ThaskWidgetReceiver : HomeWidgetGlanceWidgetReceiver<ThaskWidget>() {
      */
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray) {
         super.onUpdate(context, appWidgetManager, appWidgetIds)
+        // Nach einem App-Update ist der geplante Lauf eventuell weg; schedule() ist idempotent.
+        WidgetRefreshWorker.schedule(context)
         val prefs = context.getSharedPreferences("HomeWidgetPreferences", Context.MODE_PRIVATE)
         val now = System.currentTimeMillis()
         if (now - prefs.getLong("last_refresh", 0L) < REFRESH_INTERVAL_MS) return
         prefs.edit().putLong("last_refresh", now).apply()
         HomeWidgetBackgroundIntent.getBroadcast(context, Uri.parse("thask://refresh")).send()
+    }
+
+    /** Ohne Widget kein regelmäßiger Abruf. */
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        WidgetRefreshWorker.cancel(context)
     }
 
     private companion object {
