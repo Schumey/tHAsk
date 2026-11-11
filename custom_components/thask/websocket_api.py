@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import base64
 from collections.abc import Callable
 from datetime import timedelta
 from functools import partial, wraps
@@ -39,6 +40,7 @@ from .const import (
 )
 from .core.collection import Change, NotFoundError
 from .core.custom_periods import PeriodRule
+from .core.importers import FORMATS as IMPORT_FORMATS, import_file
 from .core.models import Task, TaskList
 from .core.period import Period
 from .core.parser import KIND_DUE, KIND_PRIORITY, KIND_RECURRENCE, KIND_TIME, parse
@@ -96,6 +98,7 @@ def async_register_websocket_commands(hass: HomeAssistant) -> None:
         ws_period_rule_update,
         ws_period_rule_delete,
         ws_period_rules_refresh,
+        ws_import,
     ):
         websocket_api.async_register_command(hass, command)
 
@@ -576,3 +579,42 @@ async def ws_period_rules_refresh(hass, connection, msg, data: ThaskData) -> Non
     """Look all rules up in their calendars now."""
     await data.async_refresh_periods(rule_ids=list(data.periods.rules))
     connection.send_result(msg["id"], _period_rules(data))
+
+
+# -- import ---------------------------------------------------------------------------------------
+
+# A chosen file arrives base64 encoded in one message (Home Assistant allows about 4 MB per message).
+IMPORT_MAX_BASE64 = 3_000_000
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "thask/import",
+        vol.Required("name"): vol.All(str, vol.Length(min=1, max=255)),
+        vol.Required("data"): vol.All(str, vol.Length(max=IMPORT_MAX_BASE64)),
+        vol.Optional("format", default="auto"): vol.In(IMPORT_FORMATS),
+        # True only counts what would happen (the preview); False writes it.
+        vol.Optional("dry_run", default=True): bool,
+    }
+)
+@websocket_api.require_admin
+@_async_with_data
+async def ws_import(hass, connection, msg, data: ThaskData) -> None:
+    """Import a task file (checklists, Todoist, Google Tasks, ...): a preview with `dry_run`, otherwise for real."""
+    try:
+        content = base64.b64decode(msg["data"], validate=True)
+    except ValueError as err:
+        raise HomeAssistantError(f"Die Datei konnte nicht übertragen werden: {err}") from err
+    try:
+        result = import_file(
+            data.collection,
+            msg["name"],
+            content,
+            fmt=msg["format"],
+            today=data.today,
+            tz=data.tz,
+            dry_run=msg["dry_run"],
+        )
+    except ValueError as err:
+        raise HomeAssistantError(f"Datei konnte nicht gelesen werden: {err}") from err
+    connection.send_result(msg["id"], result.as_dict())

@@ -44,6 +44,7 @@ const STRINGS = {
     opt_auto_clear: "Erledigte automatisch löschen", opt_auto_clear_days: "Tage nach dem Abhaken (0 = nie)", opt_auto_clear_hint: "Geprüft beim Start von Home Assistant und jede Nacht. Gelöschte Aufgaben lassen sich nicht wiederherstellen.",
     opt_hidden_views: "Ansichten ausblenden", opt_hidden_views_hint: "Angehakte Ansichten erscheinen nicht in der Navigation, auch nicht in den Apps und im Widget. „Heute“ bleibt immer.",
     settings: "Einstellungen", saved: "Gespeichert", opt_overdue_in_today: "Überfällige Aufgaben in „Heute“", overdue_in_today_section: "Oben in einem eigenen Abschnitt „Überfällig“", overdue_in_today_mixed: "Zwischen den heutigen Aufgaben", overdue_in_today_separate: "Nicht in „Heute“, sondern in einer eigenen Ansicht „Überfällig“", opt_week_mode: "„Diese Woche“", week_mode_calendar: "Kalenderwoche (Montag bis Sonntag)", week_mode_rolling: "Heute und die nächsten 7 Tage", opt_views_apart: "Ansichten trennen", opt_separate_week: "„Heute“ und „Diese Woche“ trennen", opt_separate_week_hint: "„Heute“ zeigt nur Aufgaben mit einem festen Tag (und Überfälliges); Zeiträume wie „KW 44“ stehen in „Diese Woche“, das nichts zeigt, was schon in „Heute“ steht.", opt_separate_month: "„Diesen Monat“ trennen", opt_separate_month_hint: "„Diesen Monat“ zeigt nur, was nach dieser Woche bis Monatsende fällig ist.", opt_reminder_targets: "Erinnerungen senden an", opt_reminder_targets_hint: "Push über die Companion-App (mit Knopf „Erledigt“) oder persistent_notification für die Glocke in Home Assistant. Die Windows-App zeigt Erinnerungen selbst, solange sie läuft.", no_notify: "Keine Benachrichtigungsdienste gefunden.",
+    import_title: "Aufgaben importieren", import_hint: "Checklisten (JSON oder CSV), Todoist, Google Tasks, TickTick, CSV oder iCalendar. Zuerst gibt es eine Vorschau, gespeichert wird erst nach Bestätigung. Vorhandene Aufgaben bleiben unverändert und werden übersprungen.", import_choose: "Datei wählen …", import_busy: "Wird verarbeitet …", import_too_big: "Die Datei ist zu groß (höchstens 2 MB).", import_summary: "„{0}“: {1} Liste(n), {2} Abschnitt(e), {3} Aufgabe(n)", import_summary_plain: "„{0}“: {1} Liste(n), {2} Aufgabe(n)", import_counts: "{0} neu, {1} schon vorhanden", import_lists_new: "Neue Listen", import_lists_merged: "Vorhandene Listen (es wird ergänzt)", import_errors: "Einträge mit Fehlern ({0}) werden nicht importiert", import_warnings: "Hinweise", import_confirm: "{0} Aufgabe(n) importieren", import_nothing: "Es gibt nichts Neues zu importieren.", import_cancel: "Abbrechen", import_done: "Fertig: {0} Aufgabe(n) importiert, {1} neue Liste(n).",
     custom_periods: "Eigene Zeiträume", custom_periods_hint: "Zeiträume aus einem Kalender, z. B. ein „X-Block“ nach der Nachtschicht. Aufgaben bekommen ihn unter Fälligkeit, in der Schnelleingabe („nächster X-Block“, „jeden X-Block“) oder mit thask.add_task (due_period).", period_add: "Zeitraum hinzufügen", period_name: "Name", period_calendar: "Kalender", period_anchor: "Nach einem Termin, dessen Titel enthält", period_anchor_any: "leer = jeder Termin; mehrere mit Komma trennen", anchor_part_end: "am letzten Tag des Termins", anchor_part_start: "am ersten Tag des Termins", period_weekdays: "nur wenn dieser Tag ist", period_start: "Beginn (Tage danach)", period_end: "Ende (Tage danach)", period_max: "Höchstens so viele Termine im Zeitraum", period_max_hint: "leer = egal", period_count_match: "Dabei nur Termine zählen, deren Titel enthält", period_horizon: "Tage vorausschauen", period_found: "Gefunden", period_none: "Noch kein Zeitraum gefunden.", period_why_empty: "Der Kalender hat in den nächsten {0} Tagen keine Termine.", period_why_anchor: "{0} Termine im Kalender, aber keiner mit „{1}“ im Titel.", period_why_weekday_end: "{0} passende Termine, aber keiner endet an einem gewählten Tag (sie enden am {1}).", period_why_weekday_start: "{0} passende Termine, aber keiner beginnt an einem gewählten Tag (sie beginnen am {1}).", period_why_busy: "{0} passende Termine, aber in jedem Zeitraum liegen zu viele Termine (mindestens {1}, erlaubt {2}).", period_why_past: "Die passenden Termine liegen schon zurück; in den nächsten {0} Tagen kommt keiner.", period_refresh: "Neu suchen", period_delete_confirm: "Zeitraum „{0}“ löschen? Aufgaben behalten ihre Daten.", period_example: "Beispiel X-Block: Nachtschicht endet am Mi, Beginn 1 (Do), Ende 9 (übernächster Fr), höchstens 3 Termine.", rec_custom: "Jeder eigene Zeitraum", rec_custom_x: "Jeder {0}",
   },
   en: {
@@ -88,6 +89,7 @@ const STRINGS = {
     opt_auto_clear: "Delete completed tasks automatically", opt_auto_clear_days: "days after ticking off (0 = never)", opt_auto_clear_hint: "Checked when Home Assistant starts and every night. Deleted tasks cannot be restored.",
     opt_hidden_views: "Hide views", opt_hidden_views_hint: "Ticked views do not appear in the navigation, nor in the apps and the widget. “Today” always stays.",
     settings: "Settings", saved: "Saved", opt_overdue_in_today: "Overdue tasks in “Today”", overdue_in_today_section: "At the top in a section “Overdue”", overdue_in_today_mixed: "Among today's tasks", overdue_in_today_separate: "Not in “Today” but in a view “Overdue” of their own", opt_week_mode: "“This week”", week_mode_calendar: "Calendar week (Monday to Sunday)", week_mode_rolling: "Today and the next 7 days", opt_views_apart: "Keep views apart", opt_separate_week: "Keep “Today” and “This week” apart", opt_separate_week_hint: "“Today” only shows tasks due on a specific day (and overdue ones); periods such as “week 44” are in “This week”, which leaves out what “Today” shows.", opt_separate_month: "Keep “This month” apart", opt_separate_month_hint: "“This month” only shows what is due after this week until the end of the month.", opt_reminder_targets: "Send reminders to", opt_reminder_targets_hint: "Push via the companion app (with a “Done” button) or persistent_notification for the bell in Home Assistant. The Windows app shows reminders on its own while it is running.", no_notify: "No notify services found.",
+    import_title: "Import tasks", import_hint: "Checklists (JSON or CSV), Todoist, Google Tasks, TickTick, CSV or iCalendar. You see a preview first and nothing is saved until you confirm. Existing tasks stay unchanged and are skipped.", import_choose: "Choose file …", import_busy: "Working …", import_too_big: "The file is too big (2 MB at most).", import_summary: "“{0}”: {1} list(s), {2} section(s), {3} task(s)", import_summary_plain: "“{0}”: {1} list(s), {2} task(s)", import_counts: "{0} new, {1} already there", import_lists_new: "New lists", import_lists_merged: "Existing lists (tasks are added)", import_errors: "Entries with errors ({0}) will not be imported", import_warnings: "Notes", import_confirm: "Import {0} task(s)", import_nothing: "Nothing new to import.", import_cancel: "Cancel", import_done: "Done: {0} task(s) imported, {1} new list(s).",
     custom_periods: "Custom periods", custom_periods_hint: "Periods from a calendar, e.g. an “X-Block” after night shifts. Tasks get them under Due, in the quick entry (“next X-Block”, “every X-Block”) or with thask.add_task (due_period).", period_add: "Add period", period_name: "Name", period_calendar: "Calendar", period_anchor: "After an event whose title contains", period_anchor_any: "empty = any event; separate several with commas", anchor_part_end: "on the event's last day", anchor_part_start: "on the event's first day", period_weekdays: "only if that day is a", period_start: "Start (days after)", period_end: "End (days after)", period_max: "At most this many events in the period", period_max_hint: "empty = any number", period_count_match: "Only count events whose title contains", period_horizon: "Days to look ahead", period_found: "Found", period_none: "No period found yet.", period_why_empty: "The calendar has no events in the next {0} days.", period_why_anchor: "{0} events in the calendar, but none with “{1}” in the title.", period_why_weekday_end: "{0} matching events, but none ends on a selected day (they end on {1}).", period_why_weekday_start: "{0} matching events, but none starts on a selected day (they start on {1}).", period_why_busy: "{0} matching events, but every period has too many events (at least {1}, allowed {2}).", period_why_past: "The matching events are in the past; none comes in the next {0} days.", period_refresh: "Search again", period_delete_confirm: "Delete the period “{0}”? Tasks keep their dates.", period_example: "Example X-Block: night shift ends on Wed, start 1 (Thu), end 9 (the Friday after next), at most 3 events.", rec_custom: "Every custom period", rec_custom_x: "Every {0}",
   },
   nl: {
@@ -132,6 +134,7 @@ const STRINGS = {
     opt_auto_clear: "Voltooide taken automatisch verwijderen", opt_auto_clear_days: "dagen na het afvinken (0 = nooit)", opt_auto_clear_hint: "Gecontroleerd bij het starten van Home Assistant en elke nacht. Verwijderde taken kunnen niet worden hersteld.",
     opt_hidden_views: "Weergaven verbergen", opt_hidden_views_hint: "Aangevinkte weergaven verschijnen niet in de navigatie, ook niet in de apps en de widget. „Vandaag” blijft altijd.",
     settings: "Instellingen", saved: "Opgeslagen", opt_overdue_in_today: "Te late taken in „Vandaag”", overdue_in_today_section: "Bovenaan in een sectie „Te laat”", overdue_in_today_mixed: "Tussen de taken van vandaag", overdue_in_today_separate: "Niet in „Vandaag”, maar in een eigen weergave „Te laat”", opt_week_mode: "„Deze week”", week_mode_calendar: "Kalenderweek (maandag tot zondag)", week_mode_rolling: "Vandaag en de komende 7 dagen", opt_views_apart: "Weergaven scheiden", opt_separate_week: "„Vandaag” en „Deze week” scheiden", opt_separate_week_hint: "„Vandaag” toont alleen taken op een vaste dag (en te late); periodes zoals „week 44” staan in „Deze week”, die niets toont wat al in „Vandaag” staat.", opt_separate_month: "„Deze maand” scheiden", opt_separate_month_hint: "„Deze maand” toont alleen wat na deze week tot het einde van de maand moet.", opt_reminder_targets: "Herinneringen sturen naar", opt_reminder_targets_hint: "Push via de Companion-app (met een knop „Klaar”) of persistent_notification voor de bel in Home Assistant. De Windows-app toont herinneringen zelf zolang hij draait.", no_notify: "Geen meldingsdiensten gevonden.",
+    import_title: "Taken importeren", import_hint: "Checklists (JSON of CSV), Todoist, Google Tasks, TickTick, CSV of iCalendar. Eerst zie je een voorbeeld; pas na bevestiging wordt er opgeslagen. Bestaande taken blijven ongewijzigd en worden overgeslagen.", import_choose: "Bestand kiezen …", import_busy: "Bezig …", import_too_big: "Het bestand is te groot (maximaal 2 MB).", import_summary: "„{0}”: {1} lijsten, {2} secties, {3} taken", import_summary_plain: "„{0}”: {1} lijsten, {2} taken", import_counts: "{0} nieuw, {1} al aanwezig", import_lists_new: "Nieuwe lijsten", import_lists_merged: "Bestaande lijsten (er wordt aangevuld)", import_errors: "{0} items met fouten worden niet geïmporteerd", import_warnings: "Opmerkingen", import_confirm: "{0} taken importeren", import_nothing: "Er is niets nieuws om te importeren.", import_cancel: "Annuleren", import_done: "Klaar: {0} taken geïmporteerd, {1} nieuwe lijsten.",
     custom_periods: "Eigen periodes", custom_periods_hint: "Periodes uit een agenda, bijv. een „X-Block” na nachtdiensten. Taken krijgen ze onder Uiterlijk, in de snelinvoer („volgende X-Block”, „elke X-Block”) of met thask.add_task (due_period).", period_add: "Periode toevoegen", period_name: "Naam", period_calendar: "Agenda", period_anchor: "Na een afspraak waarvan de titel bevat", period_anchor_any: "leeg = elke afspraak; meerdere scheiden met komma's", anchor_part_end: "op de laatste dag van de afspraak", anchor_part_start: "op de eerste dag van de afspraak", period_weekdays: "alleen als die dag is", period_start: "Begin (dagen erna)", period_end: "Einde (dagen erna)", period_max: "Hoogstens zoveel afspraken in de periode", period_max_hint: "leeg = maakt niet uit", period_count_match: "Alleen afspraken tellen waarvan de titel bevat", period_horizon: "Dagen vooruitkijken", period_found: "Gevonden", period_none: "Nog geen periode gevonden.", period_why_empty: "De agenda heeft de komende {0} dagen geen afspraken.", period_why_anchor: "{0} afspraken in de agenda, maar geen met „{1}” in de titel.", period_why_weekday_end: "{0} passende afspraken, maar geen eindigt op een gekozen dag (ze eindigen op {1}).", period_why_weekday_start: "{0} passende afspraken, maar geen begint op een gekozen dag (ze beginnen op {1}).", period_why_busy: "{0} passende afspraken, maar elke periode heeft te veel afspraken (minstens {1}, toegestaan {2}).", period_why_past: "De passende afspraken liggen in het verleden; de komende {0} dagen komt er geen.", period_refresh: "Opnieuw zoeken", period_delete_confirm: "Periode „{0}” verwijderen? Taken houden hun datums.", period_example: "Voorbeeld X-Block: nachtdienst eindigt op wo, begin 1 (do), einde 9 (vrijdag over anderhalve week), hoogstens 3 afspraken.", rec_custom: "Elke eigen periode", rec_custom_x: "Elke {0}",
   },
   fr: {
@@ -176,6 +179,7 @@ const STRINGS = {
     opt_auto_clear: "Supprimer automatiquement les tâches terminées", opt_auto_clear_days: "jours après les avoir cochées (0 = jamais)", opt_auto_clear_hint: "Vérifié au démarrage de Home Assistant et chaque nuit. Les tâches supprimées ne peuvent pas être restaurées.",
     opt_hidden_views: "Masquer des vues", opt_hidden_views_hint: "Les vues cochées n'apparaissent pas dans la navigation, ni dans les applications et le widget. « Aujourd'hui » reste toujours.",
     settings: "Paramètres", saved: "Enregistré", opt_overdue_in_today: "Tâches en retard dans « Aujourd'hui »", overdue_in_today_section: "En haut, dans une section « En retard »", overdue_in_today_mixed: "Parmi les tâches du jour", overdue_in_today_separate: "Pas dans « Aujourd'hui », mais dans une vue « En retard » à part", opt_week_mode: "« Cette semaine »", week_mode_calendar: "Semaine calendaire (lundi à dimanche)", week_mode_rolling: "Aujourd'hui et les 7 prochains jours", opt_views_apart: "Séparer les vues", opt_separate_week: "Séparer « Aujourd'hui » et « Cette semaine »", opt_separate_week_hint: "« Aujourd'hui » n'affiche que les tâches d'un jour précis (et celles en retard) ; les périodes comme « semaine 44 » sont dans « Cette semaine », qui n'affiche pas ce qui est déjà dans « Aujourd'hui ».", opt_separate_month: "Séparer « Ce mois-ci »", opt_separate_month_hint: "« Ce mois-ci » n'affiche que ce qui est à faire après cette semaine jusqu'à la fin du mois.", opt_reminder_targets: "Envoyer les rappels à", opt_reminder_targets_hint: "Push via l'application Companion (avec un bouton « Terminé ») ou persistent_notification pour la cloche de Home Assistant. L'application Windows affiche elle-même les rappels tant qu'elle est ouverte.", no_notify: "Aucun service de notification trouvé.",
+    import_title: "Importer des tâches", import_hint: "Listes de contrôle (JSON ou CSV), Todoist, Google Tasks, TickTick, CSV ou iCalendar. Un aperçu s'affiche d'abord ; rien n'est enregistré avant votre confirmation. Les tâches existantes restent inchangées et sont ignorées.", import_choose: "Choisir un fichier …", import_busy: "En cours …", import_too_big: "Le fichier est trop volumineux (2 Mo au maximum).", import_summary: "« {0} » : {1} listes, {2} sections, {3} tâches", import_summary_plain: "« {0} » : {1} listes, {2} tâches", import_counts: "{0} nouvelles, {1} déjà présentes", import_lists_new: "Nouvelles listes", import_lists_merged: "Listes existantes (complétées)", import_errors: "{0} entrées avec erreurs ne seront pas importées", import_warnings: "Remarques", import_confirm: "Importer {0} tâches", import_nothing: "Rien de nouveau à importer.", import_cancel: "Annuler", import_done: "Terminé : {0} tâches importées, {1} nouvelles listes.",
     custom_periods: "Périodes personnalisées", custom_periods_hint: "Des périodes tirées d'un calendrier, p. ex. un « X-Block » après les nuits. Les tâches les reçoivent sous Échéance, dans la saisie rapide (« prochain X-Block », « chaque X-Block ») ou avec thask.add_task (due_period).", period_add: "Ajouter une période", period_name: "Nom", period_calendar: "Calendrier", period_anchor: "Après un événement dont le titre contient", period_anchor_any: "vide = tout événement ; séparer plusieurs par des virgules", anchor_part_end: "le dernier jour de l'événement", anchor_part_start: "le premier jour de l'événement", period_weekdays: "seulement si ce jour est un", period_start: "Début (jours après)", period_end: "Fin (jours après)", period_max: "Au plus autant d'événements dans la période", period_max_hint: "vide = peu importe", period_count_match: "Ne compter que les événements dont le titre contient", period_horizon: "Jours à l'avance", period_found: "Trouvé", period_none: "Aucune période trouvée pour l'instant.", period_why_empty: "Le calendrier n'a aucun événement dans les {0} prochains jours.", period_why_anchor: "{0} événements dans le calendrier, mais aucun avec « {1} » dans le titre.", period_why_weekday_end: "{0} événements correspondants, mais aucun ne se termine un jour choisi (ils se terminent le {1}).", period_why_weekday_start: "{0} événements correspondants, mais aucun ne commence un jour choisi (ils commencent le {1}).", period_why_busy: "{0} événements correspondants, mais chaque période contient trop d'événements (au moins {1}, autorisé {2}).", period_why_past: "Les événements correspondants sont passés ; aucun dans les {0} prochains jours.", period_refresh: "Rechercher à nouveau", period_delete_confirm: "Supprimer la période « {0} » ? Les tâches gardent leurs dates.", period_example: "Exemple X-Block : la nuit finit le mer., début 1 (jeu.), fin 9 (le vendredi de la semaine suivante), au plus 3 événements.", rec_custom: "Chaque période personnalisée", rec_custom_x: "Chaque {0}",
   },
   es: {
@@ -220,6 +224,7 @@ const STRINGS = {
     opt_auto_clear: "Eliminar tareas completadas automáticamente", opt_auto_clear_days: "días después de marcarlas (0 = nunca)", opt_auto_clear_hint: "Se comprueba al iniciar Home Assistant y cada noche. Las tareas eliminadas no se pueden recuperar.",
     opt_hidden_views: "Ocultar vistas", opt_hidden_views_hint: "Las vistas marcadas no aparecen en la navegación, tampoco en las apps ni en el widget. «Hoy» siempre se mantiene.",
     settings: "Ajustes", saved: "Guardado", opt_overdue_in_today: "Tareas vencidas en «Hoy»", overdue_in_today_section: "Arriba, en una sección «Vencidas»", overdue_in_today_mixed: "Entre las tareas de hoy", overdue_in_today_separate: "No en «Hoy», sino en una vista propia «Vencidas»", opt_week_mode: "«Esta semana»", week_mode_calendar: "Semana natural (lunes a domingo)", week_mode_rolling: "Hoy y los próximos 7 días", opt_views_apart: "Separar vistas", opt_separate_week: "Separar «Hoy» y «Esta semana»", opt_separate_week_hint: "«Hoy» solo muestra tareas de un día concreto (y las vencidas); los periodos como «semana 44» están en «Esta semana», que no muestra lo que ya está en «Hoy».", opt_separate_month: "Separar «Este mes»", opt_separate_month_hint: "«Este mes» solo muestra lo que vence después de esta semana hasta final de mes.", opt_reminder_targets: "Enviar recordatorios a", opt_reminder_targets_hint: "Push mediante la app Companion (con un botón «Hecho») o persistent_notification para la campana de Home Assistant. La app de Windows muestra los recordatorios por sí misma mientras está abierta.", no_notify: "No se encontraron servicios de notificación.",
+    import_title: "Importar tareas", import_hint: "Listas de control (JSON o CSV), Todoist, Google Tasks, TickTick, CSV o iCalendar. Primero se muestra una vista previa; no se guarda nada hasta que confirmes. Las tareas existentes no cambian y se omiten.", import_choose: "Elegir archivo …", import_busy: "Procesando …", import_too_big: "El archivo es demasiado grande (máximo 2 MB).", import_summary: "«{0}»: {1} listas, {2} secciones, {3} tareas", import_summary_plain: "«{0}»: {1} listas, {2} tareas", import_counts: "{0} nuevas, {1} ya existentes", import_lists_new: "Listas nuevas", import_lists_merged: "Listas existentes (se completan)", import_errors: "{0} entradas con errores no se importarán", import_warnings: "Notas", import_confirm: "Importar {0} tareas", import_nothing: "No hay nada nuevo que importar.", import_cancel: "Cancelar", import_done: "Listo: {0} tareas importadas, {1} listas nuevas.",
     custom_periods: "Periodos propios", custom_periods_hint: "Periodos de un calendario, p. ej. un «X-Block» tras los turnos de noche. Las tareas los reciben en Vencimiento, en la entrada rápida («próximo X-Block», «cada X-Block») o con thask.add_task (due_period).", period_add: "Añadir periodo", period_name: "Nombre", period_calendar: "Calendario", period_anchor: "Tras un evento cuyo título contiene", period_anchor_any: "vacío = cualquier evento; separar varios con comas", anchor_part_end: "el último día del evento", anchor_part_start: "el primer día del evento", period_weekdays: "solo si ese día es", period_start: "Inicio (días después)", period_end: "Fin (días después)", period_max: "Como máximo tantos eventos en el periodo", period_max_hint: "vacío = da igual", period_count_match: "Contar solo eventos cuyo título contiene", period_horizon: "Días por adelantado", period_found: "Encontrado", period_none: "Aún no se ha encontrado ningún periodo.", period_why_empty: "El calendario no tiene eventos en los próximos {0} días.", period_why_anchor: "{0} eventos en el calendario, pero ninguno con «{1}» en el título.", period_why_weekday_end: "{0} eventos que coinciden, pero ninguno termina en un día elegido (terminan el {1}).", period_why_weekday_start: "{0} eventos que coinciden, pero ninguno empieza en un día elegido (empiezan el {1}).", period_why_busy: "{0} eventos que coinciden, pero cada periodo tiene demasiados eventos (al menos {1}, permitidos {2}).", period_why_past: "Los eventos que coinciden ya pasaron; ninguno en los próximos {0} días.", period_refresh: "Buscar de nuevo", period_delete_confirm: "¿Eliminar el periodo «{0}»? Las tareas conservan sus fechas.", period_example: "Ejemplo X-Block: el turno de noche termina el mié, inicio 1 (jue), fin 9 (el viernes de la semana siguiente), como máximo 3 eventos.", rec_custom: "Cada periodo propio", rec_custom_x: "Cada {0}",
   },
 };
@@ -228,6 +233,8 @@ const TASK_SORTS = ["manual", "priority", "due", "title", "created"];
 // Period of the "Important" view: everything, or what is due by the end of this week, month …
 const IMPORTANT_RANGES = ["all", "week", "month", "quarter", "year"];
 const RANGE_STORAGE_KEY = "thask.importantRange";
+// Largest file the import takes (the server accepts about 3 MB of base64).
+const IMPORT_MAX_BYTES = 2_000_000;
 
 /** File size for people: "830 B", "12 KB", "3,4 MB". */
 function formatSize(bytes) {
@@ -310,6 +317,7 @@ class ThaskPanel extends HTMLElement {
     this._settings = null; // settings page: { options, notify_services } once loaded
     this._periods = []; // custom periods from the snapshot: [{ id, name, instances: [period] }]
     this._periodRules = null; // settings page: the rules of the custom periods, with what they found
+    this._import = null; // settings page: the file chosen for import, its preview or result
     this._overdueCollapsed = false;
     try {
       this._overdueCollapsed = localStorage.getItem(OVERDUE_COLLAPSED_KEY) === "1";
@@ -1415,6 +1423,88 @@ class ThaskPanel extends HTMLElement {
     return `<div class="period-why muted"><ha-icon icon="mdi:information-outline"></ha-icon>${esc(text)}</div>`;
   }
 
+  // ---- Import: a file of tasks (checklists, Todoist, ...): preview first, written after confirmation ----
+
+  async _importChoose(input) {
+    const file = input.files?.[0];
+    input.value = "";
+    if (!file) return;
+    if (file.size > IMPORT_MAX_BYTES) {
+      this._import = { name: file.name, error: this.t("import_too_big") };
+      this._render();
+      return;
+    }
+    this._import = { name: file.name, busy: true };
+    this._render();
+    try {
+      const bytes = new Uint8Array(await file.arrayBuffer());
+      let binary = "";
+      for (let i = 0; i < bytes.length; i += 0x8000) binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+      const data = btoa(binary);
+      const preview = await this._hass.callWS({ type: "thask/import", name: file.name, data, dry_run: true });
+      this._import = { name: file.name, data, preview };
+    } catch (err) {
+      this._import = { name: file.name, error: err?.message || String(err) };
+    }
+    if (this._view.type === "settings") this._render();
+  }
+
+  async _importRun() {
+    const state = this._import;
+    if (!state?.data || state.busy) return;
+    this._import = { ...state, busy: true };
+    this._render();
+    try {
+      const result = await this._hass.callWS({ type: "thask/import", name: state.name, data: state.data, dry_run: false });
+      this._import = { name: state.name, done: result };
+    } catch (err) {
+      // Nothing was written: the server undoes a failed import.
+      this._import = { name: state.name, error: err?.message || String(err) };
+    }
+    if (this._view.type === "settings") this._render();
+  }
+
+  _importHtml() {
+    const state = this._import;
+    const list = (items) => `<ul class="import-items">${items.map((item) => `<li>${esc(item)}</li>`).join("")}</ul>`;
+    let body = "";
+    if (state?.busy) {
+      body = `<div class="muted option-hint">${esc(this.t("import_busy"))}</div>`;
+    } else if (state?.error) {
+      body = `<div class="error-line"><ha-icon icon="mdi:alert-outline"></ha-icon>${esc(state.error)}</div>`;
+    } else if (state?.done) {
+      const r = state.done;
+      body = `<div class="import-preview"><div>${esc(this.t("import_done", r.tasks_imported, r.lists_created.length))}</div>
+        ${r.errors.length ? `<div class="error-line"><ha-icon icon="mdi:alert-outline"></ha-icon>${esc(this.t("import_errors", r.errors.length))}</div>${list(r.errors)}` : ""}</div>`;
+    } else if (state?.preview) {
+      const r = state.preview;
+      const lists = r.lists_created.length + r.lists_merged.length;
+      const tasks = r.tasks_imported + r.tasks_skipped_existing + r.tasks_skipped_completed;
+      const summary = r.sections ? this.t("import_summary", state.name, lists, r.sections, tasks) : this.t("import_summary_plain", state.name, lists, tasks);
+      body = `<div class="import-preview">
+        <div class="import-summary">${esc(summary)}</div>
+        <div>${esc(this.t("import_counts", r.tasks_imported, r.tasks_skipped_existing))}</div>
+        ${r.lists_created.length ? `<div class="muted">${esc(this.t("import_lists_new"))}</div>${list(r.lists_created)}` : ""}
+        ${r.lists_merged.length ? `<div class="muted">${esc(this.t("import_lists_merged"))}</div>${list(r.lists_merged)}` : ""}
+        ${r.errors.length ? `<div class="error-line"><ha-icon icon="mdi:alert-outline"></ha-icon>${esc(this.t("import_errors", r.errors.length))}</div>${list(r.errors)}` : ""}
+        ${r.warnings.length ? `<div class="muted">${esc(this.t("import_warnings"))}</div>${list(r.warnings)}` : ""}
+        ${r.tasks_imported ? "" : `<div class="muted">${esc(this.t("import_nothing"))}</div>`}
+        <div class="row">
+          ${r.tasks_imported ? `<button class="chip on" data-action="import-confirm"><ha-icon icon="mdi:check"></ha-icon>${esc(this.t("import_confirm", r.tasks_imported))}</button>` : ""}
+          <button class="chip" data-action="import-cancel">${esc(this.t("import_cancel"))}</button>
+        </div>
+      </div>`;
+    }
+    return `
+      <div class="section-title">${esc(this.t("import_title"))}</div>
+      <div class="muted option-hint">${esc(this.t("import_hint"))}</div>
+      <div class="row">
+        <button class="chip" data-action="import-choose"><ha-icon icon="mdi:file-upload-outline"></ha-icon>${esc(this.t("import_choose"))}</button>
+        <input type="file" hidden data-field="import-file" accept=".json,.csv,.ics,.ical,.zip">
+      </div>
+      ${body}`;
+  }
+
   async _saveOption(input) {
     const key = input.dataset.option;
     const value = key === "reminder_targets" || key === "hidden_views"
@@ -1481,6 +1571,7 @@ class ThaskPanel extends HTMLElement {
         ${this._periodRules?.length ? `<button class="chip" data-action="period-refresh"><ha-icon icon="mdi:refresh"></ha-icon>${esc(this.t("period_refresh"))}</button>` : ""}
       </div>
       <div class="muted option-hint">${esc(this.t("period_example"))}</div>
+      ${this._importHtml()}
     </div>`;
   }
 
@@ -1778,6 +1869,16 @@ class ThaskPanel extends HTMLElement {
       case "period-weekday":
         this._onPeriodAction(action, target);
         break;
+      case "import-choose":
+        this.shadowRoot.querySelector("[data-field=import-file]")?.click();
+        break;
+      case "import-confirm":
+        this._importRun();
+        break;
+      case "import-cancel":
+        this._import = null;
+        this._render();
+        break;
       case "back-to-sidebar":
         this._pane = "sidebar";
         this._render();
@@ -1946,6 +2047,10 @@ class ThaskPanel extends HTMLElement {
   }
 
   _onChange(ev) {
+    if (ev.target.dataset?.field === "import-file") {
+      this._importChoose(ev.target);
+      return;
+    }
     if (ev.target.dataset?.field === "attachment-file") {
       const task = this._tasks.get(this._selectedTask);
       if (task) this._upload(task, [...ev.target.files]);
@@ -2344,6 +2449,10 @@ const STYLE = `
   .option-choice { display: flex; align-items: center; gap: 10px; padding: 6px 4px; cursor: pointer; }
   .option-choice input { margin: 0; accent-color: var(--primary-color, #03a9f4); }
   .option-hint { padding: 0 4px 8px 30px; }
+  .import-preview { display: flex; flex-direction: column; gap: 6px; padding: 8px 4px; }
+  .import-summary { font-weight: 500; }
+  .chip.on { background: var(--thask-accent); color: #fff; }
+  .import-items { margin: 0; padding-left: 22px; max-height: 240px; overflow: auto; font-size: 13px; }
   .period-rule { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 12px; padding: 10px; border: 1px solid var(--thask-divider); border-radius: 8px; }
   .period-rule.disabled { opacity: 0.6; }
   .period-rule .row { flex-wrap: wrap; }

@@ -50,7 +50,11 @@ class ImportResult:
     # Day tasks that look like they were meant for a whole month/week.
     month_end_candidates: int = 0
     sunday_candidates: int = 0
+    # Sections found in the file (formats that have them, e.g. checklists); their titles become categories.
+    sections: int = 0
     warnings: list[str] = field(default_factory=list)
+    # Entries that could not be read and were left out; the rest of the file is still imported.
+    errors: list[str] = field(default_factory=list)
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)

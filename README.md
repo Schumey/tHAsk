@@ -314,6 +314,8 @@ Listen mit gleichem Namen werden zusammengeführt (z. B. „Aufgaben“). Ein er
 
 ## Import aus anderen Apps
 
+**Mit einem Klick (Administratoren):** **tHAsk → Einstellungen → Aufgaben importieren → Datei wählen**. Das Format wird an der Endung und am Inhalt erkannt. Zuerst erscheint eine Vorschau mit der Zahl der Listen, Abschnitte und Aufgaben (wie viele neu sind und wie viele schon vorhanden), den Listen und allen Fehlern. Gespeichert wird erst nach **Importieren**; schlägt das fehl, bleibt der bisherige Stand unverändert. Die Datei darf höchstens 2 MB groß sein.
+
 Der Service `thask.import_tasks` übernimmt Aufgaben aus weiteren Apps. Die Exportdatei in den HA-Konfigurationsordner kopieren (neben `configuration.yaml`), dann unter **Entwicklerwerkzeuge → Aktionen** `thask.import_tasks` mit `file: <Dateiname>` und zuerst `dry_run: true` ausführen (**Antwort anzeigen**), danach mit `dry_run: false`. Das Format wird in der Regel erkannt; mit `list` landet alles in einer Liste, sonst entstehen die Listen wie in der Datei. Ein erneuter Import überspringt bereits importierte Aufgaben.
 
 | App | Exportieren | Übernommen |
@@ -324,7 +326,48 @@ Der Service `thask.import_tasks` übernimmt Aufgaben aus weiteren Apps. Die Expo
 | **iCalendar** (`.ics` mit Aufgaben) | z. B. Apple Erinnerungen über einen CalDAV-Client, Thunderbird, Nextcloud Tasks | Aufgaben (VTODO), Beschreibung, Fälligkeit, Wiederholung, Priorität, Kategorien, Unteraufgaben als Schritte. Listenname aus der Datei, sonst der Dateiname. |
 | **CSV** (allgemein) | aus jeder App oder Tabelle mit Kopfzeile, Trennzeichen Komma oder Semikolon | Spalten werden am Namen erkannt (deutsch oder englisch): Titel, Notizen, Liste, Fällig, Priorität, Erledigt, Kategorien. Fälligkeit als `2026-11-30`, `30.11.2026`, `11/30/2026` oder wie in der Schnelleingabe („KW 47“, „November“). |
 
+| **Checkliste** (`.json` oder `.csv` mit `external_id`) | eigene Dateien im Checklisten-Format, siehe unten | Listen, Aufgaben, Notizen, Fälligkeit (reiner Kalendertag), Tags und Abschnitte als Kategorien. Erledigt-Status wird nicht übernommen. |
+
 Für Apps ohne passenden Export (etwa Any.do oder Things) die Aufgaben in eine Tabelle übertragen und als CSV speichern; eine Spalte „Titel“ genügt.
+
+### Checklisten-Format
+
+Eine Datei mit Listen, Abschnitten und Aufgaben, die immer wieder importiert werden kann: Aufgaben mit derselben `external_id` werden nicht noch einmal angelegt, vorhandene Aufgaben bleiben unverändert (auch ein gesetzter Haken), nichts wird gelöscht.
+
+```json
+{
+  "schema_version": 1,
+  "lists": [
+    {
+      "id": "vorbereitung",
+      "title": "Reisevorbereitung",
+      "groups": [
+        {
+          "title": "Dinge mit Vorlaufzeit",
+          "description": "",
+          "items": [
+            {
+              "external_id": "c-pass",
+              "title": "Reisepass prüfen",
+              "notes": "Gültig bis mindestens August 2027.",
+              "due": "2026-11-15",
+              "date_label": "",
+              "tags": ["Papiere"],
+              "done": false
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+```
+
+- Pflicht sind `external_id` (eindeutig in der ganzen Datei) und `title`; `due` ist `JJJJ-MM-TT` oder `null`.
+- tHAsk kennt keine Abschnitte innerhalb einer Liste: der Titel des Abschnitts wird neben den `tags` zur Kategorie der Aufgabe. Eine `description` des Abschnitts steht in der Notiz seiner ersten Aufgabe, `date_label` am Anfang der Notiz.
+- `done` wird ignoriert, ein Import hakt nichts ab. Die Daten werden nicht über UTC umgerechnet.
+- Eine ungültige Aufgabe (fehlender Titel, kaputtes Datum, doppelte ID) wird in der Vorschau als Fehler aufgeführt und übersprungen, der Rest wird importiert. Eine unbekannte `schema_version` lehnt die ganze Datei ab.
+- Als CSV (UTF-8, Trennzeichen `;`): `external_id;list;group;title;notes;due;date_label;tags;done`, `tags` mit Komma getrennt.
 
 ## Android-App
 

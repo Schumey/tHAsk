@@ -56,7 +56,8 @@
         "google_tasks": "Google Tasks (Takeout, Tasks.json)",
         "ticktick": "TickTick (copia de seguridad CSV)",
         "csv": "CSV (genérico)",
-        "ical": "iCalendar (.ics, VTODO)"
+        "ical": "iCalendar (.ics, VTODO)",
+        "checklist": "Lista de control (JSON o CSV con external_id)"
       }
     },
     "week_mode": {

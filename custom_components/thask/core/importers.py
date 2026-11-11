@@ -24,7 +24,7 @@ from .ms_todo import ImportResult
 from .parser import parse
 from .period import Granularity, Period
 
-FORMATS = ["auto", "todoist", "google_tasks", "ticktick", "csv", "ical"]
+FORMATS = ["auto", "todoist", "google_tasks", "ticktick", "csv", "ical", "checklist"]
 
 _RRULE_DAYS = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"]
 _RRULE_UNITS = {
@@ -515,6 +515,195 @@ def _ical_task(todo: dict[str, Any], uid: str, tz: tzinfo, result: ImportResult)
     )
 
 
+# -- Checklists ------------------------------------------------------------------------------------------------
+
+# A file of lists, sections ("groups") and items with a stable `external_id` each: JSON (schema_version 1) or the
+# same flattened to CSV (`external_id;list;group;title;notes;due;date_label;tags;done`, ";" separated).
+# tHAsk has no sections inside a list, so the section title becomes a category next to the item's own tags.
+# `due` is a plain calendar day (never converted through UTC) and `done` is ignored: an import never ticks anything.
+
+CHECKLIST_SCHEMA_VERSION = 1
+CHECKLIST_PREFIX = "checklist:"
+_CHECKLIST_REQUIRED_COLUMNS = ("external_id", "list", "title")
+_ISO_DAY = re.compile(r"\d{4}-\d{2}-\d{2}")
+
+
+def _decode_utf8(data: bytes) -> str:
+    try:
+        return data.decode("utf-8-sig")
+    except UnicodeDecodeError as err:
+        raise ValueError("Die Datei ist nicht UTF-8-kodiert (in der Tabellenkalkulation als „CSV UTF-8“ speichern)") from err
+
+
+class _ChecklistReader:
+    """Collects the lists of a checklist file; an invalid item is reported in `result.errors`, the rest is kept."""
+
+    def __init__(self, result: ImportResult) -> None:
+        self.result = result
+        self.lists: dict[str, ImportedList] = {}
+        self._seen_ids: set[str] = set()
+        self._sections: set[tuple[str, str]] = set()
+        self._described: set[tuple[str, str]] = set()
+
+    def add_list(self, key: str, title: str) -> ImportedList:
+        return self.lists.setdefault(key, ImportedList(key=key, name=title))
+
+    def add_section(self, imported: ImportedList, title: str) -> None:
+        if title:
+            self._sections.add((imported.key, title))
+
+    def error(self, where: str, message: str) -> None:
+        self.result.errors.append(f"{where}: {message}")
+
+    def finish(self) -> list[ImportedList]:
+        self.result.sections = len(self._sections)
+        return list(self.lists.values())
+
+    @staticmethod
+    def text(raw: dict[str, Any], name: str, problems: list[str], *, required: bool = False) -> str:
+        value = raw.get(name)
+        if value is None:
+            text = ""
+        elif isinstance(value, str):
+            text = value.strip()
+        else:
+            problems.append(f"Feld „{name}“ muss Text sein")
+            return ""
+        if required and not text:
+            problems.append(f"Pflichtfeld „{name}“ fehlt")
+        return text
+
+    def add_item(self, where: str, imported: ImportedList, section: str, description: str, raw: Any) -> None:
+        if not isinstance(raw, dict):
+            self.error(where, "Eintrag ist keine Aufgabe")
+            return
+        problems: list[str] = []
+        external_id = self.text(raw, "external_id", problems, required=True)
+        title = self.text(raw, "title", problems, required=True)
+        notes = self.text(raw, "notes", problems)
+        date_label = self.text(raw, "date_label", problems)
+
+        due: date | None = None
+        due_text = self.text(raw, "due", problems)
+        if due_text:
+            if not _ISO_DAY.fullmatch(due_text):
+                problems.append(f"Datum „{due_text}“ hat das falsche Format (erwartet JJJJ-MM-TT)")
+            else:
+                try:
+                    due = date.fromisoformat(due_text)
+                except ValueError:
+                    problems.append(f"Datum „{due_text}“ gibt es nicht")
+
+        raw_tags = raw.get("tags")
+        if raw_tags is None:
+            tags: list[str] = []
+        elif isinstance(raw_tags, str):
+            tags = [tag.strip() for tag in raw_tags.split(",") if tag.strip()]
+        elif isinstance(raw_tags, list) and all(isinstance(tag, str) for tag in raw_tags):
+            tags = [tag.strip() for tag in raw_tags if tag.strip()]
+        else:
+            tags = []
+            problems.append("Feld „tags“ muss eine Liste von Texten sein")
+
+        if external_id:
+            if external_id in self._seen_ids:
+                problems.append(f"external_id „{external_id}“ kommt in der Datei mehrfach vor")
+            self._seen_ids.add(external_id)
+        if problems:
+            self.error(f"{where} („{title}“)" if title else where, "; ".join(problems))
+            return
+
+        # What the section says about all its items goes on the first one, so it is not lost.
+        notes_parts = [date_label, notes]
+        if description and (imported.key, section) not in self._described:
+            self._described.add((imported.key, section))
+            notes_parts.append(f"Hinweis zum Abschnitt „{section}“: {description}")
+        imported.tasks.append(
+            _task(
+                title,
+                CHECKLIST_PREFIX + external_id,
+                notes="\n".join(part for part in notes_parts if part),
+                categories=list(dict.fromkeys([*tags, *([section] if section else [])])),
+                due=Period.day(due).as_dict() if due else None,
+            )
+        )
+
+
+def read_checklist_json(text: str, result: ImportResult) -> list[ImportedList]:
+    """A checklist file in JSON: lists → groups (sections) → items."""
+    try:
+        parsed = json.loads(text)
+    except ValueError as err:
+        raise ValueError(f"Datei ist kein gültiges JSON: {err}") from err
+    if not isinstance(parsed, dict) or not isinstance(parsed.get("lists"), list):
+        raise ValueError("Keine Checklisten-Datei (Feld „lists“ fehlt)")
+    version = parsed.get("schema_version")
+    if isinstance(version, bool) or version != CHECKLIST_SCHEMA_VERSION:
+        raise ValueError(f"Unbekannte schema_version {version!r}, unterstützt wird {CHECKLIST_SCHEMA_VERSION}")
+
+    reader = _ChecklistReader(result)
+    for number, raw_list in enumerate(parsed["lists"], 1):
+        where = f"Liste {number}"
+        if not isinstance(raw_list, dict):
+            reader.error(where, "Eintrag ist keine Liste")
+            continue
+        problems: list[str] = []
+        title = reader.text(raw_list, "title", problems, required=True)
+        list_id = reader.text(raw_list, "id", problems)
+        if problems:
+            reader.error(where, "; ".join(problems))
+            continue
+        imported = reader.add_list(CHECKLIST_PREFIX + (list_id or title.casefold()), title)
+        groups = raw_list.get("groups")
+        if not isinstance(groups, list):
+            reader.error(f"Liste „{title}“", "Feld „groups“ muss eine Liste sein")
+            continue
+        for group_number, raw_group in enumerate(groups, 1):
+            if not isinstance(raw_group, dict):
+                reader.error(f"Liste „{title}“, Abschnitt {group_number}", "Eintrag ist kein Abschnitt")
+                continue
+            group_problems: list[str] = []
+            section = reader.text(raw_group, "title", group_problems)
+            description = reader.text(raw_group, "description", group_problems)
+            items = raw_group.get("items")
+            if not isinstance(items, list):
+                group_problems.append("Feld „items“ muss eine Liste sein")
+            if group_problems:
+                reader.error(f"Liste „{title}“, Abschnitt {group_number}", "; ".join(group_problems))
+                continue
+            reader.add_section(imported, section)
+            for item_number, raw_item in enumerate(items, 1):
+                item_where = f"Liste „{title}“, Abschnitt „{section}“, Aufgabe {item_number}"
+                reader.add_item(item_where, imported, section, description, raw_item)
+    return reader.finish()
+
+
+def read_checklist_csv(text: str, result: ImportResult) -> list[ImportedList]:
+    """A checklist file as CSV (see the header above); the group column is the section."""
+    text = text.lstrip("﻿")
+    first_line = text.split("\n", 1)[0]
+    reader = csv.DictReader(io.StringIO(text), delimiter=";" if ";" in first_line else ",")
+    columns = [name.strip().casefold() for name in reader.fieldnames or [] if name]
+    if missing := [name for name in _CHECKLIST_REQUIRED_COLUMNS if name not in columns]:
+        raise ValueError("Spalten fehlen in der Kopfzeile: " + ", ".join(missing))
+
+    checklist = _ChecklistReader(result)
+    for row in reader:
+        cells = {(key or "").strip().casefold(): (value or "").strip() for key, value in row.items() if key}
+        where = f"Zeile {reader.line_num}"
+        if not any(cells.values()):
+            continue
+        name = cells.get("list", "")
+        if not name:
+            checklist.error(where, "Pflichtfeld „list“ fehlt")
+            continue
+        imported = checklist.add_list(CHECKLIST_PREFIX + name.casefold(), name)
+        section = cells.get("group", "")
+        checklist.add_section(imported, section)
+        checklist.add_item(where, imported, section, "", cells)
+    return checklist.finish()
+
+
 # -- Detection and merging -------------------------------------------------------------------------------------
 
 
@@ -525,9 +714,9 @@ def detect_format(name: str, data: bytes) -> str:
         return "todoist"
     if suffix in (".ics", ".ical", ".ifb"):
         return "ical"
-    head = _decode(data[:4096])
+    head = _decode(data[:65536])
     if suffix == ".json" or head.lstrip().startswith("{"):
-        return "google_tasks"
+        return "checklist" if '"schema_version"' in head else "google_tasks"
     if "BEGIN:VCALENDAR" in head:
         return "ical"
     if "Folder Name" in head and "List Name" in head:
@@ -535,6 +724,8 @@ def detect_format(name: str, data: bytes) -> str:
     first = head.lstrip("﻿").splitlines()[0] if head.strip() else ""
     if first.upper().startswith("TYPE") and "CONTENT" in first.upper():
         return "todoist"
+    if "external_id" in first.casefold() and "list" in first.casefold():
+        return "checklist"
     return "csv"
 
 
@@ -567,6 +758,11 @@ def read_export(name: str, data: bytes, fmt: str, default_list: str, today: date
         return read_csv(_decode(data), default_list, today, tz, result)
     if fmt == "ical":
         return read_ical(_decode(data), default_list, tz, result)
+    if fmt == "checklist":
+        text = _decode_utf8(data)
+        if PurePath(name).suffix.lower() == ".json" or text.lstrip().startswith("{"):
+            return read_checklist_json(text, result)
+        return read_checklist_csv(text, result)
     raise ValueError(f"Unbekanntes Format: {fmt}")
 
 
@@ -579,35 +775,81 @@ def merge_lists(
     target_list: str | None = None,
     dry_run: bool,
 ) -> ImportResult:
-    """Add imported lists and tasks. `target_list` puts everything into one list (by name)."""
-    by_name = {item.name.casefold(): item for item in collection.lists.values()}
-    for imported in lists:
-        name = target_list or imported.name
-        target = (None if target_list else collection.find_external_list(imported.key)) or by_name.get(name.casefold())
-        if target is None:
-            if name not in result.lists_created:
-                result.lists_created.append(name)
-            if not dry_run:
-                target = collection.create_list(
-                    name, external_id=None if target_list else imported.key, group=imported.group
-                )
-                by_name[name.casefold()] = target
-        elif name not in result.lists_merged and name not in result.lists_created:
-            result.lists_merged.append(name)
+    """Add imported lists and tasks. `target_list` puts everything into one list (by name).
 
-        # Each new task goes on top, so add them bottom first to keep the order of the export.
-        for fields in reversed(imported.tasks):
-            if collection.find_external(fields["external_id"]):
-                result.tasks_skipped_existing += 1
-                continue
-            if fields["completed"] and not include_completed:
-                result.tasks_skipped_completed += 1
-                continue
-            result.tasks_imported += 1
-            result.tasks_completed += fields["completed"]
-            if dry_run or target is None:
-                continue
-            task = Task.from_dict({**fields, "id": new_id(), "list_id": target.id})
-            task.position = collection.top_position(target.id)
-            collection.add_task(task)
+    All or nothing: if adding fails half way, what this call added is removed again before the error goes on.
+    Existing tasks are never changed.
+    """
+    by_name = {item.name.casefold(): item for item in collection.lists.values()}
+    new_lists: list[str] = []
+    new_tasks: list[str] = []
+    try:
+        for imported in lists:
+            name = target_list or imported.name
+            target = (None if target_list else collection.find_external_list(imported.key)) or by_name.get(
+                name.casefold()
+            )
+            if target is None:
+                if name not in result.lists_created:
+                    result.lists_created.append(name)
+                if not dry_run:
+                    target = collection.create_list(
+                        name, external_id=None if target_list else imported.key, group=imported.group
+                    )
+                    new_lists.append(target.id)
+                    by_name[name.casefold()] = target
+            elif name not in result.lists_merged and name not in result.lists_created:
+                result.lists_merged.append(name)
+
+            # Each new task goes on top, so add them bottom first to keep the order of the export.
+            for fields in reversed(imported.tasks):
+                if collection.find_external(fields["external_id"]):
+                    result.tasks_skipped_existing += 1
+                    continue
+                if fields["completed"] and not include_completed:
+                    result.tasks_skipped_completed += 1
+                    continue
+                result.tasks_imported += 1
+                result.tasks_completed += fields["completed"]
+                if dry_run or target is None:
+                    continue
+                task = Task.from_dict({**fields, "id": new_id(), "list_id": target.id})
+                task.position = collection.top_position(target.id)
+                collection.add_task(task)
+                new_tasks.append(task.id)
+    except Exception:
+        for task_id in reversed(new_tasks):
+            if task_id in collection.tasks:
+                collection.delete_task(task_id)
+        for list_id in reversed(new_lists):
+            if list_id in collection.lists:
+                collection.delete_list(list_id)
+        raise
     return result
+
+
+def import_file(
+    collection: TaskCollection,
+    name: str,
+    data: bytes,
+    *,
+    fmt: str = "auto",
+    target_list: str | None = None,
+    include_completed: bool = True,
+    today: date,
+    tz: tzinfo,
+    dry_run: bool,
+) -> ImportResult:
+    """Read an export file and merge it; with `dry_run` only count what would happen.
+
+    Raises ValueError for a file that cannot be read at all. Invalid single entries do not: they end up in
+    `result.errors` and the rest is imported.
+    """
+    result = ImportResult(dry_run=dry_run)
+    try:
+        lists = read_export(name, data, fmt, target_list or PurePath(name).stem, today, tz, result)
+    except (KeyError, zipfile.BadZipFile) as err:
+        raise ValueError(f"Datei konnte nicht gelesen werden: {err}") from err
+    return merge_lists(
+        collection, lists, result, include_completed=include_completed, target_list=target_list, dry_run=dry_run
+    )

@@ -8,3 +8,6 @@ thask_ms_todo.json
 
 # Private companion repo Schumey/tHAsk-local
 local/
+
+# Private sample files for the checklist import (personal travel data)
+samples/

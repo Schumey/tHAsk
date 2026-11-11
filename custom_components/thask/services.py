@@ -20,8 +20,8 @@ from .const import DOMAIN, VIEWS
 from .core.assist import LANGUAGES as SENTENCE_LANGUAGES, sentences
 from .core.collection import NotFoundError
 from .core.models import PRIORITIES, Task
-from .core.importers import FORMATS, merge_lists, read_export
-from .core.ms_todo import ImportOptions, ImportResult, import_export
+from .core.importers import FORMATS, import_file
+from .core.ms_todo import ImportOptions, import_export
 from .core.period import Granularity, Period, PeriodStatus
 from .data import ThaskData, async_get_data
 from .schema import FIXED_GRANULARITIES
@@ -277,22 +277,20 @@ def async_setup_services(hass: HomeAssistant) -> None:
         data = async_get_data(hass)
         path = _config_file(hass.config.config_dir, call.data["file"])
         content = await hass.async_add_executor_job(path.read_bytes)
-        dry_run = call.data["dry_run"]
-        result = ImportResult(dry_run=dry_run)
         try:
-            lists = read_export(
-                path.name, content, call.data["format"], call.data.get("list") or path.stem, data.today, data.tz, result
+            result = import_file(
+                data.collection,
+                path.name,
+                content,
+                fmt=call.data["format"],
+                target_list=call.data.get("list"),
+                include_completed=call.data["include_completed"],
+                today=data.today,
+                tz=data.tz,
+                dry_run=call.data["dry_run"],
             )
-        except (ValueError, KeyError) as err:
+        except ValueError as err:
             raise ServiceValidationError(f"Datei konnte nicht gelesen werden: {err}") from err
-        merge_lists(
-            data.collection,
-            lists,
-            result,
-            include_completed=call.data["include_completed"],
-            target_list=call.data.get("list"),
-            dry_run=dry_run,
-        )
         return result.as_dict()
 
     hass.services.async_register(

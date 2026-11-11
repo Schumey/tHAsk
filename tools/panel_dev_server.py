@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import base64
 from datetime import date, datetime, timedelta
 from email import policy as email_policy
 from email.parser import BytesParser
@@ -25,6 +26,7 @@ sys.path.insert(0, str(INTEGRATION))
 
 from core.collection import NotFoundError, TaskCollection  # noqa: E402
 from core.custom_periods import PeriodBook, PeriodRule  # noqa: E402
+from core.importers import import_file  # noqa: E402
 from core.models import Attachment, Task, TaskList, new_id  # noqa: E402
 from core.parser import parse  # noqa: E402
 from core.period import Granularity, Period  # noqa: E402
@@ -296,6 +298,15 @@ class Backend:
             case "thask/period_rules/refresh":
                 self.refresh_periods()
                 return self.period_rules()
+            case "thask/import":
+                try:
+                    result = import_file(
+                        collection, msg["name"], base64.b64decode(msg["data"]), fmt=msg.get("format", "auto"),
+                        today=today, tz=datetime.now().astimezone().tzinfo, dry_run=msg.get("dry_run", True),
+                    )
+                except ValueError as err:
+                    raise ValueError(f"Datei konnte nicht gelesen werden: {err}") from err
+                return result.as_dict()
             case "thask/list/create":
                 fields = pick(TaskList.EDITABLE)
                 return collection.create_list(fields.pop("name"), **fields).as_dict()

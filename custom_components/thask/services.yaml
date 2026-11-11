@@ -113,6 +113,7 @@ import_tasks:
             - ticktick
             - csv
             - ical
+            - checklist
     list:
       example: Import
       selector:
