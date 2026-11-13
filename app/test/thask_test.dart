@@ -249,6 +249,13 @@ void main() {
       expect(cache.outbox, isNotNull);
     });
 
+    test('Aufgabe mit Erinnerung anlegen: Erinnerung sofort gesetzt', () async {
+      final when = DateTime(2026, 11, 3, 9, 30);
+      await store.addQuick('l1', 'Zahnarzt anrufen', reminder: when);
+      final task = store.tasksOf('l1').singleWhere((t) => t.title == 'Zahnarzt anrufen');
+      expect(DateTime.parse(task.reminder!), when.toUtc());
+    });
+
     test('Reihenfolge ohne Verbindung ändern: sofort sichtbar, beim Verbinden gesendet', () async {
       await store.addQuick('l1', 'Milch');
       await store.addQuick('l1', 'Brot');

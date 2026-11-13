@@ -40,6 +40,9 @@ class _HomeScreenState extends State<HomeScreen> {
   final _entry = TextEditingController();
   bool _sending = false;
 
+  /// Erinnerung für die nächste Aufgabe aus der Schnelleingabe (Ortszeit); null = keine.
+  DateTime? _entryReminder;
+
   ThaskStore get store => widget.store;
 
   final _entryFocus = FocusNode();
@@ -166,10 +169,36 @@ class _HomeScreenState extends State<HomeScreen> {
           text,
           dueToday: _view is TodayView || _view is OverdueView,
           dueDay: _view is DayPlanView ? store.planDay : null,
+          reminder: _entryReminder,
         ));
     if (!mounted) return;
     setState(() => _sending = false);
-    if (added) _entry.clear();
+    if (added) {
+      _entry.clear();
+      setState(() => _entryReminder = null);
+    }
+  }
+
+  /// Datum und Uhrzeit für die Erinnerung der neuen Aufgabe wählen.
+  Future<void> _pickEntryReminder() async {
+    final now = DateTime.now();
+    final base = _entryReminder ?? DateTime(now.year, now.month, now.day, now.hour + 1);
+    final date = await showDatePicker(
+      context: context,
+      initialDate: base,
+      firstDate: DateTime(now.year, now.month, now.day),
+      lastDate: DateTime(now.year + 10),
+    );
+    if (date == null || !mounted) return;
+    final time = await showTimePicker(context: context, initialTime: TimeOfDay.fromDateTime(base));
+    if (time == null || !mounted) return;
+    setState(() => _entryReminder = DateTime(date.year, date.month, date.day, time.hour, time.minute));
+    _entryFocus.requestFocus();
+  }
+
+  String _entryReminderText(DateTime t) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${Period(Granularity.day, dateOnly(t)).label(store.today)}, ${two(t.hour)}:${two(t.minute)}';
   }
 
   Future<void> _newList() async {
@@ -536,25 +565,53 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildEntry(BuildContext context) {
+    final reminder = _entryReminder;
     return SafeArea(
       top: false,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(12, 4, 12, 8),
-        child: TextField(
-          controller: _entry,
-          focusNode: _entryFocus,
-          enabled: !_sending,
-          textInputAction: TextInputAction.send,
-          onSubmitted: (_) => _submit(),
-          decoration: InputDecoration(
-            hintText: tr('entry_hint'),
-            filled: true,
-            fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(28), borderSide: BorderSide.none),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-            prefixIcon: const Icon(Icons.add_task),
-            suffixIcon: IconButton(icon: const Icon(Icons.arrow_upward), tooltip: tr('create'), onPressed: _submit),
-          ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (reminder != null)
+              Padding(
+                padding: const EdgeInsets.only(left: 8, bottom: 6),
+                child: InputChip(
+                  avatar: const Icon(Icons.notifications_active_outlined, size: 18),
+                  label: Text(_entryReminderText(reminder)),
+                  onPressed: _sending ? null : _pickEntryReminder,
+                  onDeleted: _sending ? null : () => setState(() => _entryReminder = null),
+                  deleteButtonTooltipMessage: tr('remove_reminder'),
+                ),
+              ),
+            TextField(
+              controller: _entry,
+              focusNode: _entryFocus,
+              enabled: !_sending,
+              textInputAction: TextInputAction.send,
+              onSubmitted: (_) => _submit(),
+              decoration: InputDecoration(
+                hintText: tr('entry_hint'),
+                filled: true,
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(28), borderSide: BorderSide.none),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                prefixIcon: const Icon(Icons.add_task),
+                suffixIcon: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(reminder == null ? Icons.add_alert_outlined : Icons.notifications_active),
+                      tooltip: tr('add_reminder'),
+                      onPressed: _sending ? null : _pickEntryReminder,
+                    ),
+                    IconButton(icon: const Icon(Icons.arrow_upward), tooltip: tr('create'), onPressed: _submit),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

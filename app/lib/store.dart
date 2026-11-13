@@ -642,7 +642,7 @@ class ThaskStore extends ChangeNotifier {
           'important': _priorityOf(payload) >= 3,
           'due': payload['due'],
           'due_time': payload['due_time'],
-          'reminder': null,
+          'reminder': payload['reminder'],
           'recurrence': payload['recurrence'],
           'my_day': payload['my_day'],
           'steps': <Map<String, dynamic>>[],
@@ -844,8 +844,8 @@ class ThaskStore extends ChangeNotifier {
 
   /// Aufgabe aus einem Schnelleingabe-Text anlegen („Steuer KW 47 !“). Erkannt wird auf dem Gerät,
   /// deshalb geht das auch ohne Verbindung. Mit [dueToday] wird sie ohne erkannte Fälligkeit heute fällig,
-  /// mit [dueDay] an diesem Tag.
-  Future<void> addQuick(String listId, String text, {bool dueToday = false, DateTime? dueDay}) {
+  /// mit [dueDay] an diesem Tag. [reminder] ist der Zeitpunkt einer Erinnerung (Ortszeit).
+  Future<void> addQuick(String listId, String text, {bool dueToday = false, DateTime? dueDay, DateTime? reminder}) {
     final parsed = parse(text, today, custom: customPeriods);
     final title = parsed.title.isEmpty ? text.trim() : parsed.title;
     if (title.isEmpty) return Future.value();
@@ -861,6 +861,7 @@ class ThaskStore extends ChangeNotifier {
         if (parsed.dueTime != null) 'due_time': parsed.dueTime,
         if (parsed.recurrence != null) 'recurrence': parsed.recurrence!.toJson(),
         if (parsed.priority > 0) 'priority': parsed.priority,
+        if (reminder != null) 'reminder': reminder.toUtc().toIso8601String(),
       },
       tempId: _newTempId(),
     );
