@@ -11,6 +11,7 @@ import voluptuous as vol
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import intent
 
+from .core.access import visible_lists
 from .core.assist import (
     INTENT_ADD,
     INTENT_DUE,
@@ -71,9 +72,13 @@ class AddTaskIntent(intent.IntentHandler):
         slots = self.async_validate_slots(intent_obj.slots)
         data = async_get_data(intent_obj.hass)
         mine = _visible_lists(data, intent_obj)
-        text, task_list = split_list(intent_obj.language, slots["task"]["value"], data.collection.lists.values())
+        user_id = intent_obj.context.user_id if intent_obj.context else None
+        user = await intent_obj.hass.auth.async_get_user(user_id) if user_id else None
+        # Only lists this person may change (administrators: all), see access.py.
+        allowed = visible_lists(user, data.collection)
+        text, task_list = split_list(intent_obj.language, slots["task"]["value"], allowed)
         if task_list is None:
-            task_list = mine[0] if mine else data.collection.default_list()
+            task_list = mine[0] if mine else next(iter(allowed), None)
         if task_list is None:
             raise intent.IntentHandleError("There is no task list to add the task to")
         result = parse(text, data.today, custom=data.custom_periods())

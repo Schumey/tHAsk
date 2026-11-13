@@ -25,12 +25,12 @@ sealed class ViewRef {
         _ => const TodayView(),
       };
 
-  /// Alle Ansichten, die es gerade gibt: zuerst die intelligenten, dann die eigenen Listen.
-  /// Ohne den Tagesplan, der seinen Tag erst in der App bekommt (für das Widget).
+  /// Alle Ansichten für das Widget, in der Reihenfolge des Menüs: zuerst die intelligenten, dann die
+  /// eigenen Listen. Der Tagesplan zeigt im Widget immer heute (siehe [WidgetDayPlan]).
   static List<ViewRef> all(ThaskStore store) => [
         const TodayView(),
         if (store.overdueMode == 'separate') const OverdueView(),
-        for (final view in const [ThisWeekView(), ThisMonthView(), ImportantView(), PlannedView()])
+        for (final view in const [ThisWeekView(), ThisMonthView(), ImportantView(), PlannedView(), WidgetDayPlan()])
           if (!store.hiddenViews.contains(view.id)) view,
         for (final list in store.visibleLists) ListRef(list.id),
       ];
@@ -107,6 +107,17 @@ class DayPlanView extends ViewRef {
   String title(ThaskStore store) => tr('view_day_view');
   @override
   List<Task> tasks(ThaskStore store) => store.dayPlan;
+}
+
+/// Der Tagesplan von heute, für das Widget; dieselbe Kennung wie [DayPlanView], damit „Öffnen“ ihn zeigt.
+class WidgetDayPlan extends ViewRef {
+  const WidgetDayPlan();
+  @override
+  String get id => 'day_view';
+  @override
+  String title(ThaskStore store) => tr('view_day_view');
+  @override
+  List<Task> tasks(ThaskStore store) => store.dayPlanFor(store.today);
 }
 
 class ListRef extends ViewRef {

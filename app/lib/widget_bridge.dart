@@ -76,7 +76,10 @@ class WidgetBridge {
             'tasks': [
               for (final task in view.tasks(store).where((t) => !t.completed).take(maxWidgetTasks))
                 {
-                  'id': task.id,
+                  // Eine Vorschau teilt die Id mit ihrer Aufgabe; mit dem Tag wird sie eindeutig, und das
+                  // Abhaken erledigt genau dieses Vorkommen vorab.
+                  'id': task.preview ? previewId(task) : task.id,
+                  if (task.preview) 'preview': true,
                   'title': task.title,
                   'due': task.due == null
                       ? null
@@ -91,6 +94,23 @@ class WidgetBridge {
           },
       ],
     });
+  }
+
+  /// Kennung einer Vorschau im Widget: `<Aufgabe>@<Beginn des Vorkommens>`.
+  static String previewId(Task task) => '${task.id}@${isoDate(task.due!.start)}';
+
+  /// Abhaken im Widget: eine Aufgabe erledigen oder, bei einer Vorschau, ihr Vorkommen vorab erledigen.
+  /// Ohne Verbindung wird beides vorgemerkt.
+  static Future<void> complete(ThaskStore store, String id) async {
+    final at = id.indexOf('@');
+    if (at < 0) {
+      final task = store.task(id);
+      if (task != null) await store.completeNow(task);
+      return;
+    }
+    final preview = store.dayPlanFor(store.today).where((t) => t.preview && previewId(t) == id).firstOrNull;
+    final task = store.task(id.substring(0, at));
+    if (preview != null && task != null) await store.completeOccurrenceNow(task, preview.due!);
   }
 
   /// Daten ans Widget schreiben und es neu zeichnen lassen. Vorläufig ausgeblendete Aufgaben werden wieder freigegeben.
@@ -115,13 +135,10 @@ Future<void> widgetBackgroundCallback(Uri? uri) async {
     await store.start();
     await store.waitUntilConnected(const Duration(seconds: 15));
     if (uri.host == 'complete') {
-      final task = store.task(uri.queryParameters['id'] ?? '');
-      if (task != null) {
-        // Ohne Verbindung wird das Abhaken vorgemerkt und später von der App gesendet.
-        await store.completeNow(task);
-        // Das Änderungsereignis ist vor der Antwort eingetroffen; kurz Zeit zum Verarbeiten.
-        await Future<void>.delayed(const Duration(milliseconds: 300));
-      }
+      // Ohne Verbindung wird das Abhaken vorgemerkt und später von der App gesendet.
+      await WidgetBridge.complete(store, uri.queryParameters['id'] ?? '');
+      // Das Änderungsereignis ist vor der Antwort eingetroffen; kurz Zeit zum Verarbeiten.
+      await Future<void>.delayed(const Duration(milliseconds: 300));
     }
   } catch (_) {
     // Bei einem Fehler bleibt der letzte Stand; push() gibt die ausgeblendete Aufgabe wieder frei.

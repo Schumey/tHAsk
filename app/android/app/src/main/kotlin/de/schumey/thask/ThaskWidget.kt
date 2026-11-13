@@ -42,6 +42,7 @@ import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.layout.width
+import androidx.glance.text.FontStyle
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
@@ -79,6 +80,8 @@ internal class WidgetTask(
     val today: Boolean = false,
     /** Zeitraum (Woche, Monat …) statt eines festen Tags. */
     val fuzzy: Boolean = false,
+    /** Kommendes Vorkommen einer wiederkehrenden Aufgabe im Tagesplan; Abhaken erledigt es vorab. */
+    val preview: Boolean = false,
 )
 
 /** [count]: alle offenen Aufgaben der Ansicht; [tasks] ist auf die ersten begrenzt. */
@@ -106,6 +109,7 @@ internal fun parseViews(json: String?): List<WidgetView> {
                         task.optInt("priority", if (task.optBoolean("important")) 3 else 0),
                         task.optBoolean("today"),
                         task.optBoolean("fuzzy"),
+                        task.optBoolean("preview"),
                     )
                 },
                 view.optInt("count", tasks.length()),
@@ -253,7 +257,16 @@ class ThaskWidget : GlanceAppWidget() {
                     actionStartActivity<MainActivity>(context, Uri.parse("thask://open?view=$viewId")),
                 ),
             ) {
-                Text(text = task.title, style = TextStyle(color = textPrimary, fontSize = 14.sp), maxLines = 2)
+                // Vorschauen wie in der App zurückgenommen: kursiv und grau.
+                Text(
+                    text = task.title,
+                    style = if (task.preview) {
+                        TextStyle(color = textSecondary, fontSize = 14.sp, fontStyle = FontStyle.Italic)
+                    } else {
+                        TextStyle(color = textPrimary, fontSize = 14.sp)
+                    },
+                    maxLines = 2,
+                )
                 if (task.due != null) DueChip(task, task.due)
             }
             if (task.priority > 0) {
@@ -309,7 +322,7 @@ class CompleteCallback : ActionCallback {
         val pending = (prefs.getString("pending_done", "") ?: "").split(',').filter { it.isNotEmpty() } + taskId
         prefs.edit().putString("pending_done", pending.joinToString(",")).apply()
         ThaskWidget().update(context, glanceId)
-        HomeWidgetBackgroundIntent.getBroadcast(context, Uri.parse("thask://complete?id=$taskId")).send()
+        HomeWidgetBackgroundIntent.getBroadcast(context, Uri.parse("thask://complete?id=${Uri.encode(taskId)}")).send()
     }
 }
 

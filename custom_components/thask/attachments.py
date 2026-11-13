@@ -12,9 +12,10 @@ from urllib.parse import quote
 
 from aiohttp import web
 
-from homeassistant.components.http import KEY_HASS, HomeAssistantView
+from homeassistant.components.http import KEY_HASS, KEY_HASS_USER, HomeAssistantView
 from homeassistant.core import HomeAssistant
 
+from .core.access import check_task
 from .core.collection import NotFoundError
 from .core.files import ATTACHMENTS_DIR, remove_task_files
 from .core.models import Attachment, new_id
@@ -49,7 +50,9 @@ class AttachmentUploadView(HomeAssistantView):
     async def post(self, request: web.Request, task_id: str) -> web.Response:
         hass = request.app[KEY_HASS]
         data = async_get_data(hass)
-        if task_id not in data.collection.tasks:
+        try:
+            check_task(request.get(KEY_HASS_USER), data.collection, task_id)
+        except NotFoundError:
             return self.json_message("Task not found", 404)
         reader = await request.multipart()
         field = await reader.next()
@@ -88,6 +91,7 @@ class AttachmentView(HomeAssistantView):
         hass = request.app[KEY_HASS]
         data = async_get_data(hass)
         try:
+            check_task(request.get(KEY_HASS_USER), data.collection, task_id)
             attachment = data.collection.get_attachment(task_id, attachment_id)
         except NotFoundError:
             return self.json_message("Attachment not found", 404)

@@ -269,9 +269,13 @@ class ThaskStore extends ChangeNotifier {
 
   /// Tagesplan für [planDay]: was an dem Tag fällig ist, mit Vorschauen wiederkehrender Aufgaben;
   /// heute auch Überfälliges.
-  List<Task> get dayPlan {
-    final tasks = dayTasks(_visibleTasks, planDay, today, customPeriods);
-    if (planDay == today) tasks.addAll(_visibleTasks.where((t) => t.isOverdue(today)));
+  List<Task> get dayPlan => dayPlanFor(planDay);
+
+  /// Tagesplan für einen beliebigen [day], unabhängig vom gewählten Tag (für das Widget: immer heute).
+  List<Task> dayPlanFor(DateTime day) {
+    final d = dateOnly(day);
+    final tasks = dayTasks(_visibleTasks, d, today, customPeriods);
+    if (d == today) tasks.addAll(_visibleTasks.where((t) => t.isOverdue(today)));
     return sortByTime(tasks);
   }
 
@@ -934,6 +938,14 @@ class ThaskStore extends ChangeNotifier {
       return _client!.call('thask/task/update', {'task_id': task.id, 'completed': true});
     }
     return setCompleted(task, true);
+  }
+
+  /// Wie [completeNow] für ein Vorkommen, das im Widget vorab abgehakt wird.
+  Future<void> completeOccurrenceNow(Task task, Period due) {
+    if (connection == LinkState.connected && _client != null && !_isTemp(task.id)) {
+      return _client!.call('thask/task/occurrence', {'task_id': task.id, 'due': due.toJson(), 'done': true});
+    }
+    return setOccurrence(task, due, true);
   }
 
   /// Erledigte einer Liste löschen; geht auch ohne Verbindung.

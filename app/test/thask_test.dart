@@ -697,9 +697,44 @@ void main() {
       expect(creates, [
         {'granularity': 'day', 'start': '2026-11-03'},
       ]);
-      // Der Tagesplan steht nicht im Widget.
-      expect(ViewRef.all(store).whereType<DayPlanView>(), isEmpty);
+      // Im Widget zeigt der Tagesplan immer heute, egal welcher Tag in der App gewählt ist.
+      final widgetPlan = ViewRef.all(store).whereType<WidgetDayPlan>().single;
+      expect(widgetPlan.tasks(store).map(describe), ['gießen']);
       expect(ViewRef.fromId('day_view'), isA<DayPlanView>());
+      connection.emit({'type': 'options', 'hidden_views': ['day_view']});
+      await Future<void>.delayed(Duration.zero);
+      expect(ViewRef.all(store).whereType<WidgetDayPlan>(), isEmpty);
+    });
+
+    test('Widget: Tagesplan von heute mit Vorschauen, Abhaken erledigt das Vorkommen vorab', () async {
+      await signIn();
+      connection.emit({
+        ..._snapshot,
+        'tasks': [
+          {
+            'id': 'müll',
+            'list_id': 'l1',
+            'title': 'Müll',
+            'due': {'granularity': 'day', 'start': '2026-10-30'},
+            'recurrence': {'unit': 'day', 'interval': 1},
+          },
+        ],
+      });
+      await Future<void>.delayed(Duration.zero);
+      final views = (jsonDecode(WidgetBridge.encode(store)) as Map)['views'] as List;
+      final plan = views.firstWhere((v) => v['id'] == 'day_view') as Map;
+      expect([for (final t in plan['tasks'] as List) (t['id'], t['preview'] ?? false)], [
+        ('müll@2026-10-31', true),
+        ('müll', false),
+      ]);
+      await WidgetBridge.complete(store, 'müll@2026-10-31');
+      expect(connection.calls.where((c) => c.$1 == 'thask/task/occurrence').map((c) => c.$2), [
+        {'task_id': 'müll', 'due': {'granularity': 'day', 'start': '2026-10-31'}, 'done': true},
+      ]);
+      await WidgetBridge.complete(store, 'müll');
+      expect(connection.calls.where((c) => c.$1 == 'thask/task/update').map((c) => c.$2), [
+        {'task_id': 'müll', 'completed': true},
+      ]);
     });
 
     test('Option der Integration: Überfälliges in „Heute“ oder als eigene Ansicht', () async {

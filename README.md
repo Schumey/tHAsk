@@ -127,9 +127,10 @@ Im Detailbereich lassen sich Dateien an eine Aufgabe hängen (Weboberfläche: �
 
 Jede Liste kann für bestimmte HA-Benutzer sein (Personen-Symbol im Listenkopf, in der App „Für wen …“ im Listenmenü), z. B. „Büro“ nur für dich, „Einkauf“ für alle. Ohne Auswahl ist sie für alle.
 
-- Eine Liste für andere fehlt in deiner Navigation und in den intelligenten Ansichten (Heute, Diese Woche …). Gleiches gilt für Karte, Widget, Taskleisten-Zähler und Assist, wenn Assist weiß, wer fragt.
-- Unten in der Navigation blendet **„Listen anderer zeigen“** sie wieder ein; jedes Gerät merkt sich das.
-- Es geht nur um Übersicht, nicht um Schutz: Alle können die Listen einblenden, und die Entities in Home Assistant gibt es weiterhin für alle Listen.
+- **Rechte**: Wer nicht eingetragen ist, bekommt die Liste und ihre Aufgaben gar nicht erst – weder in der Weboberfläche noch in Karte, Apps, Widget, Erinnerungen der Apps, Anhängen, Assist oder den Diensten `thask.get_tasks`, `thask.add_task` und `thask.clear_completed` – und kann sie nicht ändern. Wird jemand ein- oder ausgetragen, bekommen die offenen Apps sofort den neuen Stand.
+- **Administratoren** sehen alle Listen (sie kommen ohnehin an die Dateien in `.storage`). Listen anderer fehlen aber in ihrer Navigation und in den intelligenten Ansichten; unten in der Navigation blendet **„Listen anderer zeigen“** sie ein, jedes Gerät merkt sich das.
+- Automationen und Skripte (Aufrufe ohne Benutzer) dürfen alle Listen.
+- **Grenze**: Die todo-Entities in Home Assistant gibt es für alle Listen, und Home Assistant kennt keine Rechte pro Entity. Wer Dashboards, Entwicklerwerkzeuge oder `todo.*`-Dienste nutzen kann, sieht dort auch fremde Listen.
 
 ### Priorität
 
@@ -373,7 +374,7 @@ Eine Datei mit Listen, Abschnitten und Aufgaben, die immer wieder importiert wer
 
 Die App spiegelt die Weboberfläche: intelligente Listen und eigene Listen (anlegen, umbenennen, Gruppe, Sortierung, löschen), Detailbereich, Schnelleingabe mit Erkennung, Priorität als farbiger Balken, Fälligkeit als Pille (rot überfällig, blau wenn sie heute endet). Sie hält Verbindung zu Home Assistant über die WebSocket-API, zeigt offline den letzten Stand und merkt Änderungen ohne Verbindung vor, bis sie gesendet werden können – auch Listen anlegen, umbenennen, sortieren, löschen und „Erledigte löschen“. Gesendet werden nur die geänderten Felder; ändern zwei Geräte dasselbe Feld, gilt die zuletzt gesendete Änderung. In eigenen Listen mit manueller Sortierung lassen sich Aufgaben per Ziehen anordnen (lange drücken bzw. am Griff ziehen). Die **Lupe** oben sucht wie in der Weboberfläche über alle Listen (unter Windows auch Strg+F). Nach links wischen löscht eine Aufgabe; einige Sekunden lang lässt sich das mit „Rückgängig“ zurücknehmen, erst danach wird sie wirklich gelöscht.
 
-**Widget**: zeigt eine Ansicht mit der Zahl der offenen Aufgaben; ein Tipp auf den Titel öffnet die Auswahl der Ansicht, das tHAsk-Symbol öffnet die App in dieser Ansicht. Aufgaben lassen sich abhaken (auch offline vorgemerkt), „+“ öffnet die Schnelleingabe. Es aktualisiert sich alle 30 Minuten (das Minimum von Android) und von Hand mit ↻.
+**Widget**: zeigt eine Ansicht mit der Zahl der offenen Aufgaben; ein Tipp auf den Titel öffnet die Auswahl der Ansicht, das tHAsk-Symbol öffnet die App in dieser Ansicht. Aufgaben lassen sich abhaken (auch offline vorgemerkt), „+“ öffnet die Schnelleingabe. Der **Tagesplan** zeigt im Widget immer heute, mit Vorschauen wiederkehrender Aufgaben (grau und kursiv); deren Haken erledigt das Vorkommen vorab. Es aktualisiert sich alle 30 Minuten (das Minimum von Android) und von Hand mit ↻.
 
 Erinnerungen kommen auf dem Handy über die Companion-App, siehe [Erinnerungen](#erinnerungen).
 

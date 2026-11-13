@@ -147,7 +147,7 @@ const _strings = <String, Map<String, String>>{
     'opt_important_priority': "„Wichtig“ zeigt", 'important_priority_high': "Nur Priorität Hoch", 'important_priority_medium': "Priorität Mittel und Hoch",
     'tray_open': 'Öffnen', 'tray_quit': 'Beenden',
     'empty_title': "Alles erledigt", 'empty_text': "Hier ist gerade nichts zu tun.", 'empty_hint': "Neue Aufgaben unten eingeben, z. B. „Steuer KW 47“.",
-    'members_menu': "Für wen …", 'members': "Für wen", 'members_all': "Alle", 'show_other_lists': "Listen anderer zeigen ({0})", 'only_my_lists': "Nur meine Listen", 'members_hint': "Die Liste steht nur bei diesen Personen in der Übersicht. Die anderen können sie trotzdem einblenden.",
+    'members_menu': "Für wen …", 'members': "Für wen", 'members_all': "Alle", 'show_other_lists': "Listen anderer zeigen ({0})", 'only_my_lists': "Nur meine Listen", 'members_hint': "Nur diese Personen sehen und ändern die Liste. Administratoren sehen sie auch, aber nicht in ihrer Übersicht.",
     'attachments': "Anhänge", 'add_file': "Datei hinzufügen", 'uploading': "Wird hochgeladen …", 'delete_attachment_q': "Anhang löschen?", 'err_file_too_large': "{0} ist größer als 15 MB.", 'err_not_synced': "Die Aufgabe ist noch nicht auf dem Server.",
   },
   'en': {
@@ -193,7 +193,7 @@ const _strings = <String, Map<String, String>>{
     'opt_important_priority': "“Important” shows", 'important_priority_high': "High priority only", 'important_priority_medium': "Medium and high priority",
     'tray_open': 'Open', 'tray_quit': 'Quit',
     'empty_title': "All done", 'empty_text': "Nothing to do here right now.", 'empty_hint': "Add tasks below, e.g. “Taxes week 47”.",
-    'members_menu': "Who is it for …", 'members': "Who is it for", 'members_all': "Everyone", 'show_other_lists': "Show others' lists ({0})", 'only_my_lists': "Only my lists", 'members_hint': "Only these people see the list in their overview. Others can still show it.",
+    'members_menu': "Who is it for …", 'members': "Who is it for", 'members_all': "Everyone", 'show_other_lists': "Show others' lists ({0})", 'only_my_lists': "Only my lists", 'members_hint': "Only these people see and change the list. Administrators can see it too, but not in their overview.",
     'attachments': "Attachments", 'add_file': "Add file", 'uploading': "Uploading …", 'delete_attachment_q': "Delete attachment?", 'err_file_too_large': "{0} is larger than 15 MB.", 'err_not_synced': "The task is not on the server yet.",
   },
   'nl': {
@@ -239,7 +239,7 @@ const _strings = <String, Map<String, String>>{
     'opt_important_priority': "„Belangrijk” toont", 'important_priority_high': "Alleen prioriteit hoog", 'important_priority_medium': "Prioriteit gemiddeld en hoog",
     'tray_open': 'Openen', 'tray_quit': 'Afsluiten',
     'empty_title': "Alles klaar", 'empty_text': "Hier is nu niets te doen.", 'empty_hint': "Voeg hieronder taken toe, bijv. „Belasting week 47”.",
-    'members_menu': "Voor wie …", 'members': "Voor wie", 'members_all': "Iedereen", 'show_other_lists': "Lijsten van anderen tonen ({0})", 'only_my_lists': "Alleen mijn lijsten", 'members_hint': "Alleen deze personen zien de lijst in hun overzicht. Anderen kunnen hem toch tonen.",
+    'members_menu': "Voor wie …", 'members': "Voor wie", 'members_all': "Iedereen", 'show_other_lists': "Lijsten van anderen tonen ({0})", 'only_my_lists': "Alleen mijn lijsten", 'members_hint': "Alleen deze personen zien en wijzigen de lijst. Beheerders zien hem ook, maar niet in hun overzicht.",
     'attachments': "Bijlagen", 'add_file': "Bestand toevoegen", 'uploading': "Bezig met uploaden …", 'delete_attachment_q': "Bijlage verwijderen?", 'err_file_too_large': "{0} is groter dan 15 MB.", 'err_not_synced': "De taak staat nog niet op de server.",
   },
   'fr': {
@@ -285,7 +285,7 @@ const _strings = <String, Map<String, String>>{
     'opt_important_priority': "« Important » affiche", 'important_priority_high': "Priorité haute uniquement", 'important_priority_medium': "Priorités moyenne et haute",
     'tray_open': 'Ouvrir', 'tray_quit': 'Quitter',
     'empty_title': "Tout est fait", 'empty_text': "Rien à faire ici pour le moment.", 'empty_hint': "Ajoutez des tâches ci-dessous, p. ex. « Impôts semaine 47 ».",
-    'members_menu': "Pour qui …", 'members': "Pour qui", 'members_all': "Tout le monde", 'show_other_lists': "Afficher les listes des autres ({0})", 'only_my_lists': "Seulement mes listes", 'members_hint': "Seules ces personnes voient la liste dans leur aperçu. Les autres peuvent quand même l'afficher.",
+    'members_menu': "Pour qui …", 'members': "Pour qui", 'members_all': "Tout le monde", 'show_other_lists': "Afficher les listes des autres ({0})", 'only_my_lists': "Seulement mes listes", 'members_hint': "Seules ces personnes voient et modifient la liste. Les administrateurs la voient aussi, mais pas dans leur aperçu.",
     'attachments': "Pièces jointes", 'add_file': "Ajouter un fichier", 'uploading': "Envoi …", 'delete_attachment_q': "Supprimer la pièce jointe ?", 'err_file_too_large': "{0} dépasse 15 Mo.", 'err_not_synced': "La tâche n'est pas encore sur le serveur.",
   },
   'es': {
@@ -331,7 +331,7 @@ const _strings = <String, Map<String, String>>{
     'opt_important_priority': "«Importante» muestra", 'important_priority_high': "Solo prioridad alta", 'important_priority_medium': "Prioridad media y alta",
     'tray_open': 'Abrir', 'tray_quit': 'Salir',
     'empty_title': "Todo hecho", 'empty_text': "No hay nada que hacer aquí ahora.", 'empty_hint': "Añade tareas abajo, p. ej. «Impuestos semana 47».",
-    'members_menu': "Para quién …", 'members': "Para quién", 'members_all': "Todos", 'show_other_lists': "Mostrar listas de otros ({0})", 'only_my_lists': "Solo mis listas", 'members_hint': "Solo estas personas ven la lista en su resumen. Los demás pueden mostrarla igualmente.",
+    'members_menu': "Para quién …", 'members': "Para quién", 'members_all': "Todos", 'show_other_lists': "Mostrar listas de otros ({0})", 'only_my_lists': "Solo mis listas", 'members_hint': "Solo estas personas ven y cambian la lista. Los administradores también la ven, pero no en su resumen.",
     'attachments': "Adjuntos", 'add_file': "Añadir archivo", 'uploading': "Subiendo …", 'delete_attachment_q': "¿Eliminar el adjunto?", 'err_file_too_large': "{0} supera los 15 MB.", 'err_not_synced': "La tarea aún no está en el servidor.",
   },
 };

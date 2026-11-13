@@ -86,6 +86,8 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       if (view != null) _view = ViewRef.fromId(view);
     });
+    // Das Widget zeigt den Tagesplan von heute; die App soll denselben Tag öffnen.
+    if (view == 'day_view' && widget.store.planDay != widget.store.today) widget.store.setPlanDay(widget.store.today);
     if (uri.host == 'add') _entryFocus.requestFocus();
   }
 

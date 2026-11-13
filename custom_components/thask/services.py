@@ -9,6 +9,7 @@ from typing import Any
 
 import voluptuous as vol
 
+from homeassistant.auth.models import User
 from homeassistant.const import ATTR_ENTITY_ID
 from homeassistant.core import HomeAssistant, ServiceCall, ServiceResponse, SupportsResponse, callback
 from homeassistant.exceptions import ServiceValidationError, Unauthorized
@@ -16,6 +17,7 @@ from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import entity_registry as er
 from homeassistant.util import dt as dt_util
 
+from .core.access import can_access, check_list, visible_lists
 from .const import DOMAIN, VIEWS
 from .core.assist import LANGUAGES as SENTENCE_LANGUAGES, sentences
 from .core.collection import NotFoundError
@@ -140,6 +142,18 @@ async def _require_admin(hass: HomeAssistant, call: ServiceCall) -> None:
             raise Unauthorized(context=call.context)
 
 
+async def _caller(hass: HomeAssistant, call: ServiceCall) -> User | None:
+    """The calling user; None for automations and other calls without a user (not restricted)."""
+    return await hass.auth.async_get_user(call.context.user_id) if call.context.user_id else None
+
+
+def _check_list(user: User | None, data: ThaskData, list_id: str) -> None:
+    try:
+        check_list(user, data.collection, list_id)
+    except NotFoundError as err:
+        raise ServiceValidationError("Diese Liste ist nur für bestimmte Personen") from err
+
+
 def _config_file(config_dir: str, file: str) -> Path:
     """A file inside the config directory; anything outside is refused."""
     root = Path(config_dir).resolve()
@@ -199,11 +213,16 @@ def _matches_due(task: Task, due: str, today: date) -> bool:
 def async_setup_services(hass: HomeAssistant) -> None:
     async def add_task(call: ServiceCall) -> ServiceResponse:
         data = async_get_data(hass)
+        user = await _caller(hass, call)
         list_id = _list_id_for(hass, data, call.data.get(ATTR_ENTITY_ID))
         if list_id is None:
-            if (default := data.collection.default_list()) is None:
+            default = data.collection.default_list()
+            if default is not None and not can_access(user, default):
+                default = next(iter(visible_lists(user, data.collection)), None)
+            if default is None:
                 raise ServiceValidationError("There is no task list to add the task to")
             list_id = default.id
+        _check_list(user, data, list_id)
         fields: dict[str, Any] = {"notes": call.data["notes"], "priority": call.data["priority"]}
         if "due_period" in call.data:
             fields["due"] = data.next_custom_period(call.data["due_period"], call.data.get("due_date")).as_dict()
@@ -217,14 +236,17 @@ def async_setup_services(hass: HomeAssistant) -> None:
 
     async def get_tasks(call: ServiceCall) -> ServiceResponse:
         data = async_get_data(hass)
+        user = await _caller(hass, call)
         entity_id = call.data.get(ATTR_ENTITY_ID)
         list_id = _list_id_for(hass, data, entity_id)
         view = call.data.get("view") or _smart_view(hass, entity_id)
+        allowed = {task_list.id for task_list in visible_lists(user, data.collection)}
         today = data.today
         tasks = [
             task
             for task in data.collection.tasks.values()
-            if (list_id is None or task.list_id == list_id)
+            if task.list_id in allowed
+            and (list_id is None or task.list_id == list_id)
             and (call.data["include_completed"] or not task.completed)
             and _matches_due(task, call.data["due"], today)
             and (view is None or data.in_view(task, view, today))
@@ -239,6 +261,9 @@ def async_setup_services(hass: HomeAssistant) -> None:
     async def complete_task(call: ServiceCall) -> None:
         """Tick a task off (or open it again) by its id, whichever list or view it is shown in."""
         data = async_get_data(hass)
+        task = data.collection.tasks.get(call.data["task_id"])
+        if task is not None:
+            _check_list(await _caller(hass, call), data, task.list_id)
         try:
             data.collection.update_task(call.data["task_id"], {"completed": call.data["completed"]}, data.today)
         except NotFoundError:
@@ -253,7 +278,16 @@ def async_setup_services(hass: HomeAssistant) -> None:
         before = None
         if "older_than_days" in call.data:
             before = dt_util.utcnow() - timedelta(days=call.data["older_than_days"])
-        removed = data.collection.clear_completed(list_id, before)
+        user = await _caller(hass, call)
+        if list_id is not None:
+            _check_list(user, data, list_id)
+            removed = data.collection.clear_completed(list_id, before)
+        elif user is None or user.is_admin:
+            removed = data.collection.clear_completed(None, before)
+        else:
+            removed = sum(
+                data.collection.clear_completed(task_list.id, before) for task_list in visible_lists(user, data.collection)
+            )
         return {"removed": removed} if call.return_response else None
 
     async def import_ms_todo(call: ServiceCall) -> ServiceResponse:

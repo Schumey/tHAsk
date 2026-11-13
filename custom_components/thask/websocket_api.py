@@ -17,6 +17,7 @@ from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.util import dt as dt_util
 
+from .core.access import ChangeFilter, check_list, check_task, visible_lists
 from .const import (
     CONF_AUTO_CLEAR_DAYS,
     CONF_IMPORTANT_PRIORITY,
@@ -123,13 +124,15 @@ def _patch(msg: dict[str, Any], fields: tuple[str, ...]) -> dict[str, Any]:
 
 
 def _snapshot(data: ThaskData, connection: websocket_api.ActiveConnection) -> dict[str, Any]:
+    # Lists with members only reach those users (and administrators), see access.py.
+    lists = visible_lists(connection.user, data.collection)
+    list_ids = {task_list.id for task_list in lists}
     return {
         "today": data.today.isoformat(),
-        # Lists with members are only in the overview of those users.
         "me": connection.user.id if connection.user else None,
         "options": data.options,
-        "lists": [task_list.as_dict() for task_list in data.collection.sorted_lists()],
-        "tasks": [task.as_dict() for task in data.collection.tasks.values()],
+        "lists": [task_list.as_dict() for task_list in lists],
+        "tasks": [task.as_dict() for task in data.collection.tasks.values() if task.list_id in list_ids],
         # Custom periods ("X block") with the periods their rules found.
         "periods": data.periods.public(data.today),
     }
@@ -153,11 +156,23 @@ def ws_data(hass, connection, msg, data: ThaskData) -> None:
 @websocket_api.websocket_command({vol.Required("type"): "thask/subscribe"})
 @_with_data
 def ws_subscribe(hass, connection, msg, data: ThaskData) -> None:
-    """Send a snapshot, then every change and a notice when the day changes."""
+    """Send a snapshot, then every change and a notice when the day changes.
+
+    Only lists the user may see and their tasks are sent. When a list becomes visible or invisible for
+    the user (its members changed), a fresh snapshot replaces everything instead of single changes.
+    """
+    changes = ChangeFilter(connection.user, data.collection)
 
     @callback
     def forward_change(change: Change) -> None:
-        connection.send_message(websocket_api.event_message(msg["id"], {"type": "change", **change.as_dict()}))
+        result = changes.apply(change)
+        if result == ChangeFilter.RESNAPSHOT:
+            changes.reset()
+            connection.send_message(
+                websocket_api.event_message(msg["id"], {"type": "snapshot", **_snapshot(data, connection)})
+            )
+        elif isinstance(result, Change):
+            connection.send_message(websocket_api.event_message(msg["id"], {"type": "change", **result.as_dict()}))
 
     @callback
     def forward_day_changed() -> None:
@@ -177,7 +192,10 @@ def ws_subscribe(hass, connection, msg, data: ThaskData) -> None:
 
     @callback
     def forward_reminder(info: dict[str, Any]) -> None:
-        # The desktop app shows these as notifications.
+        # The desktop app shows these as notifications; only for tasks the user may see.
+        task = data.collection.tasks.get(info.get("id", ""))
+        if task is None or task.list_id not in changes.visible:
+            return
         connection.send_message(websocket_api.event_message(msg["id"], {"type": "reminder", "task": info}))
 
     unsubs = [
@@ -213,6 +231,7 @@ def ws_list_create(hass, connection, msg, data: ThaskData) -> None:
 )
 @_with_data
 def ws_list_update(hass, connection, msg, data: ThaskData) -> None:
+    check_list(connection.user, data.collection, msg["list_id"])
     task_list = data.collection.update_list(msg["list_id"], _patch(msg, TaskList.EDITABLE))
     connection.send_result(msg["id"], task_list.as_dict())
 
@@ -220,6 +239,7 @@ def ws_list_update(hass, connection, msg, data: ThaskData) -> None:
 @websocket_api.websocket_command({vol.Required("type"): "thask/list/delete", vol.Required("list_id"): str})
 @_with_data
 def ws_list_delete(hass, connection, msg, data: ThaskData) -> None:
+    check_list(connection.user, data.collection, msg["list_id"])
     if len(data.collection.lists) == 1 and msg["list_id"] in data.collection.lists:
         raise HomeAssistantError("The last list cannot be deleted")
     data.collection.delete_list(msg["list_id"])
@@ -235,6 +255,7 @@ def ws_list_delete(hass, connection, msg, data: ThaskData) -> None:
 )
 @_with_data
 def ws_list_move(hass, connection, msg, data: ThaskData) -> None:
+    check_list(connection.user, data.collection, msg["list_id"])
     task_list = data.collection.move_list(msg["list_id"], msg.get("previous_id"))
     connection.send_result(msg["id"], task_list.as_dict())
 
@@ -252,7 +273,17 @@ def ws_list_clear_completed(hass, connection, msg, data: ThaskData) -> None:
     before = None
     if "older_than_days" in msg:
         before = dt_util.utcnow() - timedelta(days=msg["older_than_days"])
-    removed = data.collection.clear_completed(msg.get("list_id"), before)
+    if msg.get("list_id"):
+        check_list(connection.user, data.collection, msg["list_id"])
+        removed = data.collection.clear_completed(msg["list_id"], before)
+    elif connection.user is None or connection.user.is_admin:
+        removed = data.collection.clear_completed(None, before)
+    else:
+        # "All lists" means all lists this user may change.
+        removed = sum(
+            data.collection.clear_completed(task_list.id, before)
+            for task_list in visible_lists(connection.user, data.collection)
+        )
     connection.send_result(msg["id"], {"removed": removed})
 
 
@@ -267,6 +298,7 @@ def ws_list_clear_completed(hass, connection, msg, data: ThaskData) -> None:
 @_with_data
 def ws_task_create(hass, connection, msg, data: ThaskData) -> None:
     fields = _patch(msg, Task.EDITABLE)
+    check_list(connection.user, data.collection, fields["list_id"])
     task = data.collection.create_task(fields.pop("list_id"), fields.pop("title"), **fields)
     connection.send_result(msg["id"], task.as_dict())
 
@@ -276,6 +308,9 @@ def ws_task_create(hass, connection, msg, data: ThaskData) -> None:
 )
 @_with_data
 def ws_task_update(hass, connection, msg, data: ThaskData) -> None:
+    check_task(connection.user, data.collection, msg["task_id"])
+    if "list_id" in msg:
+        check_list(connection.user, data.collection, msg["list_id"])
     task = data.collection.update_task(msg["task_id"], _patch(msg, Task.EDITABLE), data.today)
     connection.send_result(msg["id"], task.as_dict())
 
@@ -283,6 +318,7 @@ def ws_task_update(hass, connection, msg, data: ThaskData) -> None:
 @websocket_api.websocket_command({vol.Required("type"): "thask/task/delete", vol.Required("task_id"): str})
 @_with_data
 def ws_task_delete(hass, connection, msg, data: ThaskData) -> None:
+    check_task(connection.user, data.collection, msg["task_id"])
     data.collection.delete_task(msg["task_id"])
     connection.send_result(msg["id"])
 
@@ -296,6 +332,7 @@ def ws_task_delete(hass, connection, msg, data: ThaskData) -> None:
 )
 @_with_data
 def ws_task_move(hass, connection, msg, data: ThaskData) -> None:
+    check_task(connection.user, data.collection, msg["task_id"])
     task = data.collection.move_task(msg["task_id"], msg.get("previous_id"))
     connection.send_result(msg["id"], task.as_dict())
 
@@ -312,6 +349,7 @@ def ws_task_move(hass, connection, msg, data: ThaskData) -> None:
 @_with_data
 def ws_task_occurrence(hass, connection, msg, data: ThaskData) -> None:
     """Tick off (or untick) a coming occurrence of a recurring task ahead of time."""
+    check_task(connection.user, data.collection, msg["task_id"])
     try:
         occurrence = data.collection.set_occurrence(
             msg["task_id"], Period.from_dict(msg["due"]), msg["done"], data.today
@@ -458,6 +496,7 @@ def _notify_services(hass: HomeAssistant) -> list[str]:
 )
 @_with_data
 def ws_attachment_delete(hass, connection, msg, data: ThaskData) -> None:
+    check_task(connection.user, data.collection, msg["task_id"])
     attachment = data.collection.remove_attachment(msg["task_id"], msg["attachment_id"])
     path = data.attachments_root / msg["task_id"] / attachment.id
     hass.async_add_executor_job(partial(path.unlink, missing_ok=True))
