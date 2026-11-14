@@ -13,6 +13,7 @@ Gedacht als Ersatz für Microsoft To Do: Die Daten liegen in Home Assistant (und
 | **Dashboard-Karte** | `custom:thask-card` für beliebige Dashboards |
 | **Android-App mit Widget** (`app/`) | Flutter-App mit Offline-Modus, Widget auf dem Startbildschirm |
 | **Windows-App** (`app/`) | dieselbe App für Windows, mit Installer, Benachrichtigungen und Zähler an der Taskleiste |
+| **[Tessera-Plugin](https://github.com/Schumey/tessera-plugin-thask)** | tHAsk-Aufgaben auf einem ESP32-Touchscreen (Tessera), per Tipp abhaken |
 
 Aktueller Stand: Integration **0.20.0**, Apps **0.9.19** (siehe [Releases](https://github.com/Schumey/tHAsk/releases)). Die Apps gibt es dort fertig als `thask-<Version>.apk` (Android) und `thask-setup-<Version>.exe` (Windows); danach aktualisieren sie sich selbst, siehe [Updates der Apps](#updates-der-apps).
 
@@ -27,6 +28,7 @@ Aktueller Stand: Integration **0.20.0**, Apps **0.9.19** (siehe [Releases](https
 - **Trigger**: legen Aufgaben automatisch an, wenn in HA etwas zutrifft (z. B. ein Kalendertermin morgen).
 - **Anhänge**: Dateien an Aufgaben, gespeichert in Home Assistant (im Backup).
 - **Import** aus Microsoft To Do, Todoist, Google Tasks, TickTick, iCalendar und CSV.
+- **Tessera-Plugin**: Aufgaben mit unscharfen Fälligkeiten auf einem ESP32-Touchscreen, abgehakt per Tipp ([tessera-plugin-thask](https://github.com/Schumey/tessera-plugin-thask), braucht Integration 0.18.2 oder neuer).
 
 ### Screenshots
 
