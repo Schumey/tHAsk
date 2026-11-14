@@ -14,7 +14,7 @@ Gedacht als Ersatz für Microsoft To Do: Die Daten liegen in Home Assistant (und
 | **Android-App mit Widget** (`app/`) | Flutter-App mit Offline-Modus, Widget auf dem Startbildschirm |
 | **Windows-App** (`app/`) | dieselbe App für Windows, mit Installer, Benachrichtigungen und Zähler an der Taskleiste |
 
-Aktueller Stand: Integration **0.18.2**, Apps **0.9.16** (siehe [Releases](https://github.com/Schumey/tHAsk/releases)). Die Apps gibt es dort fertig als `thask-<Version>.apk` (Android) und `thask-setup-<Version>.exe` (Windows); danach aktualisieren sie sich selbst, siehe [Updates der Apps](#updates-der-apps).
+Aktueller Stand: Integration **0.20.0**, Apps **0.9.19** (siehe [Releases](https://github.com/Schumey/tHAsk/releases)). Die Apps gibt es dort fertig als `thask-<Version>.apk` (Android) und `thask-setup-<Version>.exe` (Windows); danach aktualisieren sie sich selbst, siehe [Updates der Apps](#updates-der-apps).
 
 ### Funktionen
 
@@ -27,6 +27,20 @@ Aktueller Stand: Integration **0.18.2**, Apps **0.9.16** (siehe [Releases](https
 - **Trigger**: legen Aufgaben automatisch an, wenn in HA etwas zutrifft (z. B. ein Kalendertermin morgen).
 - **Anhänge**: Dateien an Aufgaben, gespeichert in Home Assistant (im Backup).
 - **Import** aus Microsoft To Do, Todoist, Google Tasks, TickTick, iCalendar und CSV.
+
+### Screenshots
+
+| Heute | Schnelleingabe mit Erkennung |
+|---|---|
+| ![Heute](docs/screenshots/01-heute.png) | ![Schnelleingabe](docs/screenshots/02-schnelleingabe.png) |
+
+| Tagesplan | Details mit Fälligkeit als Zeitraum |
+|---|---|
+| ![Tagesplan](docs/screenshots/04-tagesplan.png) | ![Details](docs/screenshots/06-details.png) |
+
+| Dunkles Theme | Auf dem Handy |
+|---|---|
+| ![Dunkel](docs/screenshots/09-dunkel.png) | <img src="docs/screenshots/10-handy.png" width="300" alt="Handy"> |
 
 ## Sprachen
 
