@@ -433,7 +433,7 @@ Die Android- und die Windows-App suchen einmal am Tag beim Start in den [Release
 - **Android** öffnet danach die Paketinstallation. Beim ersten Mal fragt Android, ob tHAsk Apps installieren darf (Einstellungen → „Unbekannte Apps installieren“). Anmeldung und Daten bleiben erhalten.
 - **Windows** startet das Setup ohne Rückfragen, beendet die App und startet sie nach dem Update neu. Desktop-Verknüpfung und Autostart bleiben, wie sie waren.
 
-Die App-Version steht in den Dateinamen der Release-Pakete (`thask-0.9.15.apk`, `thask-setup-0.9.15.exe`) und ist unabhängig von der Version der Integration im Tag. Die Pakete für ein Release baut `tools\build_app_release.ps1` (mit `-Tag v0.17.0` lädt es sie gleich zum Release hoch); die APK wird dafür mit dem Release-Schlüssel aus dem privaten Begleit-Repo signiert.
+Die App-Version steht in den Dateinamen der Release-Pakete (`thask-0.9.19.apk`, `thask-setup-0.9.19.exe`) und ist unabhängig von der Version der Integration im Tag. Die Pakete für ein Release baut `tools\build_app_release.ps1` (mit `-Tag v0.17.0` lädt es sie gleich zum Release hoch); die APK wird dafür mit dem Release-Schlüssel aus dem privaten Begleit-Repo signiert.
 
 ## WebSocket-API
 
