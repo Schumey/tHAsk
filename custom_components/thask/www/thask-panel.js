@@ -996,6 +996,15 @@ class ThaskPanel extends HTMLElement {
           <div class="stepper-label"><b>${esc(periodLabel(task.due, lang, this._today))}</b><span>${esc(periodRange(task.due, this._locale))}</span></div>
           ${step(1, "mdi:chevron-right")}
         </div>`;
+      // A calendar week shows its seven days; a click narrows the due date to that day.
+      if (granularity === "week") {
+        const monday = parseISO(task.due.start);
+        dueEditor += `
+        <div class="row weekdays"><div class="segmented week-days">${WEEKDAYS_SHORT[lang].map((name, i) => {
+          const day = addDays(monday, i);
+          return `<button class="${toISO(day) === toISO(this._today) ? "today" : ""}" data-action="due-pick-day" data-date="${toISO(day)}">${esc(name)}<small>${day.getDate()}</small></button>`;
+        }).join("")}</div></div>`;
+      }
     }
     const quick = [
       ["today", makePeriod("day", this._today)],
@@ -1956,6 +1965,9 @@ class ThaskPanel extends HTMLElement {
       case "due-set":
         this._updateTask(task, { due: JSON.parse(target.dataset.period) });
         break;
+      case "due-pick-day":
+        this._updateTask(task, { due: { granularity: "day", start: target.dataset.date } });
+        break;
       case "clear-reminder":
         this._updateTask(task, { reminder: null });
         break;
@@ -2422,6 +2434,9 @@ const STYLE = `
   .segmented button.on { background: var(--thask-accent); color: var(--text-primary-color, #fff); }
   .row.weekdays { margin-top: 8px; }
   .row.weekdays .segmented { flex: 1; }
+  .week-days button { display: flex; flex-direction: column; align-items: center; line-height: 1.2; }
+  .week-days button small { font-size: 11px; opacity: 0.7; }
+  .week-days button.today small { font-weight: 700; opacity: 1; }
   .stepper { display: flex; align-items: center; gap: 4px; }
   .stepper-label { flex: 1; display: flex; flex-direction: column; align-items: center; }
   .stepper-label span { font-size: 12px; color: var(--thask-muted); }

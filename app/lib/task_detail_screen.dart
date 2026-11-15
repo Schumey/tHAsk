@@ -571,6 +571,23 @@ class _TaskDetailScreenState extends State<TaskDetailScreen> {
                     onPressed: _shifted(due, 1) == null ? null : () => _update({'due': _shifted(due, 1)!.toJson()}),
                   ),
                 ),
+              // Eine Kalenderwoche zeigt ihre sieben Tage; ein Tipp legt die Fälligkeit auf diesen Tag.
+              if (due != null && due.granularity == Granularity.week)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Wrap(
+                    spacing: 8,
+                    children: [
+                      for (var i = 0; i < 7; i++)
+                        ActionChip(
+                          label: Text('${_weekdayNames[i]} ${DateTime(due.start.year, due.start.month, due.start.day + i).day}'),
+                          onPressed: () => _update({
+                            'due': Period(Granularity.day, DateTime(due.start.year, due.start.month, due.start.day + i)).toJson(),
+                          }),
+                        ),
+                    ],
+                  ),
+                ),
               if (due?.granularity == Granularity.day)
                 ListTile(
                   leading: const Icon(Icons.schedule),

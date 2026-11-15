@@ -15,7 +15,7 @@ Gedacht als Ersatz für Microsoft To Do: Die Daten liegen in Home Assistant (und
 | **Windows-App** (`app/`) | dieselbe App für Windows, mit Installer, Benachrichtigungen und Zähler an der Taskleiste |
 | **[Tessera-Plugin](https://github.com/Schumey/tessera-plugin-thask)** | tHAsk-Aufgaben auf einem ESP32-Touchscreen (Tessera), per Tipp abhaken |
 
-Aktueller Stand: Integration **0.20.0**, Apps **0.9.19** (siehe [Releases](https://github.com/Schumey/tHAsk/releases)). Die Apps gibt es dort fertig als `thask-<Version>.apk` (Android) und `thask-setup-<Version>.exe` (Windows); danach aktualisieren sie sich selbst, siehe [Updates der Apps](#updates-der-apps).
+Aktueller Stand: Integration **0.20.1**, Apps **0.9.20** (siehe [Releases](https://github.com/Schumey/tHAsk/releases)). Die Apps gibt es dort fertig als `thask-<Version>.apk` (Android) und `thask-setup-<Version>.exe` (Windows); danach aktualisieren sie sich selbst, siehe [Updates der Apps](#updates-der-apps).
 
 ### Funktionen
 
@@ -435,7 +435,7 @@ Die Android- und die Windows-App suchen einmal am Tag beim Start in den [Release
 - **Android** öffnet danach die Paketinstallation. Beim ersten Mal fragt Android, ob tHAsk Apps installieren darf (Einstellungen → „Unbekannte Apps installieren“). Anmeldung und Daten bleiben erhalten.
 - **Windows** startet das Setup ohne Rückfragen, beendet die App und startet sie nach dem Update neu. Desktop-Verknüpfung und Autostart bleiben, wie sie waren.
 
-Die App-Version steht in den Dateinamen der Release-Pakete (`thask-0.9.19.apk`, `thask-setup-0.9.19.exe`) und ist unabhängig von der Version der Integration im Tag. Die Pakete für ein Release baut `tools\build_app_release.ps1` (mit `-Tag v0.17.0` lädt es sie gleich zum Release hoch); die APK wird dafür mit dem Release-Schlüssel aus dem privaten Begleit-Repo signiert.
+Die App-Version steht in den Dateinamen der Release-Pakete (`thask-0.9.20.apk`, `thask-setup-0.9.20.exe`) und ist unabhängig von der Version der Integration im Tag. Die Pakete für ein Release baut `tools\build_app_release.ps1` (mit `-Tag v0.17.0` lädt es sie gleich zum Release hoch); die APK wird dafür mit dem Release-Schlüssel aus dem privaten Begleit-Repo signiert.
 
 ## WebSocket-API
 
